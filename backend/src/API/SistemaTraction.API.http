@@ -1,0 +1,6 @@
+@SistemaTraction.API_HostAddress = http://localhost:5207
+
+GET {{SistemaTraction.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

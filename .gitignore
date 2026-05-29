@@ -10,11 +10,11 @@ frontend/.env.local
 frontend/.env.*.local
 
 # Backend
-backend/bin/
-backend/obj/
+backend/**/bin/
+backend/**/obj/
 backend/**/*.user
 backend/.vs/
-backend/appsettings.Development.json
+backend/**/appsettings.Development.json
 
 # OS
 .DS_Store
