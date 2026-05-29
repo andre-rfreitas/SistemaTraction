@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SistemaTraction.Domain.Config;
 using SistemaTraction.Domain.Dtf;
 using SistemaTraction.Domain.Fabric;
 
@@ -11,6 +12,7 @@ public interface IApplicationDbContext
     DbSet<DtfModel> DtfModels { get; }
     DbSet<DtfStockItem> DtfStockItems { get; }
     DbSet<DtfStockMovement> DtfStockMovements { get; }
+    DbSet<AppConfig> AppConfigs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

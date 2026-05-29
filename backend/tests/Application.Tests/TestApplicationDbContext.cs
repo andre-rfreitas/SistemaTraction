@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaTraction.Application.Common.Interfaces;
+using SistemaTraction.Domain.Config;
 using SistemaTraction.Domain.Dtf;
 using SistemaTraction.Domain.Fabric;
 
@@ -14,6 +15,7 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<DtfModel> DtfModels => Set<DtfModel>();
     public DbSet<DtfStockItem> DtfStockItems => Set<DtfStockItem>();
     public DbSet<DtfStockMovement> DtfStockMovements => Set<DtfStockMovement>();
+    public DbSet<AppConfig> AppConfigs => Set<AppConfig>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,6 +57,12 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<DtfStockMovement>(b =>
         {
             b.HasKey(m => m.Id);
+        });
+
+        modelBuilder.Entity<AppConfig>(b =>
+        {
+            b.HasKey(c => c.Id);
+            b.HasIndex(c => c.Key).IsUnique();
         });
     }
 }
