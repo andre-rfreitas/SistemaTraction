@@ -19,6 +19,9 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
             b.HasMany(t => t.Colors)
              .WithOne(c => c.FabricType)
              .HasForeignKey(c => c.FabricTypeId);
+            b.Navigation(t => t.Colors)
+             .HasField("_colors")
+             .UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         modelBuilder.Entity<FabricColor>(b =>
