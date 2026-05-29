@@ -1,3 +1,4 @@
+using Scalar.AspNetCore;
 using Serilog;
 using SistemaTraction.Application;
 using SistemaTraction.Infrastructure;
@@ -30,7 +31,8 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi(); // disponível em /openapi/v1.json
+    app.MapOpenApi();
+    app.MapScalarApiReference(); // UI em /scalar/v1
 }
 
 app.UseCors();
