@@ -5,6 +5,16 @@ Write-Host "Encerrando processos dotnet anteriores..." -ForegroundColor Yellow
 Get-Process -Name dotnet,SistemaTraction* -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 1
 
+# Garantir que o LocalDB (UNI1500) está rodando
+Write-Host "Verificando LocalDB (UNI1500)..." -ForegroundColor Yellow
+$state = (sqllocaldb info UNI1500 | Select-String "State:").ToString().Trim()
+if ($state -notmatch "Running") {
+    Write-Host "Iniciando instancia LocalDB UNI1500..." -ForegroundColor Yellow
+    sqllocaldb start UNI1500 | Out-Null
+    Start-Sleep -Seconds 3
+}
+Write-Host "LocalDB OK" -ForegroundColor Green
+
 Set-Location "$PSScriptRoot\backend"
 
 Write-Host "Compilando API..." -ForegroundColor Cyan
