@@ -52,7 +52,7 @@ export function FabricColorForm({ defaultValues, onSubmit, isLoading }: Props) {
             control={control}
             render={({ field }) => {
               const pickerValue = /^#[0-9A-Fa-f]{6}$/.test(field.value ?? '')
-                ? field.value
+                ? (field.value ?? '#000000')
                 : '#000000'
 
               return (
