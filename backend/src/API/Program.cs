@@ -1,7 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
 using SistemaTraction.Application;
 using SistemaTraction.Infrastructure;
+using SistemaTraction.Infrastructure.Persistence;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -28,6 +30,13 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Aplica migrations automaticamente ao iniciar (cria o banco se não existir)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
 {
