@@ -35,7 +35,16 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();
+    try
+    {
+        db.Database.Migrate();
+        Log.Information("Migrations aplicadas com sucesso.");
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Não foi possível aplicar migrations automaticamente. " +
+            "Verifique se o LocalDB está rodando: sqllocaldb start UNI1500");
+    }
 }
 
 if (app.Environment.IsDevelopment())
