@@ -12,6 +12,12 @@ const CONFIG_LABELS: Record<string, string> = {
   stock_alert_threshold:   'Alerta de estoque mínimo (unidades)',
   recommendation_days:     'Dias de histórico para recomendação de corte',
   sizes_available:         'Tamanhos disponíveis (separados por vírgula)',
+  wp_cutter_name:          'WhatsApp — Nome do cortador',
+  wp_cutter_phone:         'WhatsApp — Número do cortador',
+  wp_sewer_name:           'WhatsApp — Nome do costureiro',
+  wp_sewer_phone:          'WhatsApp — Número do costureiro',
+  wp_dtf_name:             'WhatsApp — Nome do fornecedor DTF',
+  wp_dtf_phone:            'WhatsApp — Número do fornecedor DTF',
 }
 
 interface Props {
