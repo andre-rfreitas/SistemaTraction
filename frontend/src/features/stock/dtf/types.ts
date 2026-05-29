@@ -33,4 +33,3 @@ export const MOVEMENT_TYPE_CLASS: Record<DtfMovementType, string> = {
   3: 'text-blue-600',
 }
 
-export const LOW_STOCK_THRESHOLD = 3

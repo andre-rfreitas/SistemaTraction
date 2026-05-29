@@ -1,9 +1,9 @@
 import { useDtfStock } from '../hooks/useDtfStock'
 import type { DtfStockItemDto } from '../types'
-import { LOW_STOCK_THRESHOLD } from '../types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useDtfModels } from '@/features/settings/dtf/hooks/useDtfModels'
+import { useAppConfigs } from '@/features/settings/config/hooks/useAppConfigs'
 
 interface Props {
   onSelect: (item: DtfStockItemDto | { dtfModelId: string; modelName: string; sheetLabel: string }) => void
@@ -12,6 +12,11 @@ interface Props {
 export function DtfStockList({ onSelect }: Props) {
   const { data: stockItems, isLoading: loadingStock } = useDtfStock()
   const { data: allModels, isLoading: loadingModels } = useDtfModels()
+  const { data: configs } = useAppConfigs()
+
+  const threshold = Number(
+    configs?.find((c) => c.key === 'stock_alert_threshold')?.value ?? 15
+  )
 
   if (loadingStock || loadingModels)
     return <p className="text-neutral-500 text-sm">Carregando estoque...</p>
@@ -26,7 +31,7 @@ export function DtfStockList({ onSelect }: Props) {
       {allModels.map((model) => {
         const stock = stockMap.get(model.id)
         const qty = stock?.currentQuantity ?? 0
-        const isLow = qty <= LOW_STOCK_THRESHOLD
+        const isLow = qty <= threshold
         const hasStock = !!stock
 
         return (

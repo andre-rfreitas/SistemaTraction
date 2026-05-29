@@ -22,23 +22,33 @@ public class AppConfigConfiguration : IEntityTypeConfiguration<AppConfig>
         builder.HasIndex(c => c.Key).IsUnique();
 
         builder.HasData(
-            Seed(new Guid("aaaaaaaa-0000-0000-0000-000011110001"), "dtf.alerta_estoque_minimo", "3",
-                "Quantidade mínima de folhas por modelo antes de alertar reposição"),
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000001"),
+                "cutting_price_default", "1.00",
+                "Preço padrão de corte por peça (R$)"),
 
-            Seed(new Guid("aaaaaaaa-0000-0000-0000-000011110002"), "dtf.custo_folha_padrao", "49.80",
-                "Custo padrão de uma folha DTF em reais"),
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000002"),
+                "sewing_price_default", "5.60",
+                "Preço padrão de costura por peça — tamanhos P/M/G/GG (R$)"),
 
-            Seed(new Guid("aaaaaaaa-0000-0000-0000-000011110003"), "pedido.lead_time_padrao_dias", "7",
-                "Prazo médio em dias para recebimento de pedidos a fornecedores"),
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000003"),
+                "sewing_price_g1", "6.30",
+                "Preço de costura por peça — tamanho G1 (R$)"),
 
-            Seed(new Guid("aaaaaaaa-0000-0000-0000-000011110004"), "estoque.tecido.alerta_minimo_kg", "5",
-                "Quantidade mínima em kg de tecido antes de alertar reposição"),
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000004"),
+                "dtf_sheet_price_default", "49.80",
+                "Preço padrão por folha DTF (R$)"),
 
-            Seed(new Guid("aaaaaaaa-0000-0000-0000-000011110005"), "sistema.timezone", "America/Sao_Paulo",
-                "Fuso horário padrão do sistema"),
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000005"),
+                "stock_alert_threshold", "15",
+                "Quantidade mínima em estoque antes de disparar alerta de reposição"),
 
-            Seed(new Guid("aaaaaaaa-0000-0000-0000-000011110006"), "sistema.moeda", "BRL",
-                "Moeda padrão do sistema")
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000006"),
+                "recommendation_days", "30",
+                "Dias de histórico usados para calcular recomendação de corte"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000007"),
+                "sizes_available", "P,M,G,G1,GG",
+                "Tamanhos disponíveis para produção, separados por vírgula")
         );
     }
 

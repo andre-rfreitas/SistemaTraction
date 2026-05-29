@@ -5,12 +5,13 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 const CONFIG_LABELS: Record<string, string> = {
-  'dtf.alerta_estoque_minimo':       'Alerta de estoque mínimo DTF (folhas)',
-  'dtf.custo_folha_padrao':          'Custo padrão por folha DTF (R$)',
-  'estoque.tecido.alerta_minimo_kg': 'Alerta de estoque mínimo de tecido (kg)',
-  'pedido.lead_time_padrao_dias':    'Lead time padrão de pedidos (dias)',
-  'sistema.moeda':                   'Moeda do sistema',
-  'sistema.timezone':                'Fuso horário',
+  cutting_price_default:   'Preço de corte por peça (R$)',
+  sewing_price_default:    'Preço de costura — P / M / G / GG (R$)',
+  sewing_price_g1:         'Preço de costura — G1 (R$)',
+  dtf_sheet_price_default: 'Preço por folha DTF (R$)',
+  stock_alert_threshold:   'Alerta de estoque mínimo (unidades)',
+  recommendation_days:     'Dias de histórico para recomendação de corte',
+  sizes_available:         'Tamanhos disponíveis (separados por vírgula)',
 }
 
 interface Props {
