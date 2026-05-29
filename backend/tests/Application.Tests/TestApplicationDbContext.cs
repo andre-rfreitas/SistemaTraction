@@ -16,6 +16,7 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<FabricColor> FabricColors => Set<FabricColor>();
     public DbSet<FabricRoll> FabricRolls => Set<FabricRoll>();
     public DbSet<CuttingOrder> CuttingOrders => Set<CuttingOrder>();
+    public DbSet<CuttingDelivery> CuttingDeliveries => Set<CuttingDelivery>();
     public DbSet<DtfModel> DtfModels => Set<DtfModel>();
     public DbSet<DtfStockItem> DtfStockItems => Set<DtfStockItem>();
     public DbSet<DtfStockMovement> DtfStockMovements => Set<DtfStockMovement>();
@@ -53,6 +54,12 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
             b.HasKey(o => o.Id);
             b.Property(o => o.Status).HasConversion<string>();
             b.HasOne(o => o.FabricRoll).WithMany().HasForeignKey(o => o.FabricRollId);
+        });
+
+        modelBuilder.Entity<CuttingDelivery>(b =>
+        {
+            b.HasKey(d => d.Id);
+            b.HasOne(d => d.CuttingOrder).WithMany().HasForeignKey(d => d.CuttingOrderId);
         });
 
         modelBuilder.Entity<DtfModel>(b =>

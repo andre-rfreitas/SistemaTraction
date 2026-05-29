@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { CuttingOrderList } from './components/CuttingOrderList'
 import { CuttingOrderForm } from './components/CuttingOrderForm'
+import { CuttingDeliveryForm } from './components/CuttingDeliveryForm'
 import { WhatsAppMessageReview } from './components/WhatsAppMessageReview'
+import { WhatsAppSewerReview } from './components/WhatsAppSewerReview'
 import { useCreateCuttingOrder } from './hooks/useCreateCuttingOrder'
 import { useSendCuttingOrder } from './hooks/useSendCuttingOrder'
-import type { CreateCuttingOrderResult } from './types'
+import { useRegisterCuttingDelivery } from './hooks/useRegisterCuttingDelivery'
+import type { CreateCuttingOrderResult, CuttingOrderDto, RegisterCuttingDeliveryResult } from './types'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -13,36 +16,42 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-type Step = 'form' | 'whatsapp'
+type OrderStep = 'form' | 'whatsapp'
+type DeliveryStep = 'delivery-form' | 'delivery-whatsapp'
 
 export function CuttingOrderPage() {
-  const [open, setOpen] = useState(false)
-  const [step, setStep] = useState<Step>('form')
+  // New order flow
+  const [orderOpen, setOrderOpen] = useState(false)
+  const [orderStep, setOrderStep] = useState<OrderStep>('form')
   const [orderResult, setOrderResult] = useState<CreateCuttingOrderResult | null>(null)
+
+  // Delivery flow
+  const [deliveryOpen, setDeliveryOpen] = useState(false)
+  const [deliveryStep, setDeliveryStep] = useState<DeliveryStep>('delivery-form')
+  const [selectedOrder, setSelectedOrder] = useState<CuttingOrderDto | null>(null)
+  const [deliveryResult, setDeliveryResult] = useState<RegisterCuttingDeliveryResult | null>(null)
 
   const createOrder = useCreateCuttingOrder()
   const sendOrder = useSendCuttingOrder()
+  const registerDelivery = useRegisterCuttingDelivery()
 
-  function handleClose() {
-    setOpen(false)
-    setStep('form')
+  function handleOrderClose() {
+    setOrderOpen(false)
+    setOrderStep('form')
     setOrderResult(null)
   }
 
-  async function handleFormConfirm(
-    rollId: string,
-    pieces: Record<string, number>,
-    notes: string
-  ) {
-    createOrder.mutate(
-      { fabricRollId: rollId, requestedPieces: pieces, notes: notes || undefined },
-      {
-        onSuccess: (result) => {
-          setOrderResult(result)
-          setStep('whatsapp')
-        },
-      }
-    )
+  function handleDeliveryOpen(order: CuttingOrderDto) {
+    setSelectedOrder(order)
+    setDeliveryStep('delivery-form')
+    setDeliveryResult(null)
+    setDeliveryOpen(true)
+  }
+
+  function handleDeliveryClose() {
+    setDeliveryOpen(false)
+    setSelectedOrder(null)
+    setDeliveryResult(null)
   }
 
   return (
@@ -51,38 +60,73 @@ export function CuttingOrderPage() {
         <div>
           <h2 className="text-xl font-bold text-neutral-900">Pedidos de Corte</h2>
           <p className="text-sm text-neutral-500">
-            Envie bobinas ao cortador e acompanhe os pedidos.
+            Envie bobinas ao cortador e registre as entregas.
           </p>
         </div>
-        <Button onClick={() => { setOpen(true); setStep('form') }}>+ Novo pedido</Button>
+        <Button onClick={() => { setOrderOpen(true); setOrderStep('form') }}>+ Novo pedido</Button>
       </div>
 
-      <CuttingOrderList />
+      <CuttingOrderList onRegisterDelivery={handleDeliveryOpen} />
 
-      <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose() }}>
+      {/* Dialog: novo pedido */}
+      <Dialog open={orderOpen} onOpenChange={(v) => { if (!v) handleOrderClose() }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {step === 'form' ? 'Novo pedido de corte' : `Revisar mensagem — Pedido #${orderResult?.orderNumber}`}
+              {orderStep === 'form' ? 'Novo pedido de corte' : `Revisar mensagem — Pedido #${orderResult?.orderNumber}`}
             </DialogTitle>
           </DialogHeader>
 
-          {step === 'form' && (
+          {orderStep === 'form' && (
             <CuttingOrderForm
-              onConfirm={handleFormConfirm}
+              onConfirm={(rollId, pieces, notes) =>
+                createOrder.mutate(
+                  { fabricRollId: rollId, requestedPieces: pieces, notes: notes || undefined },
+                  { onSuccess: (r) => { setOrderResult(r); setOrderStep('whatsapp') } }
+                )
+              }
               isLoading={createOrder.isPending}
             />
           )}
 
-          {step === 'whatsapp' && orderResult && (
+          {orderStep === 'whatsapp' && orderResult && (
             <WhatsAppMessageReview
               result={orderResult}
               isSending={sendOrder.isPending}
-              onConfirmSend={() =>
-                sendOrder.mutate(orderResult.cuttingOrderId)
-              }
-              onDone={handleClose}
+              onConfirmSend={() => sendOrder.mutate(orderResult.cuttingOrderId)}
+              onDone={handleOrderClose}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: registrar entrega */}
+      <Dialog open={deliveryOpen} onOpenChange={(v) => { if (!v) handleDeliveryClose() }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {deliveryStep === 'delivery-form'
+                ? `Entrega do cortador — Pedido #${selectedOrder?.orderNumber}`
+                : `Avisar costureiro — Pedido #${selectedOrder?.orderNumber}`}
+            </DialogTitle>
+          </DialogHeader>
+
+          {deliveryStep === 'delivery-form' && selectedOrder && (
+            <CuttingDeliveryForm
+              order={selectedOrder}
+              isLoading={registerDelivery.isPending}
+              onConfirm={(deliveredPieces) =>
+                registerDelivery.mutate(
+                  { orderId: selectedOrder.id, deliveredPieces },
+                  { onSuccess: (r) => { setDeliveryResult(r); setDeliveryStep('delivery-whatsapp') } }
+                )
+              }
+              onCancel={handleDeliveryClose}
+            />
+          )}
+
+          {deliveryStep === 'delivery-whatsapp' && deliveryResult && (
+            <WhatsAppSewerReview result={deliveryResult} onDone={handleDeliveryClose} />
           )}
         </DialogContent>
       </Dialog>

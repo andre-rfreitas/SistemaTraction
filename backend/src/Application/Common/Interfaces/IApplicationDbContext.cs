@@ -13,6 +13,7 @@ public interface IApplicationDbContext
     DbSet<FabricColor> FabricColors { get; }
     DbSet<FabricRoll> FabricRolls { get; }
     DbSet<CuttingOrder> CuttingOrders { get; }
+    DbSet<CuttingDelivery> CuttingDeliveries { get; }
     DbSet<DtfModel> DtfModels { get; }
     DbSet<DtfStockItem> DtfStockItems { get; }
     DbSet<DtfStockMovement> DtfStockMovements { get; }

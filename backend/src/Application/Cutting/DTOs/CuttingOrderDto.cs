@@ -31,3 +31,22 @@ public record SendCuttingOrderResult(
     string? WaMeLink,
     string? Error
 );
+
+public record CuttingDeliveryDto(
+    Guid Id,
+    Guid CuttingOrderId,
+    Dictionary<string, int> DeliveredPieces,
+    int TotalPieces,
+    decimal CuttingCostTotal,
+    DateTime DeliveredAt
+);
+
+public record RegisterCuttingDeliveryResult(
+    Guid CuttingDeliveryId,
+    int TotalPieces,
+    decimal CuttingCostTotal,
+    string WhatsAppMessage,
+    string? WaMeLink,
+    string SewerPhone,
+    string SewerName
+);

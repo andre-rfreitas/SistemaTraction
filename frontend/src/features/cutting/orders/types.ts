@@ -29,3 +29,13 @@ export interface SendCuttingOrderResult {
   waMeLink: string | null
   error: string | null
 }
+
+export interface RegisterCuttingDeliveryResult {
+  cuttingDeliveryId: string
+  totalPieces: number
+  cuttingCostTotal: number
+  whatsAppMessage: string
+  waMeLink: string | null
+  sewerPhone: string
+  sewerName: string
+}

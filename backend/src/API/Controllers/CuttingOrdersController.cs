@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Cutting.Commands.CreateCuttingOrder;
+using SistemaTraction.Application.Cutting.Commands.RegisterCuttingDelivery;
 using SistemaTraction.Application.Cutting.Commands.SendCuttingOrder;
 using SistemaTraction.Application.Cutting.Queries.GetCuttingOrderById;
 using SistemaTraction.Application.Cutting.Queries.GetCuttingOrders;
@@ -52,6 +53,18 @@ public class CuttingOrdersController(IMediator mediator) : ControllerBase
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }
+
+    // POST api/cutting-orders/{id}/delivery
+    [HttpPost("{id:guid}/delivery")]
+    public async Task<IActionResult> RegisterDelivery(Guid id, [FromBody] RegisterDeliveryRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var result = await mediator.Send(new RegisterCuttingDeliveryCommand(id, request.DeliveredPieces), ct);
+            return Ok(result);
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
 }
 
 public record CreateCuttingOrderRequest(
@@ -59,3 +72,5 @@ public record CreateCuttingOrderRequest(
     Dictionary<string, int> RequestedPieces,
     string? Notes
 );
+
+public record RegisterDeliveryRequest(Dictionary<string, int> DeliveredPieces);
