@@ -5,13 +5,12 @@ export const fabricTypeSchema = z.object({
   variation: z.string().min(1, 'Variação é obrigatória').max(100),
   pricePerKg: z.coerce.number().positive('Preço deve ser maior que zero'),
   averageKgPerRoll: z.coerce.number().positive('Média de kg deve ser maior que zero'),
-  averagePiecesPerRoll: z.coerce
-    .number()
-    .int()
-    .positive()
-    .optional()
-    .nullable()
-    .or(z.literal('')),
+  averagePiecesPerRoll: z.preprocess((value) => {
+    if (value === '' || value === null || value === undefined) {
+      return undefined
+    }
+    return Number(value)
+  }, z.number().int().positive().optional()),
 })
 
 export const fabricColorSchema = z.object({
