@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SistemaTraction.Application.Common.Interfaces;
 using SistemaTraction.Infrastructure.Persistence;
+using SistemaTraction.Infrastructure.WhatsApp;
 
 namespace SistemaTraction.Infrastructure;
 
@@ -15,6 +16,8 @@ public static class DependencyInjection
 
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
+
+        services.AddScoped<IWhatsAppService, NicochatWhatsAppService>();
 
         return services;
     }

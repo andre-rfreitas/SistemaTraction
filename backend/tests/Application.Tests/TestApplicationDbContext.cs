@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaTraction.Application.Common.Interfaces;
 using SistemaTraction.Domain.Config;
+using SistemaTraction.Domain.Cutting;
 using SistemaTraction.Domain.Dtf;
 using SistemaTraction.Domain.Fabric;
+using SistemaTraction.Domain.Financial;
 
 namespace SistemaTraction.Application.Tests;
 
@@ -12,10 +14,13 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
 
     public DbSet<FabricType> FabricTypes => Set<FabricType>();
     public DbSet<FabricColor> FabricColors => Set<FabricColor>();
+    public DbSet<FabricRoll> FabricRolls => Set<FabricRoll>();
+    public DbSet<CuttingOrder> CuttingOrders => Set<CuttingOrder>();
     public DbSet<DtfModel> DtfModels => Set<DtfModel>();
     public DbSet<DtfStockItem> DtfStockItems => Set<DtfStockItem>();
     public DbSet<DtfStockMovement> DtfStockMovements => Set<DtfStockMovement>();
     public DbSet<AppConfig> AppConfigs => Set<AppConfig>();
+    public DbSet<FinancialEntry> FinancialEntries => Set<FinancialEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,6 +38,21 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<FabricColor>(b =>
         {
             b.HasKey(c => c.Id);
+        });
+
+        modelBuilder.Entity<FabricRoll>(b =>
+        {
+            b.HasKey(r => r.Id);
+            b.Property(r => r.Status).HasConversion<string>();
+            b.HasOne(r => r.FabricType).WithMany().HasForeignKey(r => r.FabricTypeId);
+            b.HasOne(r => r.FabricColor).WithMany().HasForeignKey(r => r.FabricColorId);
+        });
+
+        modelBuilder.Entity<CuttingOrder>(b =>
+        {
+            b.HasKey(o => o.Id);
+            b.Property(o => o.Status).HasConversion<string>();
+            b.HasOne(o => o.FabricRoll).WithMany().HasForeignKey(o => o.FabricRollId);
         });
 
         modelBuilder.Entity<DtfModel>(b =>
@@ -63,6 +83,12 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
         {
             b.HasKey(c => c.Id);
             b.HasIndex(c => c.Key).IsUnique();
+        });
+
+        modelBuilder.Entity<FinancialEntry>(b =>
+        {
+            b.HasKey(e => e.Id);
+            b.Property(e => e.Type).HasConversion<string>();
         });
     }
 }
