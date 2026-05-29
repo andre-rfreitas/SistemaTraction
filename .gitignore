@@ -1,0 +1,27 @@
+# Claude local overrides
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Frontend
+frontend/node_modules/
+frontend/.pnpm-store/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+
+# Backend
+backend/bin/
+backend/obj/
+backend/**/*.user
+backend/.vs/
+backend/appsettings.Development.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.swp
