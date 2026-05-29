@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaTraction.Application.Common.Interfaces;
+using SistemaTraction.Domain.Dtf;
 using SistemaTraction.Domain.Fabric;
 
 namespace SistemaTraction.Infrastructure.Persistence;
@@ -9,6 +10,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     public DbSet<FabricType> FabricTypes => Set<FabricType>();
     public DbSet<FabricColor> FabricColors => Set<FabricColor>();
+    public DbSet<DtfModel> DtfModels => Set<DtfModel>();
+    public DbSet<DtfStockItem> DtfStockItems => Set<DtfStockItem>();
+    public DbSet<DtfStockMovement> DtfStockMovements => Set<DtfStockMovement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
