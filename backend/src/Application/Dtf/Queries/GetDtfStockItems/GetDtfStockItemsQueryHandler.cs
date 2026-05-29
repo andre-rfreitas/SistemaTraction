@@ -13,13 +13,13 @@ public class GetDtfStockItemsQueryHandler(IApplicationDbContext context)
     {
         return await context.DtfStockItems
             .Where(i => !i.IsDeleted)
+            .OrderBy(i => i.DtfModel.SheetLabel)
             .Select(i => new DtfStockItemDto(
                 i.Id,
                 i.DtfModelId,
                 i.DtfModel.Name,
                 i.DtfModel.SheetLabel,
                 i.CurrentQuantity))
-            .OrderBy(i => i.SheetLabel)
             .ToListAsync(cancellationToken);
     }
 }
