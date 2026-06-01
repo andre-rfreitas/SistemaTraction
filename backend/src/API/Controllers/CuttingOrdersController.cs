@@ -5,6 +5,7 @@ using SistemaTraction.Application.Cutting.Commands.RegisterCuttingDelivery;
 using SistemaTraction.Application.Cutting.Commands.SendCuttingOrder;
 using SistemaTraction.Application.Cutting.Queries.GetCuttingOrderById;
 using SistemaTraction.Application.Cutting.Queries.GetCuttingOrders;
+using SistemaTraction.Application.Sewing.Commands.RegisterSewingDelivery;
 using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
@@ -65,6 +66,19 @@ public class CuttingOrdersController(IMediator mediator) : ControllerBase
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }
+
+    // POST api/cutting-orders/{id}/sewing-delivery
+    [HttpPost("{id:guid}/sewing-delivery")]
+    public async Task<IActionResult> RegisterSewingDelivery(Guid id, [FromBody] RegisterSewingDeliveryRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var result = await mediator.Send(
+                new RegisterSewingDeliveryCommand(id, request.GoodPieces, request.DefectivePieces), ct);
+            return Ok(result);
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
 }
 
 public record CreateCuttingOrderRequest(
@@ -74,3 +88,8 @@ public record CreateCuttingOrderRequest(
 );
 
 public record RegisterDeliveryRequest(Dictionary<string, int> DeliveredPieces);
+
+public record RegisterSewingDeliveryRequest(
+    Dictionary<string, int> GoodPieces,
+    Dictionary<string, int> DefectivePieces
+);

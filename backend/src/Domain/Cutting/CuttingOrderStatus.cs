@@ -4,5 +4,6 @@ public enum CuttingOrderStatus
 {
     Draft,
     SentToCutter,
-    Delivered
+    Delivered,
+    SewingDelivered
 }

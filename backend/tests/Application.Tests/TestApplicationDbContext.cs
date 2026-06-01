@@ -5,6 +5,8 @@ using SistemaTraction.Domain.Cutting;
 using SistemaTraction.Domain.Dtf;
 using SistemaTraction.Domain.Fabric;
 using SistemaTraction.Domain.Financial;
+using SistemaTraction.Domain.Sewing;
+using SistemaTraction.Domain.Stock;
 
 namespace SistemaTraction.Application.Tests;
 
@@ -17,6 +19,8 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<FabricRoll> FabricRolls => Set<FabricRoll>();
     public DbSet<CuttingOrder> CuttingOrders => Set<CuttingOrder>();
     public DbSet<CuttingDelivery> CuttingDeliveries => Set<CuttingDelivery>();
+    public DbSet<SewingDelivery> SewingDeliveries => Set<SewingDelivery>();
+    public DbSet<StockItem> StockItems => Set<StockItem>();
     public DbSet<DtfModel> DtfModels => Set<DtfModel>();
     public DbSet<DtfStockItem> DtfStockItems => Set<DtfStockItem>();
     public DbSet<DtfStockMovement> DtfStockMovements => Set<DtfStockMovement>();
@@ -60,6 +64,18 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
         {
             b.HasKey(d => d.Id);
             b.HasOne(d => d.CuttingOrder).WithMany().HasForeignKey(d => d.CuttingOrderId);
+        });
+
+        modelBuilder.Entity<SewingDelivery>(b =>
+        {
+            b.HasKey(s => s.Id);
+            b.HasOne(s => s.CuttingOrder).WithMany().HasForeignKey(s => s.CuttingOrderId);
+        });
+
+        modelBuilder.Entity<StockItem>(b =>
+        {
+            b.HasKey(s => s.Id);
+            b.HasIndex(s => new { s.FabricColorId, s.Size }).IsUnique();
         });
 
         modelBuilder.Entity<DtfModel>(b =>

@@ -4,6 +4,8 @@ using SistemaTraction.Domain.Cutting;
 using SistemaTraction.Domain.Dtf;
 using SistemaTraction.Domain.Fabric;
 using SistemaTraction.Domain.Financial;
+using SistemaTraction.Domain.Sewing;
+using SistemaTraction.Domain.Stock;
 
 namespace SistemaTraction.Application.Common.Interfaces;
 
@@ -14,6 +16,8 @@ public interface IApplicationDbContext
     DbSet<FabricRoll> FabricRolls { get; }
     DbSet<CuttingOrder> CuttingOrders { get; }
     DbSet<CuttingDelivery> CuttingDeliveries { get; }
+    DbSet<SewingDelivery> SewingDeliveries { get; }
+    DbSet<StockItem> StockItems { get; }
     DbSet<DtfModel> DtfModels { get; }
     DbSet<DtfStockItem> DtfStockItems { get; }
     DbSet<DtfStockMovement> DtfStockMovements { get; }

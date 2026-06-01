@@ -8,8 +8,9 @@ export interface CuttingOrderDto {
   fabricColorHexCode: string | null
   fabricRollWeightKg: number
   requestedPieces: Record<string, number>
+  deliveredPieces: Record<string, number> | null
   totalPieces: number
-  status: 'Draft' | 'SentToCutter' | 'Delivered'
+  status: 'Draft' | 'SentToCutter' | 'Delivered' | 'SewingDelivered'
   sentAt: string | null
   notes: string | null
   createdAt: string
@@ -38,4 +39,14 @@ export interface RegisterCuttingDeliveryResult {
   waMeLink: string | null
   sewerPhone: string
   sewerName: string
+}
+
+export interface RegisterSewingDeliveryResult {
+  sewingDeliveryId: string
+  totalGoodPieces: number
+  totalDefectivePieces: number
+  sewingCostTotal: number
+  defectCostTotal: number
+  goodPieces: Record<string, number>
+  defectivePieces: Record<string, number>
 }

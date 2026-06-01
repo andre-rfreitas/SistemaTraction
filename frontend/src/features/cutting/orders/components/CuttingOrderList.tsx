@@ -5,20 +5,23 @@ import { Button } from '@/components/ui/button'
 const STATUS_LABEL: Record<string, string> = {
   Draft: 'Rascunho',
   SentToCutter: 'Enviado ao cortador',
-  Delivered: 'Entregue',
+  Delivered: 'Entregue pelo cortador',
+  SewingDelivered: 'Em estoque',
 }
 
 const STATUS_COLOR: Record<string, string> = {
   Draft: 'bg-neutral-100 text-neutral-600',
   SentToCutter: 'bg-blue-100 text-blue-800',
-  Delivered: 'bg-green-100 text-green-800',
+  Delivered: 'bg-amber-100 text-amber-800',
+  SewingDelivered: 'bg-green-100 text-green-800',
 }
 
 interface Props {
   onRegisterDelivery: (order: CuttingOrderDto) => void
+  onRegisterSewingDelivery: (order: CuttingOrderDto) => void
 }
 
-export function CuttingOrderList({ onRegisterDelivery }: Props) {
+export function CuttingOrderList({ onRegisterDelivery, onRegisterSewingDelivery }: Props) {
   const { data: orders = [], isLoading } = useCuttingOrders()
 
   if (isLoading) return <p className="text-sm text-neutral-500">Carregando...</p>
@@ -65,6 +68,16 @@ export function CuttingOrderList({ onRegisterDelivery }: Props) {
                     className="text-xs h-7 px-2"
                   >
                     Registrar entrega
+                  </Button>
+                )}
+                {o.status === 'Delivered' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onRegisterSewingDelivery(o)}
+                    className="text-xs h-7 px-2 border-amber-300 text-amber-700 hover:bg-amber-50"
+                  >
+                    Entrega do costureiro
                   </Button>
                 )}
               </div>

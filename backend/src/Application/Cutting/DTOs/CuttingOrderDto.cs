@@ -10,6 +10,7 @@ public record CuttingOrderDto(
     string? FabricColorHexCode,
     decimal FabricRollWeightKg,
     Dictionary<string, int> RequestedPieces,
+    Dictionary<string, int>? DeliveredPieces,
     int TotalPieces,
     string Status,
     DateTime? SentAt,
@@ -49,4 +50,14 @@ public record RegisterCuttingDeliveryResult(
     string? WaMeLink,
     string SewerPhone,
     string SewerName
+);
+
+public record RegisterSewingDeliveryResult(
+    Guid SewingDeliveryId,
+    int TotalGoodPieces,
+    int TotalDefectivePieces,
+    decimal SewingCostTotal,
+    decimal DefectCostTotal,
+    Dictionary<string, int> GoodPieces,
+    Dictionary<string, int> DefectivePieces
 );

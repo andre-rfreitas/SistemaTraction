@@ -17,6 +17,9 @@ public class GetCuttingOrderByIdQueryHandler(IApplicationDbContext context)
 
         if (o is null) return null;
 
+        var delivery = await context.CuttingDeliveries
+            .FirstOrDefaultAsync(d => d.CuttingOrderId == o.Id, cancellationToken);
+
         return new CuttingOrderDto(
             o.Id,
             o.OrderNumber,
@@ -27,6 +30,7 @@ public class GetCuttingOrderByIdQueryHandler(IApplicationDbContext context)
             o.FabricRoll!.FabricColor!.HexCode,
             o.FabricRoll!.WeightKg,
             o.GetRequestedPieces(),
+            delivery?.GetDeliveredPieces(),
             o.GetTotalPieces(),
             o.Status.ToString(),
             o.SentAt,

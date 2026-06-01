@@ -59,4 +59,13 @@ public class CuttingOrder : BaseEntity
         Status = CuttingOrderStatus.Delivered;
         TouchUpdatedAt();
     }
+
+    public void MarkSewingDelivered()
+    {
+        if (Status != CuttingOrderStatus.Delivered)
+            throw new DomainException("Apenas pedidos entregues pelo cortador podem ter entrega do costureiro registrada.");
+
+        Status = CuttingOrderStatus.SewingDelivered;
+        TouchUpdatedAt();
+    }
 }
