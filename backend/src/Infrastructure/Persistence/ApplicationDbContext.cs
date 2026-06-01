@@ -23,6 +23,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<StockItem> StockItems => Set<StockItem>();
     public DbSet<SeparationList> SeparationLists => Set<SeparationList>();
     public DbSet<SeparationItem> SeparationItems => Set<SeparationItem>();
+    public DbSet<SkuCode> SkuCodes => Set<SkuCode>();
     public DbSet<DtfModel> DtfModels => Set<DtfModel>();
     public DbSet<DtfStockItem> DtfStockItems => Set<DtfStockItem>();
     public DbSet<DtfStockMovement> DtfStockMovements => Set<DtfStockMovement>();

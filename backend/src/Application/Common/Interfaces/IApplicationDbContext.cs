@@ -21,6 +21,7 @@ public interface IApplicationDbContext
     DbSet<StockItem> StockItems { get; }
     DbSet<SeparationList> SeparationLists { get; }
     DbSet<SeparationItem> SeparationItems { get; }
+    DbSet<SkuCode> SkuCodes { get; }
     DbSet<DtfModel> DtfModels { get; }
     DbSet<DtfStockItem> DtfStockItems { get; }
     DbSet<DtfStockMovement> DtfStockMovements { get; }

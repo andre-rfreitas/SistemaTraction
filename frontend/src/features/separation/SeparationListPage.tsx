@@ -1,6 +1,6 @@
-import { useState, useRef, useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useState, useRef } from 'react'
 import { useSeparationLists } from './hooks/useSeparationLists'
+import { SkuConfigPanel } from './components/SkuConfigPanel'
 import { useUploadSeparationList } from './hooks/useUploadSeparationList'
 import { useUpdateSeparationItems } from './hooks/useUpdateSeparationItems'
 import { useStockCheck } from './hooks/useStockCheck'
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { useDtfModels } from '../settings/dtf/hooks/useDtfModels'
 import type { DtfModelDto } from '../settings/dtf/types'
 
+type MainTab = 'lists' | 'config'
 type Step = 'list' | 'upload' | 'review' | 'stock-check' | 'confirm-modal' | 'done'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -31,6 +32,7 @@ const STATUS_COLOR: Record<string, string> = {
 const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
 export function SeparationListPage() {
+  const [mainTab, setMainTab] = useState<MainTab>('lists')
   const [step, setStep] = useState<Step>('list')
   const [currentList, setCurrentList] = useState<SeparationListDetail | null>(null)
   const [editedItems, setEditedItems] = useState<SeparationItemDto[]>([])
@@ -39,6 +41,18 @@ export function SeparationListPage() {
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  if (mainTab === 'config') {
+    return (
+      <div className="space-y-4">
+        <div className="flex gap-1 border-b border-neutral-200">
+          <button onClick={() => setMainTab('lists')} className="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-neutral-500 hover:text-neutral-700 -mb-px">← Listas</button>
+          <button className="px-4 py-2 text-sm font-medium border-b-2 border-neutral-900 text-neutral-900 -mb-px">Config. SKU</button>
+        </div>
+        <SkuConfigPanel />
+      </div>
+    )
+  }
 
   const { data: lists = [], isLoading } = useSeparationLists()
   const { data: dtfModels = [] } = useDtfModels()
@@ -106,7 +120,11 @@ export function SeparationListPage() {
   // ── LIST VIEW ──────────────────────────────────────────────────────────────
   if (step === 'list') {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
+        <div className="flex gap-1 border-b border-neutral-200 mb-2">
+          <button className="px-4 py-2 text-sm font-medium border-b-2 border-neutral-900 text-neutral-900 -mb-px">Listas</button>
+          <button onClick={() => setMainTab('config')} className="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-neutral-500 hover:text-neutral-700 -mb-px">Config. SKU</button>
+        </div>
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold text-neutral-900">Lista de Separação</h2>

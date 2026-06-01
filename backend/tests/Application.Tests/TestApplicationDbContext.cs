@@ -24,6 +24,7 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<StockItem> StockItems => Set<StockItem>();
     public DbSet<SeparationList> SeparationLists => Set<SeparationList>();
     public DbSet<SeparationItem> SeparationItems => Set<SeparationItem>();
+    public DbSet<SkuCode> SkuCodes => Set<SkuCode>();
     public DbSet<DtfModel> DtfModels => Set<DtfModel>();
     public DbSet<DtfStockItem> DtfStockItems => Set<DtfStockItem>();
     public DbSet<DtfStockMovement> DtfStockMovements => Set<DtfStockMovement>();
@@ -97,6 +98,12 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
         {
             b.HasKey(i => i.Id);
             b.HasOne(i => i.DtfModel).WithMany().HasForeignKey(i => i.DtfModelId).IsRequired(false);
+        });
+
+        modelBuilder.Entity<SkuCode>(b =>
+        {
+            b.HasKey(c => c.Id);
+            b.Property(c => c.Category).HasConversion<string>();
         });
 
         modelBuilder.Entity<DtfModel>(b =>

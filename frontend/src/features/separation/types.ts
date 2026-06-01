@@ -65,6 +65,15 @@ export interface StockCheckResult {
   canConfirm: boolean
 }
 
+export type SkuCodeCategory = 'Modelo' | 'EstampaDtf' | 'Cor' | 'Tamanho'
+
+export interface SkuCodeDto {
+  id: string
+  code: string
+  value: string
+  category: SkuCodeCategory
+}
+
 export interface SeparationConfirmResult {
   separationListId: string
   shirtDeductions: { color: string; size: string; quantity: number }[]

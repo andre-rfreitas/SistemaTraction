@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using SistemaTraction.Application.Common.Interfaces;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
@@ -6,6 +7,10 @@ namespace SistemaTraction.Infrastructure.Pdf;
 
 public class PdfPigParser : IPdfParser
 {
+    // SKU pattern: two or more hyphen-separated uppercase alphanumeric groups
+    private static readonly Regex SkuRegex =
+        new(@"^[A-Z][A-Z0-9]+-[A-Z0-9]+(-[A-Z0-9]+)*$", RegexOptions.Compiled);
+
     private static readonly HashSet<string> KnownSizes =
         new(StringComparer.OrdinalIgnoreCase) { "P", "M", "G", "GG", "G1", "XG", "XGG", "PP", "GGG" };
 
@@ -15,13 +20,19 @@ public class PdfPigParser : IPdfParser
         {
             using var doc = PdfDocument.Open(pdfStream);
             var rows = ExtractRows(doc);
-            var items = ParseItems(rows);
 
-            if (items.Count == 0)
-                return new ParseResult(false, [], "Nenhum item com SKU/Cor/Tamanho/Quantidade encontrado. " +
-                    "Verifique se o PDF é uma lista de separação do ERP com colunas de Cor, Tamanho e Quantidade.");
+            // Try SKU-based strategy (UpSeller and similar)
+            var skuItems = ParseSkuBased(rows);
+            if (skuItems.Count > 0)
+                return new ParseResult(true, skuItems, null);
 
-            return new ParseResult(true, items, null);
+            // Fall back to size-token strategy (generic ERPs)
+            var legacyItems = ParseLegacy(rows);
+            if (legacyItems.Count > 0)
+                return new ParseResult(true, legacyItems, null);
+
+            return new ParseResult(false, [],
+                "Nenhum item encontrado no PDF. Verifique se o arquivo é uma lista de separação válida do ERP.");
         }
         catch (Exception ex)
         {
@@ -29,97 +40,111 @@ public class PdfPigParser : IPdfParser
         }
     }
 
-    private static List<List<Word>> ExtractRows(PdfDocument doc)
-    {
-        const double rowTolerance = 4.0;
-        var allWords = new List<(double X, double Y, string Text)>();
+    // ── SKU-based strategy (UpSeller format) ─────────────────────────────────
+    // Finds tokens matching the SKU regex and the quantity on the same row.
+    // Groups identical SKUs and sums quantities.
 
-        foreach (var page in doc.GetPages())
+    private static List<ParsedItem> ParseSkuBased(List<List<string>> rows)
+    {
+        var accumulated = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var row in rows)
         {
-            var height = page.Height;
-            foreach (var word in page.GetWords())
+            string? sku = null;
+            int qty = 0;
+
+            for (int i = 0; i < row.Count; i++)
             {
-                // Normalise Y so rows with similar Y are grouped together
-                allWords.Add((word.BoundingBox.Left, height - word.BoundingBox.Bottom, word.Text));
+                var token = row[i];
+                if (sku == null && SkuRegex.IsMatch(token))
+                {
+                    sku = token;
+                    // Look for quantity immediately after the SKU
+                    if (i + 1 < row.Count && int.TryParse(row[i + 1], out var q) && q > 0 && q < 10_000)
+                        qty = q;
+                    break;
+                }
             }
+
+            // If qty not found after SKU, try the last numeric token on the row
+            if (sku != null && qty == 0)
+            {
+                for (int i = row.Count - 1; i >= 0; i--)
+                {
+                    if (int.TryParse(row[i], out var q) && q > 0 && q < 10_000)
+                    {
+                        qty = q;
+                        break;
+                    }
+                }
+            }
+
+            if (sku != null && qty > 0)
+                accumulated[sku] = accumulated.GetValueOrDefault(sku) + qty;
         }
 
-        // Group words by Y position (same row = within rowTolerance px of each other)
-        var grouped = allWords
-            .GroupBy(w => Math.Round(w.Y / rowTolerance) * rowTolerance)
-            .OrderBy(g => g.Key)
-            .Select(g => g.OrderBy(w => w.X).Select(w => new Word(w.Text, w.X)).ToList())
+        return accumulated
+            .Select((kv, idx) => new ParsedItem(kv.Key, "", "", kv.Value, idx))
             .ToList();
-
-        return grouped;
     }
 
-    private static List<ParsedItem> ParseItems(List<List<Word>> rows)
+    // ── Legacy size-token strategy ────────────────────────────────────────────
+    // Identifies rows by a known size token and extracts color + quantity.
+
+    private static List<ParsedItem> ParseLegacy(List<List<string>> rows)
     {
         var items = new List<ParsedItem>();
         var sortOrder = 0;
 
         foreach (var row in rows)
         {
-            var texts = row.Select(w => w.Text).ToList();
-            var item = TryParseRow(texts, sortOrder);
-            if (item is not null)
+            var sizeIndex = row.FindIndex(t => KnownSizes.Contains(t));
+            if (sizeIndex < 0) continue;
+
+            var qty = 0;
+            for (int i = sizeIndex + 1; i < row.Count; i++)
             {
-                items.Add(item);
-                sortOrder++;
+                if (int.TryParse(row[i], out var q) && q > 0) { qty = q; break; }
             }
+            if (qty == 0) continue;
+
+            var size = row[sizeIndex];
+            var color = sizeIndex > 0 && !int.TryParse(row[sizeIndex - 1], out _) ? row[sizeIndex - 1] : "?";
+            var sku = sizeIndex > 1 ? string.Join(" ", row.Take(sizeIndex - 1)) : "";
+
+            if (color == "?" || IsHeaderWord(color)) continue;
+
+            items.Add(new ParsedItem(sku.Trim(), color.Trim(), size, qty, sortOrder++));
         }
 
         return items;
     }
 
-    private static ParsedItem? TryParseRow(List<string> tokens, int sortOrder)
+    // ── PDF word extraction ───────────────────────────────────────────────────
+
+    private static List<List<string>> ExtractRows(PdfDocument doc)
     {
-        // Find a size token — that anchors the row
-        var sizeIndex = tokens.FindIndex(t => KnownSizes.Contains(t));
-        if (sizeIndex < 0) return null;
+        const double rowTolerance = 4.0;
+        var allWords = new List<(double Y, double X, string Text)>();
 
-        // Quantity must be an integer immediately after the size, or among the last few tokens
-        var qty = 0;
-        var qtyIndex = -1;
-
-        for (var i = sizeIndex + 1; i < tokens.Count; i++)
+        foreach (var page in doc.GetPages())
         {
-            if (int.TryParse(tokens[i], out var q) && q > 0)
-            {
-                qty = q;
-                qtyIndex = i;
-                break;
-            }
+            var height = page.Height;
+            foreach (var word in page.GetWords())
+                allWords.Add((height - word.BoundingBox.Bottom, word.BoundingBox.Left, word.Text));
         }
 
-        if (qtyIndex < 0) return null;
-
-        var size = tokens[sizeIndex];
-
-        // Color = token immediately before size (if it's not a number)
-        var color = sizeIndex > 0 && !int.TryParse(tokens[sizeIndex - 1], out _)
-            ? tokens[sizeIndex - 1]
-            : "?";
-
-        // SKU = everything before color, joined
-        var sku = sizeIndex > 1
-            ? string.Join(" ", tokens.Take(sizeIndex - 1))
-            : "";
-
-        // Skip header-like rows
-        if (color == "?" || IsHeader(color)) return null;
-
-        return new ParsedItem(sku.Trim(), color.Trim(), size.ToUpper(), qty, sortOrder);
+        return allWords
+            .GroupBy(w => Math.Round(w.Y / rowTolerance) * rowTolerance)
+            .OrderBy(g => g.Key)
+            .Select(g => g.OrderBy(w => w.X).Select(w => w.Text).ToList())
+            .Where(r => r.Count > 0)
+            .ToList();
     }
 
-    private static bool IsHeader(string text) =>
+    private static bool IsHeaderWord(string text) =>
         text.Equals("Cor", StringComparison.OrdinalIgnoreCase) ||
-        text.Equals("Color", StringComparison.OrdinalIgnoreCase) ||
         text.Equals("Tamanho", StringComparison.OrdinalIgnoreCase) ||
-        text.Equals("Size", StringComparison.OrdinalIgnoreCase) ||
         text.Equals("Qtd", StringComparison.OrdinalIgnoreCase) ||
         text.Equals("Quantidade", StringComparison.OrdinalIgnoreCase);
-
-    private record Word(string Text, double X);
 }

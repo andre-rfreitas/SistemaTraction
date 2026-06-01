@@ -1,10 +1,13 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Separation.Commands.ConfirmSeparationList;
+using SistemaTraction.Application.Separation.Commands.DeleteSkuCode;
 using SistemaTraction.Application.Separation.Commands.UpdateSeparationItems;
 using SistemaTraction.Application.Separation.Commands.UploadSeparationList;
+using SistemaTraction.Application.Separation.Commands.UpsertSkuCode;
 using SistemaTraction.Application.Separation.Queries.GetSeparationListById;
 using SistemaTraction.Application.Separation.Queries.GetSeparationLists;
+using SistemaTraction.Application.Separation.Queries.GetSkuCodes;
 using SistemaTraction.Application.Separation.Queries.GetStockCheck;
 using SistemaTraction.Domain.Common;
 
@@ -74,6 +77,35 @@ public class SeparationListsController(IMediator mediator) : ControllerBase
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
+    // GET api/separation-lists/sku-codes
+    [HttpGet("sku-codes")]
+    public async Task<IActionResult> GetSkuCodes(CancellationToken ct)
+        => Ok(await mediator.Send(new GetSkuCodesQuery(), ct));
+
+    // POST api/separation-lists/sku-codes
+    [HttpPost("sku-codes")]
+    public async Task<IActionResult> UpsertSkuCode([FromBody] UpsertSkuCodeRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var result = await mediator.Send(new UpsertSkuCodeCommand(request.Id, request.Code, request.Value, request.Category), ct);
+            return Ok(result);
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    // DELETE api/separation-lists/sku-codes/{id}
+    [HttpDelete("sku-codes/{id:guid}")]
+    public async Task<IActionResult> DeleteSkuCode(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await mediator.Send(new DeleteSkuCodeCommand(id), ct);
+            return NoContent();
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
     // POST api/separation-lists/{id}/confirm
     [HttpPost("{id:guid}/confirm")]
     public async Task<IActionResult> Confirm(Guid id, CancellationToken ct)
@@ -88,3 +120,5 @@ public class SeparationListsController(IMediator mediator) : ControllerBase
 }
 
 public record UpdateItemsRequest(List<UpdateItemDto> Items);
+
+public record UpsertSkuCodeRequest(Guid? Id, string Code, string Value, string Category);
