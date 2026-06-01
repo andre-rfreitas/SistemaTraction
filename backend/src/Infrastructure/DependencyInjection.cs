@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SistemaTraction.Application.Common.Interfaces;
+using SistemaTraction.Infrastructure.Pdf;
 using SistemaTraction.Infrastructure.Persistence;
 using SistemaTraction.Infrastructure.WhatsApp;
 
@@ -18,6 +19,7 @@ public static class DependencyInjection
             provider.GetRequiredService<ApplicationDbContext>());
 
         services.AddScoped<IWhatsAppService, NicochatWhatsAppService>();
+        services.AddScoped<IPdfParser, PdfPigParser>();
 
         return services;
     }

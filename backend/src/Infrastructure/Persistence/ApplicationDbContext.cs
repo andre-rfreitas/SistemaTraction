@@ -5,6 +5,7 @@ using SistemaTraction.Domain.Cutting;
 using SistemaTraction.Domain.Dtf;
 using SistemaTraction.Domain.Fabric;
 using SistemaTraction.Domain.Financial;
+using SistemaTraction.Domain.Separation;
 using SistemaTraction.Domain.Sewing;
 using SistemaTraction.Domain.Stock;
 
@@ -20,6 +21,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CuttingDelivery> CuttingDeliveries => Set<CuttingDelivery>();
     public DbSet<SewingDelivery> SewingDeliveries => Set<SewingDelivery>();
     public DbSet<StockItem> StockItems => Set<StockItem>();
+    public DbSet<SeparationList> SeparationLists => Set<SeparationList>();
+    public DbSet<SeparationItem> SeparationItems => Set<SeparationItem>();
     public DbSet<DtfModel> DtfModels => Set<DtfModel>();
     public DbSet<DtfStockItem> DtfStockItems => Set<DtfStockItem>();
     public DbSet<DtfStockMovement> DtfStockMovements => Set<DtfStockMovement>();

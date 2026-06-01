@@ -5,6 +5,7 @@ using SistemaTraction.Domain.Cutting;
 using SistemaTraction.Domain.Dtf;
 using SistemaTraction.Domain.Fabric;
 using SistemaTraction.Domain.Financial;
+using SistemaTraction.Domain.Separation;
 using SistemaTraction.Domain.Sewing;
 using SistemaTraction.Domain.Stock;
 
@@ -21,6 +22,8 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<CuttingDelivery> CuttingDeliveries => Set<CuttingDelivery>();
     public DbSet<SewingDelivery> SewingDeliveries => Set<SewingDelivery>();
     public DbSet<StockItem> StockItems => Set<StockItem>();
+    public DbSet<SeparationList> SeparationLists => Set<SeparationList>();
+    public DbSet<SeparationItem> SeparationItems => Set<SeparationItem>();
     public DbSet<DtfModel> DtfModels => Set<DtfModel>();
     public DbSet<DtfStockItem> DtfStockItems => Set<DtfStockItem>();
     public DbSet<DtfStockMovement> DtfStockMovements => Set<DtfStockMovement>();
@@ -76,6 +79,24 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
         {
             b.HasKey(s => s.Id);
             b.HasIndex(s => new { s.FabricColorId, s.Size }).IsUnique();
+        });
+
+        modelBuilder.Entity<SeparationList>(b =>
+        {
+            b.HasKey(l => l.Id);
+            b.Property(l => l.Status).HasConversion<string>();
+            b.HasMany(l => l.Items)
+             .WithOne(i => i.SeparationList)
+             .HasForeignKey(i => i.SeparationListId);
+            b.Navigation(l => l.Items)
+             .HasField("_items")
+             .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        modelBuilder.Entity<SeparationItem>(b =>
+        {
+            b.HasKey(i => i.Id);
+            b.HasOne(i => i.DtfModel).WithMany().HasForeignKey(i => i.DtfModelId).IsRequired(false);
         });
 
         modelBuilder.Entity<DtfModel>(b =>

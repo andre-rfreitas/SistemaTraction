@@ -46,4 +46,17 @@ public class StockItem : BaseEntity
         Quantity += quantity;
         TouchUpdatedAt();
     }
+
+    public void UseFromStock(int quantity)
+    {
+        if (quantity <= 0)
+            throw new DomainException("Quantidade deve ser maior que zero.");
+
+        if (quantity > Quantity)
+            throw new DomainException(
+                $"Estoque insuficiente para '{FabricColorName} {Size}'. Disponível: {Quantity}, solicitado: {quantity}.");
+
+        Quantity -= quantity;
+        TouchUpdatedAt();
+    }
 }
