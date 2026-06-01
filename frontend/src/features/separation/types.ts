@@ -72,6 +72,7 @@ export interface SkuCodeDto {
   code: string
   value: string
   category: SkuCodeCategory
+  dtfModelId: string | null
 }
 
 export interface SeparationConfirmResult {

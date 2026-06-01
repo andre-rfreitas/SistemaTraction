@@ -17,16 +17,15 @@ public class UploadSeparationListCommandHandler(IApplicationDbContext context, I
         if (!parsed.Success)
             throw new DomainException(
                 $"Não foi possível processar o PDF: {parsed.ErrorMessage ?? "formato não reconhecido"}. " +
-                "Verifique se o arquivo é uma lista de separação válida do ERP.");
+                "Verifique se o arquivo é uma lista de separação válida do ERP e se os Códigos SKU estão configurados.");
 
-        // Load SKU codes and DTF models for resolution
         var skuCodes = await context.SkuCodes
             .Where(c => !c.IsDeleted)
             .ToListAsync(cancellationToken);
 
         var dtfModels = await context.DtfModels
             .Where(m => !m.IsDeleted)
-            .ToListAsync(cancellationToken);
+            .ToDictionaryAsync(m => m.Id, m => m.Name, cancellationToken);
 
         var skuLookup = skuCodes.ToLookup(c => c.Code, StringComparer.OrdinalIgnoreCase);
         var tamanhoCodes = skuCodes
@@ -42,57 +41,43 @@ public class UploadSeparationListCommandHandler(IApplicationDbContext context, I
         var items = new List<SeparationItem>();
         foreach (var p in parsed.Items)
         {
-            // Resolve SKU parts into color, size, dtfModelId
-            var (color, size, dtfModelName) = ResolveSkuParts(p.Sku, skuLookup, tamanhoCodes);
+            var (color, size, dtfModelId) = ResolveSkuParts(p.Sku, skuLookup, tamanhoCodes);
 
             var resolvedColor = !string.IsNullOrWhiteSpace(p.Color) ? p.Color : (color ?? "");
             var resolvedSize  = !string.IsNullOrWhiteSpace(p.Size)  ? p.Size  : (size  ?? "");
 
-            Guid? dtfModelId = null;
-            if (!string.IsNullOrWhiteSpace(dtfModelName))
-            {
-                var dtf = dtfModels.FirstOrDefault(m =>
-                    m.Name.Equals(dtfModelName, StringComparison.OrdinalIgnoreCase));
-                dtfModelId = dtf?.Id;
-            }
+            if (string.IsNullOrWhiteSpace(resolvedColor)) resolvedColor = "?";
+            if (string.IsNullOrWhiteSpace(resolvedSize))  resolvedSize  = "?";
 
-            if (string.IsNullOrWhiteSpace(resolvedSize))
-                resolvedSize = "?";
-
-            if (string.IsNullOrWhiteSpace(resolvedColor))
-                resolvedColor = "?";
-
-            items.Add(SeparationItem.Create(list.Id, p.Sku, resolvedColor, resolvedSize, p.Quantity, p.SortOrder));
-            if (dtfModelId.HasValue) items[^1].SetDtfModel(dtfModelId);
+            var item = SeparationItem.Create(list.Id, p.Sku, resolvedColor, resolvedSize, p.Quantity, p.SortOrder);
+            if (dtfModelId.HasValue) item.SetDtfModel(dtfModelId);
+            items.Add(item);
         }
 
         context.SeparationItems.AddRange(items);
         await context.SaveChangesAsync(cancellationToken);
-
-        var dtfModelMap = dtfModels.ToDictionary(m => m.Id, m => m.Name);
 
         return new SeparationListDetailDto(
             list.Id, list.FileName, list.UploadedAt, list.Status.ToString(),
             items.Select(i => new SeparationItemDto(
                 i.Id, i.Sku, i.Color, i.Size, i.Quantity,
                 i.DtfModelId,
-                i.DtfModelId.HasValue ? dtfModelMap.GetValueOrDefault(i.DtfModelId.Value) : null,
+                i.DtfModelId.HasValue ? dtfModels.GetValueOrDefault(i.DtfModelId.Value) : null,
                 i.SortOrder)).ToList()
         );
     }
 
-    private static (string? color, string? size, string? dtfModel) ResolveSkuParts(
+    private static (string? color, string? size, Guid? dtfModelId) ResolveSkuParts(
         string sku,
         ILookup<string, Domain.Separation.SkuCode> skuLookup,
         List<string> tamanhoCodes)
     {
-        string? color = null, size = null, dtfModel = null;
+        string? color = null, size = null;
+        Guid? dtfModelId = null;
 
         if (string.IsNullOrWhiteSpace(sku)) return (null, null, null);
 
-        var parts = sku.Split('-', StringSplitOptions.RemoveEmptyEntries);
-
-        foreach (var raw in parts)
+        foreach (var raw in sku.Split('-', StringSplitOptions.RemoveEmptyEntries))
         {
             var part = raw.ToUpper();
             var match = skuLookup[part].FirstOrDefault();
@@ -101,9 +86,10 @@ public class UploadSeparationListCommandHandler(IApplicationDbContext context, I
             {
                 switch (match.Category)
                 {
-                    case SkuCodeCategory.Cor:        color    = match.Value; break;
-                    case SkuCodeCategory.Tamanho:    size     = match.Value; break;
-                    case SkuCodeCategory.EstampaDtf: dtfModel = match.Value; break;
+                    case SkuCodeCategory.Cor:        color      = match.Value; break;
+                    case SkuCodeCategory.Tamanho:    size       = match.Value; break;
+                    case SkuCodeCategory.EstampaDtf: dtfModelId = match.DtfModelId; break;
+                    // Modelo: ignored for now
                 }
             }
             else
@@ -113,7 +99,7 @@ public class UploadSeparationListCommandHandler(IApplicationDbContext context, I
                 {
                     if (part.Length > sizeCode.Length && part.EndsWith(sizeCode, StringComparison.OrdinalIgnoreCase))
                     {
-                        var colorPart = part[..^sizeCode.Length];
+                        var colorPart  = part[..^sizeCode.Length];
                         var colorMatch = skuLookup[colorPart].FirstOrDefault(c => c.Category == SkuCodeCategory.Cor);
                         var sizeMatch  = skuLookup[sizeCode].FirstOrDefault(c => c.Category == SkuCodeCategory.Tamanho);
 
@@ -125,6 +111,6 @@ public class UploadSeparationListCommandHandler(IApplicationDbContext context, I
             }
         }
 
-        return (color, size, dtfModel);
+        return (color, size, dtfModelId);
     }
 }

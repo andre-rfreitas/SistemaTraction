@@ -12,5 +12,7 @@ public class SkuCodeConfiguration : IEntityTypeConfiguration<SkuCode>
         builder.Property(c => c.Code).HasMaxLength(20).IsRequired();
         builder.Property(c => c.Value).HasMaxLength(200).IsRequired();
         builder.Property(c => c.Category).HasConversion<string>().HasMaxLength(20);
+        // DtfModelId is a bare FK — no navigation property needed
+        builder.Property(c => c.DtfModelId).IsRequired(false);
     }
 }

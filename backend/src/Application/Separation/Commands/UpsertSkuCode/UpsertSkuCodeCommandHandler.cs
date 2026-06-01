@@ -23,16 +23,16 @@ public class UpsertSkuCodeCommandHandler(IApplicationDbContext context)
                 .FirstOrDefaultAsync(c => c.Id == request.Id.Value && !c.IsDeleted, cancellationToken)
                 ?? throw new DomainException("Código SKU não encontrado.");
 
-            skuCode.Update(request.Code, request.Value, category);
+            skuCode.Update(request.Code, request.Value, category, request.DtfModelId);
         }
         else
         {
-            skuCode = SkuCode.Create(request.Code, request.Value, category);
+            skuCode = SkuCode.Create(request.Code, request.Value, category, request.DtfModelId);
             context.SkuCodes.Add(skuCode);
         }
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return new SkuCodeDto(skuCode.Id, skuCode.Code, skuCode.Value, skuCode.Category.ToString());
+        return new SkuCodeDto(skuCode.Id, skuCode.Code, skuCode.Value, skuCode.Category.ToString(), skuCode.DtfModelId);
     }
 }

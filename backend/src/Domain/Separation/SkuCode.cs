@@ -7,10 +7,12 @@ public class SkuCode : BaseEntity
     public string Code { get; private set; } = "";
     public string Value { get; private set; } = "";
     public SkuCodeCategory Category { get; private set; }
+    /// <summary>Only used when Category = EstampaDtf. Links directly to the DtfModel.</summary>
+    public Guid? DtfModelId { get; private set; }
 
     private SkuCode() { }
 
-    public static SkuCode Create(string code, string value, SkuCodeCategory category)
+    public static SkuCode Create(string code, string value, SkuCodeCategory category, Guid? dtfModelId = null)
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new DomainException("Código SKU não pode ser vazio.");
@@ -21,11 +23,12 @@ public class SkuCode : BaseEntity
         {
             Code = code.Trim().ToUpper(),
             Value = value.Trim(),
-            Category = category
+            Category = category,
+            DtfModelId = category == SkuCodeCategory.EstampaDtf ? dtfModelId : null
         };
     }
 
-    public void Update(string code, string value, SkuCodeCategory category)
+    public void Update(string code, string value, SkuCodeCategory category, Guid? dtfModelId = null)
     {
         if (string.IsNullOrWhiteSpace(code))
             throw new DomainException("Código SKU não pode ser vazio.");
@@ -35,6 +38,7 @@ public class SkuCode : BaseEntity
         Code = code.Trim().ToUpper();
         Value = value.Trim();
         Category = category;
+        DtfModelId = category == SkuCodeCategory.EstampaDtf ? dtfModelId : null;
         TouchUpdatedAt();
     }
 }
