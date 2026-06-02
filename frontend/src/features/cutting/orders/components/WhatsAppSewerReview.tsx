@@ -24,9 +24,9 @@ export function WhatsAppSewerReview({ result, onDone }: Props) {
   return (
     <div className="space-y-4">
       {/* Resumo financeiro */}
-      <div className="rounded-md bg-green-50 border border-green-200 p-3 text-sm space-y-1">
-        <p className="font-semibold text-green-800">Entrega registrada com sucesso!</p>
-        <div className="flex justify-between text-green-700">
+      <div className="rounded-md bg-success/10 border border-success/20 p-3 text-sm space-y-1">
+        <p className="font-semibold text-success">Entrega registrada com sucesso!</p>
+        <div className="flex justify-between text-success">
           <span>{result.totalPieces} peças entregues</span>
           <span className="font-medium">
             Custo corte: R$ {result.cuttingCostTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -35,13 +35,13 @@ export function WhatsAppSewerReview({ result, onDone }: Props) {
       </div>
 
       {/* Destinatário */}
-      <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-md">
-        <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-base shrink-0">
+      <div className="flex items-center gap-3 p-3 bg-success/10 border border-success/20 rounded-md">
+        <div className="w-9 h-9 rounded-full bg-success flex items-center justify-center text-white font-bold text-base shrink-0">
           {result.sewerName.charAt(0).toUpperCase()}
         </div>
         <div>
-          <p className="text-sm font-semibold text-green-900">{result.sewerName}</p>
-          <p className="text-xs text-green-700">
+          <p className="text-sm font-semibold text-foreground">{result.sewerName}</p>
+          <p className="text-xs text-muted-foreground">
             {result.sewerPhone || <span className="italic">Número não configurado</span>}
           </p>
         </div>
@@ -50,13 +50,13 @@ export function WhatsAppSewerReview({ result, onDone }: Props) {
       {/* Mensagem */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="text-sm font-medium text-neutral-700">Mensagem para o costureiro</label>
+          <label className="text-sm font-medium text-foreground">Mensagem para o costureiro</label>
           <button
             onClick={handleCopy}
             className={`text-xs px-2 py-1 rounded transition-colors font-medium ${
               copied
-                ? 'bg-green-100 text-green-700'
-                : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                ? 'bg-success/10 text-success'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
             {copied ? '✓ Copiado!' : 'Copiar'}
@@ -66,9 +66,9 @@ export function WhatsAppSewerReview({ result, onDone }: Props) {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={8}
-          className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-neutral-400"
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground font-mono resize-none shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
-        <p className="text-xs text-neutral-400 mt-1">Você pode editar antes de enviar.</p>
+        <p className="text-xs text-muted-foreground mt-1">Você pode editar antes de enviar.</p>
       </div>
 
       {/* Ações */}
@@ -87,7 +87,7 @@ export function WhatsAppSewerReview({ result, onDone }: Props) {
             Abrir no WhatsApp
           </a>
         ) : (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          <p className="text-xs text-warning bg-warning/10 border border-warning/20 rounded-md px-3 py-2">
             Configure o número do costureiro em Configurações para abrir diretamente no WhatsApp.
           </p>
         )}

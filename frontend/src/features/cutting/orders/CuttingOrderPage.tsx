@@ -16,12 +16,14 @@ import type {
   RegisterSewingDeliveryResult,
 } from './types'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { PageHeader } from '@/components/ui/page-header'
 
 type OrderStep = 'form' | 'whatsapp'
 type DeliveryStep = 'delivery-form' | 'delivery-whatsapp'
@@ -84,15 +86,13 @@ export function CuttingOrderPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-bold text-neutral-900">Pedidos de Corte</h2>
-          <p className="text-sm text-neutral-500">
-            Envie bobinas ao cortador e registre as entregas.
-          </p>
-        </div>
-        <Button onClick={() => { setOrderOpen(true); setOrderStep('form') }}>+ Novo pedido</Button>
-      </div>
+      <PageHeader
+        title="Pedidos de Corte"
+        description="Envie bobinas ao cortador e registre as entregas."
+        actions={
+          <Button onClick={() => { setOrderOpen(true); setOrderStep('form') }}>+ Novo pedido</Button>
+        }
+      />
 
       <CuttingOrderList
         onRegisterDelivery={handleDeliveryOpen}
@@ -209,15 +209,15 @@ function SewingDeliveryDone({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md bg-green-50 border border-green-200 p-4 space-y-2">
-        <p className="font-semibold text-green-800 text-sm">✓ Entrega registrada com sucesso!</p>
-        <div className="grid grid-cols-2 gap-2 text-sm text-green-700">
+      <div className="rounded-md bg-success/10 border border-success/20 p-4 space-y-2">
+        <p className="font-semibold text-success text-sm">✓ Entrega registrada com sucesso!</p>
+        <div className="grid grid-cols-2 gap-2 text-sm text-success">
           <div>
-            <span className="text-xs text-green-600 block">Peças em estoque</span>
+            <span className="text-xs text-success/80 block">Peças em estoque</span>
             <span className="font-bold text-lg">{result.totalGoodPieces}</span>
           </div>
           <div>
-            <span className="text-xs text-green-600 block">Custo costura</span>
+            <span className="text-xs text-success/80 block">Custo costura</span>
             <span className="font-bold">R$ {fmt(result.sewingCostTotal)}</span>
           </div>
         </div>
@@ -225,38 +225,32 @@ function SewingDeliveryDone({
 
       {activeGood.length > 0 && (
         <div>
-          <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium mb-1.5">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1.5">
             Adicionado ao estoque
           </p>
           <div className="flex flex-wrap gap-1.5">
             {activeGood.map(([size, qty]) => (
-              <span
-                key={size}
-                className="bg-green-50 border border-green-200 text-green-800 rounded px-2 py-0.5 text-sm font-medium"
-              >
+              <Badge key={size} variant="success">
                 {qty} {size}
-              </span>
+              </Badge>
             ))}
           </div>
         </div>
       )}
 
       {activeDefects.length > 0 && (
-        <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm">
-          <p className="font-medium text-amber-800 mb-1">
+        <div className="rounded-md bg-warning/10 border border-warning/20 p-3 text-sm">
+          <p className="font-medium text-warning mb-1">
             {result.totalDefectivePieces} peça(s) com defeito
           </p>
           <div className="flex flex-wrap gap-1.5 mb-1">
             {activeDefects.map(([size, qty]) => (
-              <span
-                key={size}
-                className="bg-amber-100 text-amber-800 rounded px-2 py-0.5 text-xs font-medium"
-              >
+              <Badge key={size} variant="warning">
                 {qty} {size}
-              </span>
+              </Badge>
             ))}
           </div>
-          <p className="text-xs text-amber-700">
+          <p className="text-xs text-warning">
             Custo de defeitos: <span className="font-semibold">R$ {fmt(result.defectCostTotal)}</span>
           </p>
         </div>

@@ -1,6 +1,10 @@
+import { Scissors } from 'lucide-react'
 import type { CuttingOrderDto } from '../types'
 import { useCuttingOrders } from '../hooks/useCuttingOrders'
 import { Button } from '@/components/ui/button'
+import { Badge, type BadgeProps } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 
 const STATUS_LABEL: Record<string, string> = {
   Draft: 'Rascunho',
@@ -9,11 +13,11 @@ const STATUS_LABEL: Record<string, string> = {
   SewingDelivered: 'Em estoque',
 }
 
-const STATUS_COLOR: Record<string, string> = {
-  Draft: 'bg-neutral-100 text-neutral-600',
-  SentToCutter: 'bg-blue-100 text-blue-800',
-  Delivered: 'bg-amber-100 text-amber-800',
-  SewingDelivered: 'bg-green-100 text-green-800',
+const STATUS_VARIANT: Record<string, BadgeProps['variant']> = {
+  Draft: 'neutral',
+  SentToCutter: 'info',
+  Delivered: 'warning',
+  SewingDelivered: 'success',
 }
 
 interface Props {
@@ -24,42 +28,56 @@ interface Props {
 export function CuttingOrderList({ onRegisterDelivery, onRegisterSewingDelivery }: Props) {
   const { data: orders = [], isLoading } = useCuttingOrders()
 
-  if (isLoading) return <p className="text-sm text-neutral-500">Carregando...</p>
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-20 w-full rounded-lg" />
+        <Skeleton className="h-20 w-full rounded-lg" />
+        <Skeleton className="h-20 w-full rounded-lg" />
+      </div>
+    )
+  }
 
-  if (orders.length === 0)
-    return <p className="text-sm text-neutral-500">Nenhum pedido de corte registrado.</p>
+  if (orders.length === 0) {
+    return (
+      <EmptyState
+        icon={Scissors}
+        title="Nenhum pedido de corte registrado."
+      />
+    )
+  }
 
   return (
     <div className="space-y-2">
       {orders.map((o) => {
         const activePieces = Object.entries(o.requestedPieces).filter(([, qty]) => qty > 0)
         return (
-          <div key={o.id} className="border border-neutral-200 rounded-lg p-3 bg-white">
+          <div key={o.id} className="border border-border rounded-lg p-3 bg-card">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-neutral-900 text-sm">#{o.orderNumber}</span>
-                  <span className="text-sm text-neutral-700">
+                  <span className="font-bold text-foreground text-sm">#{o.orderNumber}</span>
+                  <span className="text-sm text-foreground">
                     {o.fabricColorName} {o.fabricTypeName} {o.fabricTypeVariation}
                   </span>
-                  <span className="text-xs text-neutral-400">— {o.fabricRollWeightKg.toFixed(3)} kg</span>
+                  <span className="text-xs text-muted-foreground">— {o.fabricRollWeightKg.toFixed(3)} kg</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {activePieces.map(([size, qty]) => (
-                    <span key={size} className="text-xs bg-neutral-100 text-neutral-700 rounded px-1.5 py-0.5 font-medium">
+                    <Badge key={size} variant="neutral">
                       {qty} {size}
-                    </span>
+                    </Badge>
                   ))}
-                  <span className="text-xs text-neutral-500 self-center">= {o.totalPieces} peças</span>
+                  <span className="text-xs text-muted-foreground self-center">= {o.totalPieces} peças</span>
                 </div>
-                {o.notes && <p className="text-xs text-neutral-500 mt-1 italic">{o.notes}</p>}
+                {o.notes && <p className="text-xs text-muted-foreground mt-1 italic">{o.notes}</p>}
               </div>
 
               <div className="shrink-0 flex flex-col items-end gap-2">
-                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[o.status] ?? 'bg-neutral-100'}`}>
+                <Badge variant={STATUS_VARIANT[o.status] ?? 'neutral'}>
                   {STATUS_LABEL[o.status] ?? o.status}
-                </span>
-                <p className="text-xs text-neutral-400">{new Date(o.createdAt).toLocaleDateString('pt-BR')}</p>
+                </Badge>
+                <p className="text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleDateString('pt-BR')}</p>
                 {o.status === 'SentToCutter' && (
                   <Button
                     size="sm"
@@ -75,7 +93,7 @@ export function CuttingOrderList({ onRegisterDelivery, onRegisterSewingDelivery 
                     size="sm"
                     variant="outline"
                     onClick={() => onRegisterSewingDelivery(o)}
-                    className="text-xs h-7 px-2 border-amber-300 text-amber-700 hover:bg-amber-50"
+                    className="text-xs h-7 px-2 border-warning/40 text-warning hover:bg-warning/10"
                   >
                     Entrega do costureiro
                   </Button>

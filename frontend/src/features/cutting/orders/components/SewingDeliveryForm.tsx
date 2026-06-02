@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CuttingOrderDto } from '../types'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 const SIZES = ['P', 'M', 'G', 'G1', 'GG']
 // Prices shown in real-time (mirrors AppConfig defaults; used only for UI preview — backend recalculates)
@@ -57,13 +58,13 @@ export function SewingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Pr
   if (step === 'pieces') {
     return (
       <div className="space-y-5">
-        <div className="rounded-md bg-blue-50 border border-blue-200 px-3 py-2 text-sm text-blue-800">
+        <div className="rounded-md bg-info/10 border border-info/20 px-3 py-2 text-sm text-info">
           Pedido #{order.orderNumber} — {order.fabricColorName} {order.fabricTypeName}{' '}
           {order.fabricTypeVariation}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Peças recebidas do costureiro
           </label>
           <div className="grid grid-cols-5 gap-2">
@@ -71,27 +72,27 @@ export function SewingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Pr
               const requested = order.deliveredPieces?.[size] ?? order.requestedPieces[size] ?? 0
               return (
                 <div key={size} className="text-center">
-                  <div className="text-xs font-semibold text-neutral-500 mb-1">{size}</div>
+                  <div className="text-xs font-semibold text-muted-foreground mb-1">{size}</div>
                   <input
                     type="number"
                     min="0"
                     value={received[size] ?? 0}
                     onChange={(e) => handleReceivedChange(size, e.target.value)}
-                    className="w-full border border-neutral-300 rounded-md px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-neutral-400"
+                    className="w-full rounded-md border border-input bg-background px-2 py-2 text-sm text-foreground text-center shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
-                  <div className="text-xs text-neutral-400 mt-0.5">esperado: {requested}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">esperado: {requested}</div>
                 </div>
               )
             })}
           </div>
 
           {totalReceived > 0 && (
-            <div className="mt-3 flex justify-between text-sm border-t border-neutral-200 pt-2">
-              <span className="text-neutral-600">
+            <div className="mt-3 flex justify-between text-sm border-t border-border pt-2">
+              <span className="text-muted-foreground">
                 Total:{' '}
-                <span className="font-semibold text-neutral-900">{totalReceived} peças</span>
+                <span className="font-semibold text-foreground">{totalReceived} peças</span>
               </span>
-              <span className="text-neutral-500 text-xs self-center">
+              <span className="text-muted-foreground text-xs self-center">
                 Custo estimado: R$ {fmt(sewingCost)}
               </span>
             </div>
@@ -118,12 +119,12 @@ export function SewingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Pr
   if (step === 'defects') {
     return (
       <div className="space-y-5">
-        <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800 font-medium">
+        <div className="rounded-md bg-warning/10 border border-warning/20 px-3 py-2 text-sm text-warning font-medium">
           Quantas camisetas vieram com defeito?
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
+          <label className="block text-sm font-medium text-foreground mb-2">
             Peças defeituosas por tamanho
           </label>
           <div className="grid grid-cols-5 gap-2">
@@ -132,42 +133,42 @@ export function SewingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Pr
               if (max === 0) {
                 return (
                   <div key={size} className="text-center opacity-30">
-                    <div className="text-xs font-semibold text-neutral-500 mb-1">{size}</div>
+                    <div className="text-xs font-semibold text-muted-foreground mb-1">{size}</div>
                     <input
                       type="number"
                       disabled
                       value={0}
-                      className="w-full border border-neutral-200 rounded-md px-2 py-2 text-sm text-center bg-neutral-50"
+                      className="w-full rounded-md border border-border bg-muted px-2 py-2 text-sm text-center"
                     />
                   </div>
                 )
               }
               return (
                 <div key={size} className="text-center">
-                  <div className="text-xs font-semibold text-neutral-500 mb-1">{size}</div>
+                  <div className="text-xs font-semibold text-muted-foreground mb-1">{size}</div>
                   <input
                     type="number"
                     min="0"
                     max={max}
                     value={defects[size] ?? 0}
                     onChange={(e) => handleDefectChange(size, e.target.value)}
-                    className="w-full border border-neutral-300 rounded-md px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-neutral-400"
+                    className="w-full rounded-md border border-input bg-background px-2 py-2 text-sm text-foreground text-center shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
-                  <div className="text-xs text-neutral-400 mt-0.5">max: {max}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">max: {max}</div>
                 </div>
               )
             })}
           </div>
 
-          <div className="mt-3 border-t border-neutral-200 pt-3 space-y-1 text-sm">
-            <div className="flex justify-between text-neutral-600">
+          <div className="mt-3 border-t border-border pt-3 space-y-1 text-sm">
+            <div className="flex justify-between text-muted-foreground">
               <span>Peças boas</span>
-              <span className="font-semibold text-green-700">{totalGood}</span>
+              <span className="font-semibold text-success">{totalGood}</span>
             </div>
             {totalDefects > 0 && (
-              <div className="flex justify-between text-neutral-600">
+              <div className="flex justify-between text-muted-foreground">
                 <span>Defeituosas</span>
-                <span className="font-semibold text-red-600">{totalDefects}</span>
+                <span className="font-semibold text-danger">{totalDefects}</span>
               </div>
             )}
           </div>
@@ -195,72 +196,66 @@ export function SewingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Pr
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-neutral-200 bg-neutral-50 p-4 space-y-4">
+      <div className="rounded-md border border-border bg-muted/50 p-4 space-y-4">
         <div>
-          <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium mb-1">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">
             Pedido #{order.orderNumber}
           </p>
-          <p className="text-sm font-semibold text-neutral-900">
+          <p className="text-sm font-semibold text-foreground">
             {order.fabricColorName} {order.fabricTypeName} {order.fabricTypeVariation}
           </p>
         </div>
 
         <div>
-          <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium mb-1.5">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1.5">
             Peças boas → estoque
           </p>
           <div className="flex flex-wrap gap-2">
             {activeGood.map((size) => (
-              <span
-                key={size}
-                className="inline-flex items-center gap-1 bg-green-50 border border-green-200 rounded px-2 py-0.5 text-sm font-medium text-green-800"
-              >
-                <span className="text-green-600 text-xs">{size}</span>
+              <Badge key={size} variant="success">
+                <span className="mr-1 text-xs">{size}</span>
                 <span>{goodPieces[size]}</span>
-              </span>
+              </Badge>
             ))}
           </div>
-          <p className="text-sm text-neutral-600 mt-1.5">
-            Total: <span className="font-semibold">{totalGood} peças</span>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            Total: <span className="font-semibold text-foreground">{totalGood} peças</span>
           </p>
         </div>
 
         {activeDefects.length > 0 && (
           <div>
-            <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium mb-1.5">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1.5">
               Peças defeituosas
             </p>
             <div className="flex flex-wrap gap-2">
               {activeDefects.map((size) => (
-                <span
-                  key={size}
-                  className="inline-flex items-center gap-1 bg-red-50 border border-red-200 rounded px-2 py-0.5 text-sm font-medium text-red-800"
-                >
-                  <span className="text-red-500 text-xs">{size}</span>
+                <Badge key={size} variant="danger">
+                  <span className="mr-1 text-xs">{size}</span>
                   <span>{defects[size]}</span>
-                </span>
+                </Badge>
               ))}
             </div>
-            <p className="text-xs text-amber-700 mt-1">
+            <p className="text-xs text-warning mt-1">
               Não entram no estoque. Custo será lançado em Defeitos.
             </p>
           </div>
         )}
 
-        <div className="border-t border-neutral-200 pt-3 space-y-1 text-sm">
-          <div className="flex justify-between text-neutral-700">
+        <div className="border-t border-border pt-3 space-y-1 text-sm">
+          <div className="flex justify-between text-foreground">
             <span>Custo de costura (estimado)</span>
             <span className="font-semibold">R$ {fmt(sewingCost)}</span>
           </div>
-          <p className="text-xs text-neutral-400">
+          <p className="text-xs text-muted-foreground">
             * Valores exatos calculados pelo servidor com preços atuais de AppConfig.
           </p>
         </div>
       </div>
 
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-muted-foreground">
         Ao confirmar:{' '}
-        <span className="font-medium text-neutral-700">
+        <span className="font-medium text-foreground">
           {totalGood} peças boas adicionadas ao estoque
         </span>
         {totalDefects > 0 && (

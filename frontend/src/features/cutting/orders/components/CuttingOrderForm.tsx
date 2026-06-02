@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useFabricRolls } from '@/features/fabric/rolls/hooks/useFabricRolls'
 import type { FabricRollDto } from '@/features/fabric/rolls/types'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 const SIZES = ['P', 'M', 'G', 'G1', 'GG']
 
@@ -54,18 +55,18 @@ export function CuttingOrderForm({ onConfirm, isLoading }: Props) {
   return (
     <div className="space-y-5">
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           Bobina disponível
         </label>
         {rolls.length === 0 ? (
-          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          <p className="text-sm text-warning bg-warning/10 border border-warning/20 rounded-md px-3 py-2">
             Nenhuma bobina disponível. Registre uma bobina primeiro.
           </p>
         ) : (
           <select
             value={selectedRollId}
             onChange={(e) => setSelectedRollId(e.target.value)}
-            className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400"
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
           >
             <option value="">Selecione...</option>
             {rolls.map((r) => (
@@ -78,32 +79,32 @@ export function CuttingOrderForm({ onConfirm, isLoading }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           Quantidades por tamanho
         </label>
         <div className="grid grid-cols-5 gap-2">
           {SIZES.map((size) => (
             <div key={size} className="text-center">
-              <div className="text-xs font-semibold text-neutral-500 mb-1">{size}</div>
+              <div className="text-xs font-semibold text-muted-foreground mb-1">{size}</div>
               <input
                 type="number"
                 min="0"
                 value={pieces[size]}
                 onChange={(e) => handlePieceChange(size, e.target.value)}
-                className="w-full border border-neutral-300 rounded-md px-2 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-neutral-400"
+                className="w-full rounded-md border border-input bg-background px-2 py-2 text-sm text-foreground text-center shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
           ))}
         </div>
         {hasAnyPiece && (
-          <p className="text-xs text-neutral-500 mt-2 text-right">
-            Total: <span className="font-semibold text-neutral-800">{totalPieces} peças</span>
+          <p className="text-xs text-muted-foreground mt-2 text-right">
+            Total: <span className="font-semibold text-foreground">{totalPieces} peças</span>
           </p>
         )}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <label className="block text-sm font-medium text-foreground mb-1">
           Observações (opcional)
         </label>
         <textarea
@@ -111,7 +112,7 @@ export function CuttingOrderForm({ onConfirm, isLoading }: Props) {
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
           placeholder="Ex: urgente, entregar até sexta..."
-          className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-neutral-400"
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground resize-none shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </div>
 
@@ -141,36 +142,36 @@ function ConfirmationStep({ roll, pieces, totalPieces, notes, isLoading, onBack,
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border border-neutral-200 p-4 space-y-3 bg-neutral-50">
+      <div className="rounded-md border border-border p-4 space-y-3 bg-muted/50">
         <div>
-          <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium mb-1">Bobina</p>
-          <p className="text-sm font-semibold text-neutral-900">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">Bobina</p>
+          <p className="text-sm font-semibold text-foreground">
             {roll.fabricColorName} {roll.fabricTypeName} {roll.fabricTypeVariation} — {roll.weightKg.toFixed(3)} kg
           </p>
         </div>
 
         <div>
-          <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium mb-1">Peças</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">Peças</p>
           <div className="flex flex-wrap gap-2">
             {activePieces.map(([size, qty]) => (
-              <span key={size} className="inline-flex items-center gap-1 bg-white border border-neutral-300 rounded px-2 py-0.5 text-sm font-medium">
-                <span className="text-neutral-500 text-xs">{size}</span>
+              <Badge key={size} variant="outline">
+                <span className="text-muted-foreground text-xs mr-1">{size}</span>
                 <span>{qty}</span>
-              </span>
+              </Badge>
             ))}
           </div>
-          <p className="text-sm text-neutral-600 mt-1">Total: <span className="font-semibold">{totalPieces} peças</span></p>
+          <p className="text-sm text-muted-foreground mt-1">Total: <span className="font-semibold text-foreground">{totalPieces} peças</span></p>
         </div>
 
         {notes && (
           <div>
-            <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium mb-0.5">Observações</p>
-            <p className="text-sm text-neutral-700">{notes}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Observações</p>
+            <p className="text-sm text-foreground">{notes}</p>
           </div>
         )}
       </div>
 
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-muted-foreground">
         Ao confirmar, o pedido será criado e você poderá revisar a mensagem antes de enviar ao cortador.
       </p>
 
