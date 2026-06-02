@@ -38,7 +38,7 @@ export function ManualEntryForm({ onSubmit, isLoading }: Props) {
         <select
           id="type"
           {...register('type')}
-          className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
         >
           <option value="Expense">Despesa</option>
           <option value="Income">Receita</option>
@@ -48,19 +48,19 @@ export function ManualEntryForm({ onSubmit, isLoading }: Props) {
       <div className="space-y-1">
         <Label htmlFor="category">Categoria</Label>
         <Input id="category" {...register('category')} placeholder="ex: Energia, Venda avulsa" />
-        {errors.category && <p className="text-sm text-red-500">{errors.category.message}</p>}
+        {errors.category && <p className="text-sm text-danger">{errors.category.message}</p>}
       </div>
 
       <div className="space-y-1">
         <Label htmlFor="amount">Valor (R$)</Label>
         <Input id="amount" type="number" step="0.01" min="0.01" {...register('amount')} />
-        {errors.amount && <p className="text-sm text-red-500">{errors.amount.message}</p>}
+        {errors.amount && <p className="text-sm text-danger">{errors.amount.message}</p>}
       </div>
 
       <div className="space-y-1">
         <Label htmlFor="description">Descrição</Label>
         <Input id="description" {...register('description')} placeholder="Detalhe do lançamento" />
-        {errors.description && <p className="text-sm text-red-500">{errors.description.message}</p>}
+        {errors.description && <p className="text-sm text-danger">{errors.description.message}</p>}
       </div>
 
       <Button type="submit" disabled={isLoading} className="w-full">

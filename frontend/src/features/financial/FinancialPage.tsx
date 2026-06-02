@@ -97,15 +97,15 @@ export function FinancialPage() {
       />
 
       <div className="flex items-end gap-2 flex-wrap">
-        <div className="flex gap-1 rounded-md border border-neutral-200 p-1">
+        <div className="flex gap-1 rounded-md border border-border p-1">
           {(['week', 'month', 'custom'] as PeriodPreset[]).map((p) => (
             <button
               key={p}
               onClick={() => setPreset(p)}
               className={`px-3 py-1 text-sm rounded transition-colors ${
                 preset === p
-                  ? 'bg-neutral-900 text-white'
-                  : 'text-neutral-600 hover:text-neutral-900'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {p === 'week' ? 'Semana' : p === 'month' ? 'Mês' : 'Personalizado'}
@@ -134,7 +134,7 @@ export function FinancialPage() {
         </div>
       )}
       {summary.isError && (
-        <p className="text-sm text-red-500">{(summary.error as Error).message}</p>
+        <p className="text-sm text-danger">{(summary.error as Error).message}</p>
       )}
       {summary.data && (
         <>
@@ -145,12 +145,12 @@ export function FinancialPage() {
 
       <div className="space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="text-sm font-semibold text-neutral-700">Lançamentos</h3>
+          <h3 className="text-sm font-semibold text-foreground">Lançamentos</h3>
           <div className="flex-1" />
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="border border-neutral-200 rounded-md px-3 py-1.5 text-sm bg-white"
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
           >
             <option value="">Todas as categorias</option>
             {categories.map((c) => (
@@ -175,7 +175,7 @@ export function FinancialPage() {
           />
         )}
         {reverse.isError && (
-          <p className="text-sm text-red-500">{(reverse.error as Error).message}</p>
+          <p className="text-sm text-danger">{(reverse.error as Error).message}</p>
         )}
       </div>
 
@@ -191,7 +191,7 @@ export function FinancialPage() {
             }
           />
           {create.isError && (
-            <p className="text-sm text-red-500 mt-2">{(create.error as Error).message}</p>
+            <p className="text-sm text-danger mt-2">{(create.error as Error).message}</p>
           )}
         </DialogContent>
       </Dialog>
