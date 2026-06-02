@@ -4,13 +4,20 @@ import { useUploadSeparationList } from './hooks/useUploadSeparationList'
 import { useUpdateSeparationItems } from './hooks/useUpdateSeparationItems'
 import { useStockCheck } from './hooks/useStockCheck'
 import { useConfirmSeparationList } from './hooks/useConfirmSeparationList'
+import { useDeleteSeparationList } from './hooks/useDeleteSeparationList'
+import { useRenameSeparationList } from './hooks/useRenameSeparationList'
 import { SkuConfigPanel } from './components/SkuConfigPanel'
 import type {
+  SeparationListSummary,
   SeparationListDetail,
   SeparationItemDto,
   SeparationConfirmResult,
 } from './types'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ClipboardList } from 'lucide-react'
 import { useDtfModels } from '../settings/dtf/hooks/useDtfModels'
 import type { DtfModelDto } from '../settings/dtf/types'
 
@@ -26,8 +33,8 @@ export function SeparationListPage() {
       onClick={() => setTab(t)}
       className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
         tab === t
-          ? 'border-neutral-900 text-neutral-900'
-          : 'border-transparent text-neutral-500 hover:text-neutral-700'
+          ? 'border-foreground text-foreground'
+          : 'border-transparent text-muted-foreground hover:text-foreground'
       }`}
     >
       {label}
@@ -36,7 +43,7 @@ export function SeparationListPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-1 border-b border-neutral-200">
+      <div className="flex gap-1 border-b border-border">
         {tabBtn('lists', 'Listas')}
         {tabBtn('config', 'Config. SKU')}
       </div>
@@ -53,10 +60,10 @@ type Step = 'list' | 'upload' | 'review' | 'stock-check' | 'confirm-modal' | 'do
 const STATUS_LABEL: Record<string, string> = {
   Pending: 'Pendente', Confirmed: 'Confirmada', Cancelled: 'Cancelada',
 }
-const STATUS_COLOR: Record<string, string> = {
-  Pending: 'bg-amber-100 text-amber-800',
-  Confirmed: 'bg-green-100 text-green-800',
-  Cancelled: 'bg-red-100 text-red-800',
+const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger' | 'neutral'> = {
+  Pending: 'warning',
+  Confirmed: 'success',
+  Cancelled: 'danger',
 }
 const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
@@ -111,50 +118,27 @@ function SeparationWizard() {
     setConfirmResult(null); setStep('list')
   }
 
-  // ── LIST ──────────────────────────────────────────────────────────────────
-  if (step === 'list') return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-bold text-neutral-900">Lista de Separação</h2>
-          <p className="text-sm text-neutral-500">Importar PDF do ERP e processar pedidos.</p>
-        </div>
-        <Button onClick={() => setStep('upload')}>+ Nova lista</Button>
-      </div>
+  if (step === 'list') {
+    return (
+      <ListStep
+        lists={lists}
+        isLoading={isLoading}
+        onNew={() => setStep('upload')}
+      />
+    )
+  }
 
-      {isLoading && <p className="text-sm text-neutral-500">Carregando...</p>}
-      {!isLoading && lists.length === 0 && (
-        <p className="text-sm text-neutral-500">Nenhuma lista importada ainda.</p>
-      )}
-
-      <div className="space-y-2">
-        {lists.map((l) => (
-          <div key={l.id} className="border border-neutral-200 rounded-lg p-4 bg-white flex justify-between items-center">
-            <div>
-              <p className="text-sm font-semibold text-neutral-900">{l.fileName}</p>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                {new Date(l.uploadedAt).toLocaleDateString('pt-BR')} — {l.itemCount} itens — {l.totalQuantity} peças
-              </p>
-            </div>
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLOR[l.status] ?? 'bg-neutral-100'}`}>
-              {STATUS_LABEL[l.status] ?? l.status}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
 
   // ── UPLOAD ────────────────────────────────────────────────────────────────
   if (step === 'upload') return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={handleReset} className="text-sm text-neutral-500 hover:text-neutral-700">← Voltar</button>
-        <h2 className="text-xl font-bold text-neutral-900">Nova lista de separação</h2>
+        <button onClick={handleReset} className="text-sm text-muted-foreground hover:text-foreground">← Voltar</button>
+        <h2 className="text-xl font-bold text-foreground">Nova lista de separação</h2>
       </div>
 
       <div
-        className="border-2 border-dashed border-neutral-300 rounded-xl p-12 text-center cursor-pointer hover:border-neutral-400 transition-colors"
+        className="border-2 border-dashed border-border rounded-xl p-12 text-center cursor-pointer hover:border-foreground/40 transition-colors"
         onClick={() => fileInputRef.current?.click()}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -164,15 +148,15 @@ function SeparationWizard() {
         }}
       >
         <div className="text-4xl mb-3">📄</div>
-        <p className="text-sm font-medium text-neutral-700">Clique ou arraste o PDF aqui</p>
-        <p className="text-xs text-neutral-400 mt-1">Apenas arquivos .pdf do ERP</p>
+        <p className="text-sm font-medium text-foreground">Clique ou arraste o PDF aqui</p>
+        <p className="text-xs text-muted-foreground mt-1">Apenas arquivos .pdf do ERP</p>
         <input ref={fileInputRef} type="file" accept=".pdf" className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f) }} />
       </div>
 
-      {upload.isPending && <p className="text-sm text-neutral-500 text-center">Processando PDF...</p>}
+      {upload.isPending && <p className="text-sm text-muted-foreground text-center">Processando PDF...</p>}
       {upload.isError && (
-        <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+        <div className="rounded-md bg-danger/10 border border-danger/20 p-3 text-sm text-danger">
           {(upload.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Erro ao processar o PDF.'}
         </div>
       )}
@@ -183,48 +167,48 @@ function SeparationWizard() {
   if (step === 'review' && currentList) return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <button onClick={handleReset} className="text-sm text-neutral-500 hover:text-neutral-700">← Cancelar</button>
-        <h2 className="text-xl font-bold text-neutral-900">Revisar lista — {currentList.fileName}</h2>
+        <button onClick={handleReset} className="text-sm text-muted-foreground hover:text-foreground">← Cancelar</button>
+        <h2 className="text-xl font-bold text-foreground">Revisar lista — {currentList.fileName}</h2>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
             {editedItems.length} itens extraídos — edite se necessário
           </p>
-          <div className="border border-neutral-200 rounded-lg overflow-hidden">
+          <div className="border border-border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-neutral-50">
+              <thead className="bg-muted">
                 <tr>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-neutral-500">SKU</th>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-neutral-500">Cor</th>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-neutral-500">Tam.</th>
-                  <th className="px-2 py-2 text-center text-xs font-medium text-neutral-500">Qtd</th>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-neutral-500">DTF</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">SKU</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Cor</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Tam.</th>
+                  <th className="px-2 py-2 text-center text-xs font-medium text-muted-foreground">Qtd</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">DTF</th>
                 </tr>
               </thead>
               <tbody>
                 {editedItems.map((item, idx) => (
-                  <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-neutral-50'}>
+                  <tr key={item.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-muted/50'}>
                     <td className="px-2 py-1">
                       <input value={item.sku}
                         onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? { ...i, sku: e.target.value } : i))}
-                        className="w-full text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-neutral-300 rounded px-1 font-mono" />
+                        className="w-full text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded px-1 font-mono" />
                     </td>
                     <td className="px-2 py-1">
                       <input value={item.color}
                         onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? { ...i, color: e.target.value } : i))}
-                        className="w-full text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-neutral-300 rounded px-1" />
+                        className="w-full text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded px-1" />
                     </td>
                     <td className="px-2 py-1">
                       <input value={item.size}
                         onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? { ...i, size: e.target.value.toUpperCase() } : i))}
-                        className="w-12 text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-neutral-300 rounded px-1 uppercase" />
+                        className="w-12 text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded px-1 uppercase" />
                     </td>
                     <td className="px-2 py-1 text-center">
                       <input type="number" min="1" value={item.quantity}
                         onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? { ...i, quantity: parseInt(e.target.value) || 1 } : i))}
-                        className="w-12 text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-neutral-300 rounded px-1 text-center" />
+                        className="w-12 text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded px-1 text-center" />
                     </td>
                     <td className="px-2 py-1">
                       <select value={item.dtfModelId ?? ''}
@@ -233,7 +217,7 @@ function SeparationWizard() {
                           dtfModelId: e.target.value || null,
                           dtfModelName: dtfModels.find((m: DtfModelDto) => m.id === e.target.value)?.name ?? null
                         } : i))}
-                        className="text-xs border border-neutral-200 rounded px-1 py-0.5 bg-white w-full">
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background">
                         <option value="">—</option>
                         {dtfModels.map((m: DtfModelDto) => <option key={m.id} value={m.id}>{m.name}</option>)}
                       </select>
@@ -257,18 +241,18 @@ function SeparationWizard() {
             </Button>
           </div>
           {updateItems.isError && (
-            <p className="text-xs text-red-600">
+            <p className="text-xs text-danger">
               {(updateItems.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Erro ao salvar.'}
             </p>
           )}
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium">Preview do PDF</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Preview do PDF</p>
           {pdfBlobUrl
-            ? <iframe src={pdfBlobUrl} className="w-full rounded-lg border border-neutral-200" style={{ height: '500px' }} title="PDF preview" />
-            : <div className="w-full h-64 rounded-lg border border-neutral-200 bg-neutral-50 flex items-center justify-center">
-                <p className="text-xs text-neutral-400">Preview indisponível</p>
+            ? <iframe src={pdfBlobUrl} className="w-full rounded-lg border border-border" style={{ height: '500px' }} title="PDF preview" />
+            : <div className="w-full h-64 rounded-lg border border-border bg-muted flex items-center justify-center">
+                <p className="text-xs text-muted-foreground">Preview indisponível</p>
               </div>
           }
         </div>
@@ -282,38 +266,38 @@ function SeparationWizard() {
     return (
       <div className="space-y-5">
         <div className="flex items-center gap-3">
-          <button onClick={() => setStep('review')} className="text-sm text-neutral-500 hover:text-neutral-700">← Editar</button>
-          <h2 className="text-xl font-bold text-neutral-900">Verificação de estoque</h2>
+          <button onClick={() => setStep('review')} className="text-sm text-muted-foreground hover:text-foreground">← Editar</button>
+          <h2 className="text-xl font-bold text-foreground">Verificação de estoque</h2>
         </div>
 
-        {stockCheckQuery.isLoading && <p className="text-sm text-neutral-500">Verificando estoque...</p>}
+        {stockCheckQuery.isLoading && <p className="text-sm text-muted-foreground">Verificando estoque...</p>}
 
         {check && (
           <>
             <div>
-              <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium mb-2">Estoque de camisetas</p>
-              <div className="border border-neutral-200 rounded-lg overflow-hidden">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">Estoque de camisetas</p>
+              <div className="border border-border rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-neutral-50">
+                  <thead className="bg-muted">
                     <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500">Cor</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500">Tam.</th>
-                      <th className="px-3 py-2 text-center text-xs font-medium text-neutral-500">Necessário</th>
-                      <th className="px-3 py-2 text-center text-xs font-medium text-neutral-500">Disponível</th>
-                      <th className="px-3 py-2 text-center text-xs font-medium text-neutral-500">Status</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Cor</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Tam.</th>
+                      <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground">Necessário</th>
+                      <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground">Disponível</th>
+                      <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {check.shirtChecks.map((c, i) => (
-                      <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-neutral-50'}>
+                      <tr key={i} className={i % 2 === 0 ? 'bg-card' : 'bg-muted/50'}>
                         <td className="px-3 py-2">{c.color}</td>
                         <td className="px-3 py-2 font-medium">{c.size}</td>
                         <td className="px-3 py-2 text-center">{c.needed}</td>
                         <td className="px-3 py-2 text-center">{c.available}</td>
                         <td className="px-3 py-2 text-center">
                           {c.ok
-                            ? <span className="text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">✓ OK</span>
-                            : <span className="text-xs font-medium text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">⚠ Insuficiente</span>
+                            ? <Badge variant="success">✓ OK</Badge>
+                            : <Badge variant="danger">⚠ Insuficiente</Badge>
                           }
                         </td>
                       </tr>
@@ -321,25 +305,25 @@ function SeparationWizard() {
                   </tbody>
                 </table>
               </div>
-              {!check.canConfirm && <p className="text-xs text-red-600 mt-1">Estoque insuficiente. Edite as quantidades antes de confirmar.</p>}
+              {!check.canConfirm && <p className="text-xs text-danger mt-1">Estoque insuficiente. Edite as quantidades antes de confirmar.</p>}
             </div>
 
             {check.dtfChecks.length > 0 && (
               <div>
-                <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium mb-2">Estoque DTF</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">Estoque DTF</p>
                 <div className="space-y-2">
                   {check.dtfChecks.map((d) => (
-                    <div key={d.dtfModelId} className={`border rounded-lg p-3 text-sm ${d.fromStock ? 'border-green-200 bg-green-50' : 'border-amber-200 bg-amber-50'}`}>
+                    <div key={d.dtfModelId} className={`border rounded-lg p-3 text-sm ${d.fromStock ? 'border-success/20 bg-success/10' : 'border-warning/20 bg-warning/10'}`}>
                       <div className="flex justify-between items-center">
                         <span className="font-semibold">{d.modelName}</span>
                         {d.fromStock
-                          ? <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Do estoque</span>
-                          : <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Pedir folha</span>
+                          ? <Badge variant="success">Do estoque</Badge>
+                          : <Badge variant="warning">Pedir folha</Badge>
                         }
                       </div>
-                      <p className="text-xs mt-1 text-neutral-600">Precisa: <b>{d.needed}</b> — Tem: <b>{d.available}</b></p>
+                      <p className="text-xs mt-1 text-muted-foreground">Precisa: <b>{d.needed}</b> — Tem: <b>{d.available}</b></p>
                       {!d.fromStock && (
-                        <p className="text-xs text-amber-700">
+                        <p className="text-xs text-warning">
                           Pedir {d.sheetsToOrder} folha(s) × {d.stampsPerSheet} estampas = {d.stampsFromSheets}
                           {d.surplus > 0 && ` (sobrará ${d.surplus})`} — R$ {fmt(d.orderCost)}
                         </p>
@@ -348,7 +332,7 @@ function SeparationWizard() {
                   ))}
                 </div>
                 {check.totalDtfCost > 0 && (
-                  <p className="text-sm font-medium text-neutral-700 mt-2">
+                  <p className="text-sm font-medium text-foreground mt-2">
                     Total DTF: <span className="font-bold">R$ {fmt(check.totalDtfCost)}</span>
                   </p>
                 )}
@@ -372,14 +356,14 @@ function SeparationWizard() {
     const check = stockCheckQuery.data
     return (
       <div className="space-y-5">
-        <h2 className="text-xl font-bold text-neutral-900">Confirmar lista de separação</h2>
+        <h2 className="text-xl font-bold text-foreground">Confirmar lista de separação</h2>
 
-        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 space-y-4 text-sm">
+        <div className="rounded-lg border border-border bg-muted p-4 space-y-4 text-sm">
           <div>
-            <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium mb-2">Desconto de estoque</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">Desconto de estoque</p>
             <div className="flex flex-wrap gap-1.5">
               {check.shirtChecks.map((c, i) => (
-                <span key={i} className="bg-white border border-neutral-300 rounded px-2 py-0.5 text-xs">
+                <span key={i} className="bg-card border border-border rounded px-2 py-0.5 text-xs text-foreground">
                   {c.color} {c.size} × {c.needed}
                 </span>
               ))}
@@ -388,39 +372,39 @@ function SeparationWizard() {
 
           {check.dtfChecks.filter(d => d.fromStock).length > 0 && (
             <div>
-              <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium mb-1">DTF do estoque</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">DTF do estoque</p>
               {check.dtfChecks.filter(d => d.fromStock).map(d => (
-                <p key={d.dtfModelId} className="text-xs text-green-700">{d.modelName} — {d.needed} un.</p>
+                <p key={d.dtfModelId} className="text-xs text-success">{d.modelName} — {d.needed} un.</p>
               ))}
             </div>
           )}
 
           {check.dtfChecks.filter(d => !d.fromStock).length > 0 && (
             <div>
-              <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium mb-1">Folhas DTF a pedir</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">Folhas DTF a pedir</p>
               {check.dtfChecks.filter(d => !d.fromStock).map(d => (
-                <p key={d.dtfModelId} className="text-xs text-amber-700">
+                <p key={d.dtfModelId} className="text-xs text-warning">
                   {d.modelName} — {d.sheetsToOrder} folha(s) — R$ {fmt(d.orderCost)}
                 </p>
               ))}
-              <p className="text-sm font-semibold text-neutral-800 mt-1">Total: R$ {fmt(check.totalDtfCost)}</p>
+              <p className="text-sm font-semibold text-foreground mt-1">Total: R$ {fmt(check.totalDtfCost)}</p>
             </div>
           )}
         </div>
 
-        <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700 font-medium">
+        <div className="rounded-md bg-danger/10 border border-danger/20 p-3 text-sm text-danger font-medium">
           ⚠ Esta ação é irreversível. O estoque será descontado e os pedidos DTF lançados.
         </div>
 
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setStep('stock-check')} disabled={confirm.isPending} className="flex-1">← Voltar</Button>
-          <Button onClick={handleConfirm} disabled={confirm.isPending} className="flex-1 bg-red-600 hover:bg-red-700">
+          <Button variant="destructive" onClick={handleConfirm} disabled={confirm.isPending} className="flex-1">
             {confirm.isPending ? 'Confirmando...' : 'Confirmar definitivamente'}
           </Button>
         </div>
 
         {confirm.isError && (
-          <p className="text-xs text-red-600">
+          <p className="text-xs text-danger">
             {(confirm.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Erro ao confirmar.'}
           </p>
         )}
@@ -431,38 +415,38 @@ function SeparationWizard() {
   // ── DONE ──────────────────────────────────────────────────────────────────
   if (step === 'done' && confirmResult) return (
     <div className="space-y-5">
-      <div className="rounded-md bg-green-50 border border-green-200 p-4">
-        <p className="font-semibold text-green-800 text-sm">✓ Lista confirmada com sucesso!</p>
-        <p className="text-xs text-green-700 mt-1">
+      <div className="rounded-md bg-success/10 border border-success/20 p-4">
+        <p className="font-semibold text-success text-sm">✓ Lista confirmada com sucesso!</p>
+        <p className="text-xs text-success mt-1">
           {confirmResult.shirtDeductions.reduce((a, d) => a + d.quantity, 0)} peças descontadas do estoque.
         </p>
       </div>
 
       {confirmResult.dtfOrders.length > 0 && confirmResult.whatsAppMessage && (
         <div className="space-y-3">
-          <p className="text-sm font-medium text-neutral-700">Mensagem para o fornecedor DTF</p>
+          <p className="text-sm font-medium text-foreground">Mensagem para o fornecedor DTF</p>
 
-          <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-md">
-            <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-base shrink-0">
+          <div className="flex items-center gap-3 p-3 bg-success/10 border border-success/20 rounded-md">
+            <div className="w-9 h-9 rounded-full bg-success flex items-center justify-center text-white font-bold text-base shrink-0">
               {confirmResult.dtfSupplierName.charAt(0).toUpperCase()}
             </div>
             <div>
-              <p className="text-sm font-semibold text-green-900">{confirmResult.dtfSupplierName}</p>
-              <p className="text-xs text-green-700">{confirmResult.dtfSupplierPhone || 'Número não configurado'}</p>
+              <p className="text-sm font-semibold text-foreground">{confirmResult.dtfSupplierName}</p>
+              <p className="text-xs text-muted-foreground">{confirmResult.dtfSupplierPhone || 'Número não configurado'}</p>
             </div>
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="text-sm font-medium text-neutral-700">Mensagem WhatsApp</label>
+              <label className="text-sm font-medium text-foreground">Mensagem WhatsApp</label>
               <button
                 onClick={() => handleCopy(confirmResult.whatsAppMessage!)}
-                className={`text-xs px-2 py-1 rounded font-medium transition-colors ${copied ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'}`}
+                className={`text-xs px-2 py-1 rounded font-medium transition-colors ${copied ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
               >
                 {copied ? '✓ Copiado!' : 'Copiar'}
               </button>
             </div>
-            <pre className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm font-mono bg-neutral-50 whitespace-pre-wrap">
+            <pre className="w-full border border-border rounded-md px-3 py-2 text-sm font-mono bg-muted text-foreground whitespace-pre-wrap">
               {confirmResult.whatsAppMessage}
             </pre>
           </div>
@@ -485,4 +469,206 @@ function SeparationWizard() {
   )
 
   return null
+}
+
+// ── ListStep ────────────────────────────────────────────────────────────────
+function ListStep({
+  lists,
+  isLoading,
+  onNew,
+}: {
+  lists: SeparationListSummary[]
+  isLoading: boolean
+  onNew: () => void
+}) {
+  const deleteMutation = useDeleteSeparationList()
+  const renameMutation = useRenameSeparationList()
+
+  const [deleteTarget, setDeleteTarget] = useState<SeparationListSummary | null>(null)
+  const [editTarget, setEditTarget] = useState<SeparationListSummary | null>(null)
+  const [editName, setEditName] = useState('')
+
+  function startEdit(l: SeparationListSummary) {
+    setEditTarget(l)
+    setEditName(l.fileName)
+  }
+
+  function cancelEdit() {
+    setEditTarget(null)
+    setEditName('')
+  }
+
+  function submitRename() {
+    if (!editTarget || !editName.trim()) return
+    renameMutation.mutate(
+      { id: editTarget.id, fileName: editName.trim() },
+      { onSuccess: cancelEdit },
+    )
+  }
+
+  function confirmDelete() {
+    if (!deleteTarget) return
+    deleteMutation.mutate(deleteTarget.id, {
+      onSuccess: () => setDeleteTarget(null),
+    })
+  }
+
+  const canEdit = (l: SeparationListSummary) => l.status !== 'Confirmed'
+
+  return (
+    <>
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Lista de Separação</h2>
+            <p className="text-sm text-muted-foreground">Importar PDF do ERP e processar pedidos.</p>
+          </div>
+          <Button onClick={onNew}>+ Nova lista</Button>
+        </div>
+
+        {isLoading && (
+          <div className="space-y-2">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        )}
+        {!isLoading && lists.length === 0 && (
+          <EmptyState
+            icon={ClipboardList}
+            title="Nenhuma lista importada ainda."
+            description="Clique em '+ Nova lista' para importar um PDF do ERP."
+          />
+        )}
+
+        <div className="space-y-2">
+          {lists.map((l) => (
+            <div key={l.id} className="border border-border rounded-lg p-4 bg-card">
+              {editTarget?.id === l.id ? (
+                // ── inline edit mode ──
+                <div className="flex items-center gap-2">
+                  <input
+                    className="flex-1 text-sm border border-input rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
+                    value={editName}
+                    autoFocus
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') submitRename()
+                      if (e.key === 'Escape') cancelEdit()
+                    }}
+                  />
+                  <button
+                    onClick={submitRename}
+                    disabled={renameMutation.isPending}
+                    className="text-xs px-3 py-1 rounded bg-foreground text-background hover:bg-foreground/80 disabled:opacity-50 transition-colors"
+                  >
+                    {renameMutation.isPending ? '...' : 'Salvar'}
+                  </button>
+                  <button
+                    onClick={cancelEdit}
+                    className="text-xs px-2 py-1 rounded border border-border text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                // ── normal display mode ──
+                <div className="flex justify-between items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{l.fileName}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {new Date(l.uploadedAt).toLocaleDateString('pt-BR')} — {l.itemCount} itens — {l.totalQuantity} peças
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant={STATUS_VARIANT[l.status] ?? 'neutral'}>
+                      {STATUS_LABEL[l.status] ?? l.status}
+                    </Badge>
+
+                    {canEdit(l) && (
+                      <>
+                        <button
+                          title="Editar nome"
+                          onClick={() => startEdit(l)}
+                          className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          {/* pencil icon */}
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </button>
+                        <button
+                          title="Excluir lista"
+                          onClick={() => setDeleteTarget(l)}
+                          className="p-1.5 rounded hover:bg-danger/10 text-muted-foreground hover:text-danger transition-colors"
+                        >
+                          {/* trash icon */}
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Delete confirmation modal ── */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-card rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-full bg-danger/10 flex items-center justify-center shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  <path d="M10 11v6" /><path d="M14 11v6" />
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Excluir lista?</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  <span className="font-medium">{deleteTarget.fileName}</span> será removida permanentemente. Esta ação não pode ser desfeita.
+                </p>
+              </div>
+            </div>
+
+            {deleteMutation.isError && (
+              <p className="text-xs text-danger">
+                {(deleteMutation.error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Erro ao excluir.'}
+              </p>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleteMutation.isPending}
+                className="flex-1 text-sm px-3 py-2 rounded-lg border border-border text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleteMutation.isPending}
+                className="flex-1 text-sm px-3 py-2 rounded-lg bg-danger text-white font-medium hover:bg-danger/90 transition-colors disabled:opacity-50"
+              >
+                {deleteMutation.isPending ? 'Excluindo...' : 'Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
