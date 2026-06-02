@@ -5,6 +5,7 @@ import { CuttingDeliveryForm } from './components/CuttingDeliveryForm'
 import { SewingDeliveryForm } from './components/SewingDeliveryForm'
 import { WhatsAppMessageReview } from './components/WhatsAppMessageReview'
 import { WhatsAppSewerReview } from './components/WhatsAppSewerReview'
+import { RecommendationAccuracyHistory } from './components/RecommendationAccuracyHistory'
 import { useCreateCuttingOrder } from './hooks/useCreateCuttingOrder'
 import { useSendCuttingOrder } from './hooks/useSendCuttingOrder'
 import { useRegisterCuttingDelivery } from './hooks/useRegisterCuttingDelivery'
@@ -15,6 +16,7 @@ import type {
   RegisterCuttingDeliveryResult,
   RegisterSewingDeliveryResult,
 } from './types'
+import type { RecommendationSnapshot } from './components/CuttingOrderForm'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -99,6 +101,8 @@ export function CuttingOrderPage() {
         onRegisterSewingDelivery={handleSewingOpen}
       />
 
+      <RecommendationAccuracyHistory />
+
       {/* Dialog: novo pedido */}
       <Dialog open={orderOpen} onOpenChange={(v) => { if (!v) handleOrderClose() }}>
         <DialogContent className="max-w-md">
@@ -110,9 +114,16 @@ export function CuttingOrderPage() {
 
           {orderStep === 'form' && (
             <CuttingOrderForm
-              onConfirm={(rollId, pieces, notes) =>
+              onConfirm={(rollId, pieces, notes, recommendation: RecommendationSnapshot | null) =>
                 createOrder.mutate(
-                  { fabricRollId: rollId, requestedPieces: pieces, notes: notes || undefined },
+                  {
+                    fabricRollId: rollId,
+                    requestedPieces: pieces,
+                    notes: notes || undefined,
+                    recommendedPieces: recommendation?.pieces ?? null,
+                    recommendationDays: recommendation?.days ?? null,
+                    recommendationBasedOnOrders: recommendation?.basedOnOrders ?? null,
+                  },
                   { onSuccess: (r) => { setOrderResult(r); setOrderStep('whatsapp') } }
                 )
               }

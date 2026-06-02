@@ -3,11 +3,25 @@ import { useFabricRolls } from '@/features/fabric/rolls/hooks/useFabricRolls'
 import type { FabricRollDto } from '@/features/fabric/rolls/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useCuttingRecommendation } from '../hooks/useCuttingRecommendation'
+import { CuttingRecommendationCard } from './CuttingRecommendationCard'
+import type { CuttingRecommendationDto } from '../types'
 
 const SIZES = ['P', 'M', 'G', 'G1', 'GG']
 
+export interface RecommendationSnapshot {
+  pieces: Record<string, number>
+  days: number
+  basedOnOrders: number
+}
+
 interface Props {
-  onConfirm: (rollId: string, pieces: Record<string, number>, notes: string) => void
+  onConfirm: (
+    rollId: string,
+    pieces: Record<string, number>,
+    notes: string,
+    recommendation: RecommendationSnapshot | null
+  ) => void
   isLoading: boolean
 }
 
@@ -19,24 +33,55 @@ export function CuttingOrderForm({ onConfirm, isLoading }: Props) {
   )
   const [notes, setNotes] = useState('')
   const [showConfirm, setShowConfirm] = useState(false)
+  const [appliedRecommendation, setAppliedRecommendation] = useState<CuttingRecommendationDto | null>(null)
 
   const selectedRoll = useMemo(
     () => rolls.find((r) => r.id === selectedRollId) ?? null,
     [rolls, selectedRollId]
   )
 
+  const { data: recommendation, isLoading: isLoadingRec } = useCuttingRecommendation(
+    selectedRollId || null
+  )
+
   const totalPieces = Object.values(pieces).reduce((a, b) => a + b, 0)
   const hasAnyPiece = totalPieces > 0
+
+  function handleRollChange(rollId: string) {
+    setSelectedRollId(rollId)
+    setAppliedRecommendation(null)
+    setPieces(Object.fromEntries(SIZES.map((s) => [s, 0])))
+  }
 
   function handlePieceChange(size: string, value: string) {
     const num = Math.max(0, parseInt(value) || 0)
     setPieces((prev) => ({ ...prev, [size]: num }))
   }
 
+  function handleApplyRecommendation(recPieces: Record<string, number>) {
+    const merged = Object.fromEntries(SIZES.map((s) => [s, recPieces[s] ?? 0]))
+    setPieces(merged)
+    if (recommendation) setAppliedRecommendation(recommendation)
+  }
+
   function handleSubmit() {
     if (!selectedRollId || !hasAnyPiece) return
     setShowConfirm(true)
   }
+
+  const recommendationSnapshot: RecommendationSnapshot | null = appliedRecommendation
+    ? {
+        pieces: appliedRecommendation.recommendedPieces,
+        days: appliedRecommendation.daysUsed,
+        basedOnOrders: appliedRecommendation.basedOnOrders,
+      }
+    : recommendation && hasAnyPiece
+    ? {
+        pieces: recommendation.recommendedPieces,
+        days: recommendation.daysUsed,
+        basedOnOrders: recommendation.basedOnOrders,
+      }
+    : null
 
   if (showConfirm && selectedRoll) {
     return (
@@ -46,8 +91,9 @@ export function CuttingOrderForm({ onConfirm, isLoading }: Props) {
         totalPieces={totalPieces}
         notes={notes}
         isLoading={isLoading}
+        recommendation={recommendationSnapshot}
         onBack={() => setShowConfirm(false)}
-        onConfirm={() => onConfirm(selectedRollId, pieces, notes)}
+        onConfirm={() => onConfirm(selectedRollId, pieces, notes, recommendationSnapshot)}
       />
     )
   }
@@ -65,7 +111,7 @@ export function CuttingOrderForm({ onConfirm, isLoading }: Props) {
         ) : (
           <select
             value={selectedRollId}
-            onChange={(e) => setSelectedRollId(e.target.value)}
+            onChange={(e) => handleRollChange(e.target.value)}
             className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
           >
             <option value="">Selecione...</option>
@@ -77,6 +123,14 @@ export function CuttingOrderForm({ onConfirm, isLoading }: Props) {
           </select>
         )}
       </div>
+
+      {selectedRollId && (
+        <CuttingRecommendationCard
+          recommendation={recommendation}
+          isLoading={isLoadingRec}
+          onApply={handleApplyRecommendation}
+        />
+      )}
 
       <div>
         <label className="block text-sm font-medium text-foreground mb-2">
@@ -133,11 +187,12 @@ interface ConfirmationProps {
   totalPieces: number
   notes: string
   isLoading: boolean
+  recommendation: RecommendationSnapshot | null
   onBack: () => void
   onConfirm: () => void
 }
 
-function ConfirmationStep({ roll, pieces, totalPieces, notes, isLoading, onBack, onConfirm }: ConfirmationProps) {
+function ConfirmationStep({ roll, pieces, totalPieces, notes, isLoading, recommendation, onBack, onConfirm }: ConfirmationProps) {
   const activePieces = Object.entries(pieces).filter(([, qty]) => qty > 0)
 
   return (
@@ -162,6 +217,15 @@ function ConfirmationStep({ roll, pieces, totalPieces, notes, isLoading, onBack,
           </div>
           <p className="text-sm text-muted-foreground mt-1">Total: <span className="font-semibold text-foreground">{totalPieces} peças</span></p>
         </div>
+
+        {recommendation && (
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Recomendação registrada</p>
+            <p className="text-xs text-muted-foreground">
+              Baseado em {recommendation.basedOnOrders} pedido{recommendation.basedOnOrders !== 1 ? 's' : ''} nos últimos {recommendation.days} dias
+            </p>
+          </div>
+        )}
 
         {notes && (
           <div>

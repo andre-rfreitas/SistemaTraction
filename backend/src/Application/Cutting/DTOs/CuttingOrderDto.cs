@@ -1,5 +1,27 @@
 namespace SistemaTraction.Application.Cutting.DTOs;
 
+public record CuttingRecommendationDto(
+    string ColorName,
+    int DaysUsed,
+    int BasedOnOrders,
+    Dictionary<string, int> RecommendedPieces,
+    Dictionary<string, int> DemandBySize,
+    Dictionary<string, int> CurrentStockBySize,
+    bool HasSufficientHistory
+);
+
+public record CuttingRecommendationHistoryItemDto(
+    Guid CuttingOrderId,
+    int OrderNumber,
+    string FabricColorName,
+    DateTime CreatedAt,
+    int DaysUsed,
+    int BasedOnOrders,
+    Dictionary<string, int> RecommendedPieces,
+    Dictionary<string, int> RequestedPieces,
+    Dictionary<string, int>? ActualDeliveredPieces
+);
+
 public record CuttingOrderDto(
     Guid Id,
     int OrderNumber,

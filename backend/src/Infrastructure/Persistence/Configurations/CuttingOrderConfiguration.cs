@@ -16,6 +16,9 @@ public class CuttingOrderConfiguration : IEntityTypeConfiguration<CuttingOrder>
         builder.Property(o => o.RequestedPiecesJson).IsRequired().HasColumnType("nvarchar(max)");
         builder.Property(o => o.Status).HasConversion<string>().IsRequired();
         builder.Property(o => o.Notes).HasMaxLength(500);
+        builder.Property(o => o.RecommendedPiecesJson).HasColumnType("nvarchar(max)");
+        builder.Property(o => o.RecommendationDays);
+        builder.Property(o => o.RecommendationBasedOnOrders);
 
         builder.HasIndex(o => o.OrderNumber).IsUnique();
 

@@ -5,6 +5,8 @@ using SistemaTraction.Application.Cutting.Commands.RegisterCuttingDelivery;
 using SistemaTraction.Application.Cutting.Commands.SendCuttingOrder;
 using SistemaTraction.Application.Cutting.Queries.GetCuttingOrderById;
 using SistemaTraction.Application.Cutting.Queries.GetCuttingOrders;
+using SistemaTraction.Application.Cutting.Queries.GetCuttingRecommendation;
+using SistemaTraction.Application.Cutting.Queries.GetCuttingRecommendationHistory;
 using SistemaTraction.Application.Sewing.Commands.RegisterSewingDelivery;
 using SistemaTraction.Domain.Common;
 
@@ -14,6 +16,29 @@ namespace SistemaTraction.API.Controllers;
 [Route("api/cutting-orders")]
 public class CuttingOrdersController(IMediator mediator) : ControllerBase
 {
+    // GET api/cutting-orders/recommendation?fabricRollId={id}&daysBack={n}
+    [HttpGet("recommendation")]
+    public async Task<IActionResult> GetRecommendation(
+        [FromQuery] Guid fabricRollId,
+        [FromQuery] int? daysBack,
+        CancellationToken ct)
+    {
+        try
+        {
+            var result = await mediator.Send(new GetCuttingRecommendationQuery(fabricRollId, daysBack), ct);
+            return Ok(result);
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    // GET api/cutting-orders/recommendation-history?take=10
+    [HttpGet("recommendation-history")]
+    public async Task<IActionResult> GetRecommendationHistory([FromQuery] int take = 10, CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new GetCuttingRecommendationHistoryQuery(take), ct);
+        return Ok(result);
+    }
+
     // GET api/cutting-orders?status=Draft
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] string? status, CancellationToken ct)
@@ -37,7 +62,13 @@ public class CuttingOrdersController(IMediator mediator) : ControllerBase
         try
         {
             var result = await mediator.Send(
-                new CreateCuttingOrderCommand(request.FabricRollId, request.RequestedPieces, request.Notes), ct);
+                new CreateCuttingOrderCommand(
+                    request.FabricRollId,
+                    request.RequestedPieces,
+                    request.Notes,
+                    request.RecommendedPieces,
+                    request.RecommendationDays,
+                    request.RecommendationBasedOnOrders), ct);
             return CreatedAtAction(nameof(GetById), new { id = result.CuttingOrderId }, result);
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
@@ -84,7 +115,10 @@ public class CuttingOrdersController(IMediator mediator) : ControllerBase
 public record CreateCuttingOrderRequest(
     Guid FabricRollId,
     Dictionary<string, int> RequestedPieces,
-    string? Notes
+    string? Notes,
+    Dictionary<string, int>? RecommendedPieces = null,
+    int? RecommendationDays = null,
+    int? RecommendationBasedOnOrders = null
 );
 
 public record RegisterDeliveryRequest(Dictionary<string, int> DeliveredPieces);

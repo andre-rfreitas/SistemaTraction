@@ -27,6 +27,10 @@ public class CreateCuttingOrderCommandHandler(IApplicationDbContext context)
             : 1;
 
         var order = CuttingOrder.Create(orderNumber, request.FabricRollId, request.RequestedPieces, request.Notes);
+
+        if (request.RecommendedPieces is not null)
+            order.SetRecommendationSnapshot(request.RecommendedPieces, request.RecommendationDays, request.RecommendationBasedOnOrders);
+
         context.CuttingOrders.Add(order);
         await context.SaveChangesAsync(cancellationToken);
 

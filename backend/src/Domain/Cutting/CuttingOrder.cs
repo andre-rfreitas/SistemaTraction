@@ -13,6 +13,10 @@ public class CuttingOrder : BaseEntity
     public DateTime? SentAt { get; private set; }
     public string? Notes { get; private set; }
 
+    public string? RecommendedPiecesJson { get; private set; }
+    public int? RecommendationDays { get; private set; }
+    public int? RecommendationBasedOnOrders { get; private set; }
+
     public FabricRoll? FabricRoll { get; private set; }
 
     private CuttingOrder() { }
@@ -35,8 +39,23 @@ public class CuttingOrder : BaseEntity
         };
     }
 
+    public void SetRecommendationSnapshot(Dictionary<string, int>? recommendedPieces, int? days, int? basedOnOrders)
+    {
+        RecommendedPiecesJson = recommendedPieces is not null
+            ? JsonSerializer.Serialize(recommendedPieces)
+            : null;
+        RecommendationDays = days;
+        RecommendationBasedOnOrders = basedOnOrders;
+        TouchUpdatedAt();
+    }
+
     public Dictionary<string, int> GetRequestedPieces()
         => JsonSerializer.Deserialize<Dictionary<string, int>>(RequestedPiecesJson) ?? [];
+
+    public Dictionary<string, int>? GetRecommendedPieces()
+        => RecommendedPiecesJson is not null
+            ? JsonSerializer.Deserialize<Dictionary<string, int>>(RecommendedPiecesJson)
+            : null;
 
     public int GetTotalPieces()
         => GetRequestedPieces().Values.Sum();

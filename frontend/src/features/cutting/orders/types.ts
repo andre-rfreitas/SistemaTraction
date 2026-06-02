@@ -1,3 +1,25 @@
+export interface CuttingRecommendationDto {
+  colorName: string
+  daysUsed: number
+  basedOnOrders: number
+  recommendedPieces: Record<string, number>
+  demandBySize: Record<string, number>
+  currentStockBySize: Record<string, number>
+  hasSufficientHistory: boolean
+}
+
+export interface CuttingRecommendationHistoryItemDto {
+  cuttingOrderId: string
+  orderNumber: number
+  fabricColorName: string
+  createdAt: string
+  daysUsed: number
+  basedOnOrders: number
+  recommendedPieces: Record<string, number>
+  requestedPieces: Record<string, number>
+  actualDeliveredPieces: Record<string, number> | null
+}
+
 export interface CuttingOrderDto {
   id: string
   orderNumber: number
