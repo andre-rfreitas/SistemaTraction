@@ -77,7 +77,7 @@ export function FabricTypeList({ onEdit }: Props) {
                     style={{ backgroundColor: color.hexCode }}
                   />
                 )}
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="neutral" className="text-xs">
                   {color.name}
                 </Badge>
                 <button
