@@ -4,6 +4,7 @@ import { DtfStockDetail } from './components/DtfStockDetail'
 import { RegisterMovementForm } from './components/RegisterMovementForm'
 import { useRegisterDtfMovement } from './hooks/useRegisterDtfMovement'
 import type { DtfStockItemDto, DtfMovementType } from './types'
+import { PageHeader } from '@/components/ui/page-header'
 import {
   Dialog,
   DialogContent,
@@ -25,12 +26,10 @@ export function DtfStockPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-neutral-900">Estoque de DTF</h2>
-        <p className="text-sm text-neutral-500">
-          Posição atual de folhas por modelo. Registre entradas, saídas e ajustes.
-        </p>
-      </div>
+      <PageHeader
+        title="Estoque de DTF"
+        description="Posição atual de folhas por modelo. Registre entradas, saídas e ajustes."
+      />
 
       <DtfStockList onSelect={setSelected} />
 
@@ -39,7 +38,7 @@ export function DtfStockPage() {
           <DialogHeader>
             <DialogTitle>
               {selected?.modelName}{' '}
-              <span className="text-neutral-400 font-normal text-base">
+              <span className="text-muted-foreground font-normal text-base">
                 — {selected?.sheetLabel}
               </span>
             </DialogTitle>
@@ -47,7 +46,7 @@ export function DtfStockPage() {
 
           <div className="space-y-5">
             <div>
-              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                 Registrar movimento
               </p>
               <RegisterMovementForm
@@ -66,14 +65,14 @@ export function DtfStockPage() {
                 }}
               />
               {register.isError && (
-                <p className="text-sm text-red-500 mt-2">
+                <p className="text-sm text-danger mt-2">
                   {(register.error as Error).message}
                 </p>
               )}
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                 Últimas movimentações
               </p>
               <DtfStockDetail dtfModelId={selected?.dtfModelId ?? ''} />

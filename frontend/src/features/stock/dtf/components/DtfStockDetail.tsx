@@ -9,11 +9,11 @@ export function DtfStockDetail({ dtfModelId }: Props) {
   const { data, isLoading } = useDtfStockDetail(dtfModelId)
 
   if (isLoading)
-    return <p className="text-sm text-neutral-500">Carregando histórico...</p>
+    return <p className="text-sm text-muted-foreground">Carregando histórico...</p>
 
   if (!data || data.movements.length === 0)
     return (
-      <p className="text-sm text-neutral-400 italic">
+      <p className="text-sm text-muted-foreground italic">
         Nenhuma movimentação registrada ainda.
       </p>
     )
@@ -34,7 +34,7 @@ export function DtfStockDetail({ dtfModelId }: Props) {
         return (
           <div
             key={m.id}
-            className="flex items-center justify-between py-1.5 border-b border-neutral-100 last:border-0 text-sm"
+            className="flex items-center justify-between py-1.5 border-b border-border last:border-0 text-sm"
           >
             <div className="flex items-center gap-3">
               <span className={`font-medium w-14 ${cls}`}>{label}</span>
@@ -42,12 +42,12 @@ export function DtfStockDetail({ dtfModelId }: Props) {
                 {sign}{m.delta}
               </span>
               {m.reason && (
-                <span className="text-neutral-500 truncate max-w-[160px]">
+                <span className="text-muted-foreground truncate max-w-[160px]">
                   {m.reason}
                 </span>
               )}
             </div>
-            <span className="text-neutral-400 shrink-0">{date}</span>
+            <span className="text-muted-foreground shrink-0">{date}</span>
           </div>
         )
       })}

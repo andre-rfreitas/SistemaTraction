@@ -41,14 +41,14 @@ export function RegisterMovementForm({ onSubmit, isLoading }: Props) {
         <select
           id="type"
           {...register('type')}
-          className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
         >
           <option value={1}>Entrada — recebimento de folhas</option>
           <option value={2}>Saída — folhas usadas em produção</option>
           <option value={3}>Ajuste — correção de inventário</option>
         </select>
         {errors.type && (
-          <p className="text-sm text-red-500">{errors.type.message}</p>
+          <p className="text-sm text-danger">{errors.type.message}</p>
         )}
       </div>
 
@@ -64,7 +64,7 @@ export function RegisterMovementForm({ onSubmit, isLoading }: Props) {
           {...register('quantity')}
         />
         {errors.quantity && (
-          <p className="text-sm text-red-500">{errors.quantity.message}</p>
+          <p className="text-sm text-danger">{errors.quantity.message}</p>
         )}
       </div>
 
@@ -72,7 +72,7 @@ export function RegisterMovementForm({ onSubmit, isLoading }: Props) {
         <Label htmlFor="reason">Motivo (opcional)</Label>
         <Input id="reason" {...register('reason')} placeholder="ex: Compra #42, Produção lote 7" />
         {errors.reason && (
-          <p className="text-sm text-red-500">{errors.reason.message}</p>
+          <p className="text-sm text-danger">{errors.reason.message}</p>
         )}
       </div>
 

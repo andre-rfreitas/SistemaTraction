@@ -28,8 +28,8 @@ export const MOVEMENT_TYPE_LABEL: Record<DtfMovementType, string> = {
 }
 
 export const MOVEMENT_TYPE_CLASS: Record<DtfMovementType, string> = {
-  1: 'text-green-700',
-  2: 'text-red-600',
-  3: 'text-blue-600',
+  1: 'text-success',
+  2: 'text-danger',
+  3: 'text-info',
 }
 

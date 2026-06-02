@@ -2,6 +2,9 @@ import { useDtfStock } from '../hooks/useDtfStock'
 import type { DtfStockItemDto } from '../types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Boxes } from 'lucide-react'
 import { useDtfModels } from '@/features/settings/dtf/hooks/useDtfModels'
 import { useAppConfigs } from '@/features/settings/config/hooks/useAppConfigs'
 
@@ -19,10 +22,22 @@ export function DtfStockList({ onSelect }: Props) {
   )
 
   if (loadingStock || loadingModels)
-    return <p className="text-neutral-500 text-sm">Carregando estoque...</p>
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+      </div>
+    )
 
   if (!allModels?.length)
-    return <p className="text-neutral-500 text-sm">Nenhum modelo DTF cadastrado.</p>
+    return (
+      <EmptyState
+        icon={Boxes}
+        title="Nenhum modelo DTF cadastrado"
+        description="Cadastre modelos DTF em Configurações para acompanhar o estoque."
+      />
+    )
 
   const stockMap = new Map(stockItems?.map((s) => [s.dtfModelId, s]))
 
@@ -37,17 +52,17 @@ export function DtfStockList({ onSelect }: Props) {
         return (
           <div
             key={model.id}
-            className="border rounded-lg p-4 bg-white flex items-center justify-between gap-4"
+            className="border border-border rounded-lg p-4 bg-card flex items-center justify-between gap-4"
           >
             <div className="flex items-center gap-3 min-w-0">
               <Badge variant="outline" className="shrink-0 font-mono text-xs">
                 {model.sheetLabel}
               </Badge>
               <div className="min-w-0">
-                <h3 className="font-semibold text-neutral-900 truncate">
+                <h3 className="font-semibold text-foreground truncate">
                   {model.name}
                 </h3>
-                <p className="text-sm text-neutral-500">
+                <p className="text-sm text-muted-foreground">
                   {model.stampsPerSheet} estampas/folha
                 </p>
               </div>
@@ -55,12 +70,12 @@ export function DtfStockList({ onSelect }: Props) {
 
             <div className="flex items-center gap-3 shrink-0">
               <div className="text-right">
-                <p className={`text-2xl font-bold tabular-nums ${isLow ? 'text-red-600' : 'text-neutral-900'}`}>
+                <p className={`text-2xl font-bold tabular-nums ${isLow ? 'text-danger' : 'text-foreground'}`}>
                   {qty}
                 </p>
-                <p className="text-xs text-neutral-400">folhas</p>
+                <p className="text-xs text-muted-foreground">folhas</p>
                 {isLow && hasStock && (
-                  <p className="text-xs text-red-500 font-medium">⚠ estoque baixo</p>
+                  <p className="text-xs text-warning font-medium">⚠ estoque baixo</p>
                 )}
               </div>
               <Button
