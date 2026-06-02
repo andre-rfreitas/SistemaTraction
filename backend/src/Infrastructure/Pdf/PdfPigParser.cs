@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.RegularExpressions;
 using SistemaTraction.Application.Common.Interfaces;
 using UglyToad.PdfPig;
@@ -6,18 +7,22 @@ namespace SistemaTraction.Infrastructure.Pdf;
 
 /// <summary>
 /// Parser PDF com duas estratégias:
-/// 1) Varredura de texto completo — melhor para PDFs gerados por HTML (UpSeller, etc.)
+/// 1) Varredura completa de texto — melhor para HTML-to-PDF (UpSeller, etc.)
 /// 2) Posicionamento de palavras — fallback para ERPs genéricos
 /// </summary>
 public class PdfPigParser : IPdfParser
 {
-    // SKU: ao menos 2 partes separadas por hífen, tudo maiúsculo/dígito
-    // Captura mesmo no meio de uma linha, com lookbehind/lookahead para evitar falsos positivos
-    private static readonly Regex SkuInLineRegex = new(
+    // Padrão SKU: ao menos 2 partes maiúsculas/dígitos separadas por hífen
+    // Lookbehind/lookahead garantem que não é parte de um token maior
+    private static readonly Regex SkuRegex = new(
         @"(?<![A-Z0-9\-])[A-Z][A-Z0-9]{0,7}(?:-[A-Z0-9]{1,8}){2,4}(?![A-Z0-9\-])",
         RegexOptions.Compiled);
 
-    // Tamanhos usados na estratégia legada
+    // Número imediatamente após o SKU (mesma linha ou próxima, após espaços/newlines)
+    private static readonly Regex QtyAfterSku = new(
+        @"^[\s\r\n]*(\d{1,4})\b",
+        RegexOptions.Compiled);
+
     private static readonly HashSet<string> KnownSizes =
         new(StringComparer.OrdinalIgnoreCase) { "P", "M", "G", "GG", "G1", "XG", "XGG", "PP" };
 
@@ -27,19 +32,19 @@ public class PdfPigParser : IPdfParser
         {
             using var doc = PdfDocument.Open(pdfStream);
 
-            // Estratégia 1: varredura de page.Text (UpSeller e PDFs de HTML)
-            var items = ParseByTextScan(doc);
+            // Estratégia 1: varredura de texto completo (UpSeller e PDFs de HTML)
+            var items = ParseByFullTextScan(doc);
             if (items.Count > 0)
                 return new ParseResult(true, items, null);
 
-            // Estratégia 2: posicionamento de palavras (ERPs genéricos)
+            // Estratégia 2: posicionamento de palavras (fallback)
             var fallback = ParseByWordPositions(doc);
             if (fallback.Count > 0)
                 return new ParseResult(true, fallback, null);
 
             return new ParseResult(false, [],
-                "Nenhum item encontrado. Verifique se o PDF é uma lista de separação válida e " +
-                "se os Códigos SKU estão configurados na aba 'Config. SKU'.");
+                "Nenhum item encontrado. Verifique se o PDF é uma lista de separação válida " +
+                "e se os Códigos SKU estão configurados na aba 'Config. SKU'.");
         }
         catch (Exception ex)
         {
@@ -47,82 +52,62 @@ public class PdfPigParser : IPdfParser
         }
     }
 
-    // ── Estratégia 1: varredura de texto ─────────────────────────────────────────
-    // Extrai o texto completo de cada página como string, normaliza hífens e
-    // varre linha a linha procurando padrão de SKU.
-    // A quantidade pode estar na mesma linha (após o SKU) ou na linha seguinte.
-    // Default: 1 por linha (padrão UpSeller onde cada pedido = 1 unidade).
+    // ── Estratégia 1: varredura de ALL matches no texto completo ──────────────────
+    // Extrai todo o texto de todas as páginas como uma única string,
+    // localiza TODAS as ocorrências de padrão SKU e tenta encontrar a
+    // quantidade logo após cada uma (mesma linha ou linha seguinte).
+    // Padrão UpSeller: cada row = 1 unidade, mesmo SKU repetido N vezes = qty N.
 
-    private static List<ParsedItem> ParseByTextScan(PdfDocument doc)
+    private static List<ParsedItem> ParseByFullTextScan(PdfDocument doc)
     {
-        var allLines = new List<string>();
-
+        var sb = new StringBuilder();
         foreach (var page in doc.GetPages())
-        {
-            var text = NormalizeHyphens(page.Text ?? "");
-            foreach (var raw in text.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
-            {
-                var line = raw.Trim();
-                if (line.Length >= 3) allLines.Add(line);
-            }
-        }
+            sb.Append(NormalizeHyphens(page.Text ?? "")).Append('\n');
 
+        var fullText = sb.ToString();
         var accumulated = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        for (var i = 0; i < allLines.Count; i++)
+        foreach (Match skuMatch in SkuRegex.Matches(fullText))
         {
-            var line = allLines[i];
-            var match = SkuInLineRegex.Match(line);
-            if (!match.Success) continue;
-
-            var sku = match.Value;
-            var qty = 0;
-
-            // Quantidade após o SKU na mesma linha (ex: "REG-REDR-REDGG 1")
-            var rest = line[(match.Index + match.Length)..].Trim();
-            if (rest.Length > 0 && rest.Length <= 5 &&
-                int.TryParse(rest, out var q1) && q1 > 0 && q1 < 9999)
-            {
-                qty = q1;
-            }
-
-            // Quantidade na próxima linha (ex: "REG-REDR-RED-G" + "1")
-            if (qty == 0 && i + 1 < allLines.Count)
-            {
-                var next = allLines[i + 1];
-                if (next.Length <= 4 &&
-                    int.TryParse(next, out var q2) && q2 > 0 && q2 < 9999)
-                {
-                    qty = q2;
-                    i++; // consome a linha de quantidade
-                }
-            }
-
-            if (qty == 0) qty = 1; // UpSeller: cada linha = 1 unidade
-
+            var sku = skuMatch.Value;
+            var qty = ExtractQtyAfter(fullText, skuMatch.Index + skuMatch.Length);
             accumulated[sku] = accumulated.GetValueOrDefault(sku) + qty;
         }
 
         return accumulated
-            .OrderBy(kv => kv.Key)
             .Select((kv, idx) => new ParsedItem(kv.Key, "", "", kv.Value, idx))
             .ToList();
     }
 
+    // Encontra o primeiro número nos ~20 chars seguintes ao SKU (skip whitespace/newlines).
+    // Se não encontrar, retorna 1 (padrão UpSeller: cada linha = 1 unidade).
+    private static int ExtractQtyAfter(string text, int startIndex)
+    {
+        var end = Math.Min(startIndex + 20, text.Length);
+        var segment = text[startIndex..end];
+
+        var m = QtyAfterSku.Match(segment);
+        if (m.Success && int.TryParse(m.Groups[1].Value, out var q) && q > 0 && q < 9_999)
+            return q;
+
+        return 1;
+    }
+
     // ── Estratégia 2: posicionamento de palavras ──────────────────────────────────
-    // Para ERPs que listam Cor / Tamanho / Quantidade em colunas separadas.
+    // Para ERPs que expõem Cor / Tamanho / Quantidade em colunas explícitas.
 
     private static List<ParsedItem> ParseByWordPositions(PdfDocument doc)
     {
         const double rowTolerance = 4.0;
-
         var allWords = new List<(double Y, double X, string Text)>();
+
         foreach (var page in doc.GetPages())
         {
             var height = page.Height;
             foreach (var word in page.GetWords())
-                allWords.Add((height - word.BoundingBox.Bottom, word.BoundingBox.Left,
-                    NormalizeHyphens(word.Text)));
+                allWords.Add((height - word.BoundingBox.Bottom,
+                              word.BoundingBox.Left,
+                              NormalizeHyphens(word.Text)));
         }
 
         var rows = allWords
@@ -143,7 +128,7 @@ public class PdfPigParser : IPdfParser
             var qty = 0;
             for (var j = sizeIdx + 1; j < row.Count; j++)
             {
-                if (int.TryParse(row[j], out var q) && q > 0 && q < 9999) { qty = q; break; }
+                if (int.TryParse(row[j], out var q) && q > 0 && q < 9_999) { qty = q; break; }
             }
             if (qty == 0) continue;
 
@@ -160,7 +145,6 @@ public class PdfPigParser : IPdfParser
 
     // ── Utilitários ───────────────────────────────────────────────────────────────
 
-    /// Normaliza variantes de hífen para ASCII hífen padrão.
     private static string NormalizeHyphens(string text) =>
         Regex.Replace(text, @"[­‑‒–—−﹣－]", "-");
 
