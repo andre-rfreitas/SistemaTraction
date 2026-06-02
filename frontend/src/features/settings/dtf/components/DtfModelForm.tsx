@@ -41,7 +41,7 @@ export function DtfModelForm({ defaultValues, onSubmit, isLoading }: Props) {
           placeholder="ex: Angel, Flying Souls..."
         />
         {errors.name && (
-          <p className="text-sm text-red-500">{errors.name.message}</p>
+          <p className="text-sm text-danger">{errors.name.message}</p>
         )}
       </div>
 
@@ -53,7 +53,7 @@ export function DtfModelForm({ defaultValues, onSubmit, isLoading }: Props) {
           placeholder="ex: Folha 1, Folha 2..."
         />
         {errors.sheetLabel && (
-          <p className="text-sm text-red-500">{errors.sheetLabel.message}</p>
+          <p className="text-sm text-danger">{errors.sheetLabel.message}</p>
         )}
       </div>
 
@@ -67,7 +67,7 @@ export function DtfModelForm({ defaultValues, onSubmit, isLoading }: Props) {
             {...register('stampsPerSheet')}
           />
           {errors.stampsPerSheet && (
-            <p className="text-sm text-red-500">{errors.stampsPerSheet.message}</p>
+            <p className="text-sm text-danger">{errors.stampsPerSheet.message}</p>
           )}
         </div>
 
@@ -81,7 +81,7 @@ export function DtfModelForm({ defaultValues, onSubmit, isLoading }: Props) {
             {...register('sheetCost')}
           />
           {errors.sheetCost && (
-            <p className="text-sm text-red-500">{errors.sheetCost.message}</p>
+            <p className="text-sm text-danger">{errors.sheetCost.message}</p>
           )}
         </div>
       </div>

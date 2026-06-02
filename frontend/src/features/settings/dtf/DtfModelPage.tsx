@@ -5,6 +5,7 @@ import { useCreateDtfModel } from './hooks/useCreateDtfModel'
 import { useUpdateDtfModel } from './hooks/useUpdateDtfModel'
 import type { DtfModelDto } from './types'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/page-header'
 import {
   Dialog,
   DialogContent,
@@ -30,22 +31,20 @@ export function DtfModelPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-bold text-neutral-900">Modelos de DTF</h2>
-          <p className="text-sm text-neutral-500">
-            Gerencie os modelos de estampa DTF, folhas e custo por folha.
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setEditing(null)
-            setOpen(true)
-          }}
-        >
-          + Novo modelo
-        </Button>
-      </div>
+      <PageHeader
+        title="Modelos de DTF"
+        description="Gerencie os modelos de estampa DTF, folhas e custo por folha."
+        actions={
+          <Button
+            onClick={() => {
+              setEditing(null)
+              setOpen(true)
+            }}
+          >
+            + Novo modelo
+          </Button>
+        }
+      />
 
       <DtfModelList onEdit={handleEdit} />
 
