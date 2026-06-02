@@ -5,6 +5,7 @@ import { useCreateFabricType } from './hooks/useCreateFabricType'
 import { useUpdateFabricType } from './hooks/useUpdateFabricType'
 import type { FabricTypeDto } from './types'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/page-header'
 import {
   Dialog,
   DialogContent,
@@ -30,15 +31,11 @@ export function FabricTypePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-bold text-neutral-900">Tipos de Tecido</h2>
-          <p className="text-sm text-neutral-500">
-            Gerencie tipos, variações e cores dos tecidos usados na produção.
-          </p>
-        </div>
-        <Button onClick={() => { setEditing(null); setOpen(true) }}>+ Novo tipo</Button>
-      </div>
+      <PageHeader
+        title="Tipos de Tecido"
+        description="Gerencie tipos, variações e cores dos tecidos usados na produção."
+        actions={<Button onClick={() => { setEditing(null); setOpen(true) }}>+ Novo tipo</Button>}
+      />
 
       <FabricTypeList onEdit={handleEdit} />
 

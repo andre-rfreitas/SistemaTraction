@@ -35,7 +35,7 @@ export function FabricColorForm({ defaultValues, onSubmit, isLoading }: Props) {
       <div className="space-y-1">
         <Label htmlFor="colorName">Nome da cor</Label>
         <Input id="colorName" {...register('name')} placeholder="ex: Preto" />
-        {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+        {errors.name && <p className="text-sm text-danger">{errors.name.message}</p>}
       </div>
 
       <div className="space-y-1">
@@ -69,8 +69,8 @@ export function FabricColorForm({ defaultValues, onSubmit, isLoading }: Props) {
             }}
           />
         </div>
-        <p className="text-sm text-neutral-500">Selecione a cor com o mouse ou informe o código hex manualmente.</p>
-        {errors.hexCode && <p className="text-sm text-red-500">{errors.hexCode.message}</p>}
+        <p className="text-sm text-muted-foreground">Selecione a cor com o mouse ou informe o código hex manualmente.</p>
+        {errors.hexCode && <p className="text-sm text-danger">{errors.hexCode.message}</p>}
       </div>
 
       <Button type="submit" disabled={isLoading} className="w-full">

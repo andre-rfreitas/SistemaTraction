@@ -33,26 +33,26 @@ export function FabricTypeForm({ defaultValues, onSubmit, isLoading }: Props) {
       <div className="space-y-1">
         <Label htmlFor="name">Nome do tecido</Label>
         <Input id="name" {...register('name')} placeholder="ex: Malha" />
-        {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+        {errors.name && <p className="text-sm text-danger">{errors.name.message}</p>}
       </div>
 
       <div className="space-y-1">
         <Label htmlFor="variation">Variação</Label>
         <Input id="variation" {...register('variation')} placeholder="ex: Regular, Premium" />
-        {errors.variation && <p className="text-sm text-red-500">{errors.variation.message}</p>}
+        {errors.variation && <p className="text-sm text-danger">{errors.variation.message}</p>}
       </div>
 
       <div className="space-y-1">
         <Label htmlFor="pricePerKg">Preço por kg (R$)</Label>
         <Input id="pricePerKg" type="number" step="0.01" min="0" {...register('pricePerKg')} />
-        {errors.pricePerKg && <p className="text-sm text-red-500">{errors.pricePerKg.message}</p>}
+        {errors.pricePerKg && <p className="text-sm text-danger">{errors.pricePerKg.message}</p>}
       </div>
 
       <div className="space-y-1">
         <Label htmlFor="averageKgPerRoll">Média de kg por bobina</Label>
         <Input id="averageKgPerRoll" type="number" step="0.1" min="0" {...register('averageKgPerRoll')} />
         {errors.averageKgPerRoll && (
-          <p className="text-sm text-red-500">{errors.averageKgPerRoll.message}</p>
+          <p className="text-sm text-danger">{errors.averageKgPerRoll.message}</p>
         )}
       </div>
 
