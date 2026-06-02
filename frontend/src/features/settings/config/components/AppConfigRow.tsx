@@ -36,11 +36,11 @@ export function AppConfigRow({ config }: Props) {
   }
 
   return (
-    <div className="border rounded-lg p-4 bg-white space-y-2">
+    <div className="border border-border rounded-lg p-4 bg-card space-y-2">
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-neutral-800">{label}</p>
+        <p className="text-sm font-semibold text-foreground">{label}</p>
         {config.description && (
-          <p className="text-xs text-neutral-500 mt-0.5">{config.description}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{config.description}</p>
         )}
       </div>
       <div className="flex gap-2">
@@ -58,10 +58,10 @@ export function AppConfigRow({ config }: Props) {
         </Button>
       </div>
       {upsert.isError && (
-        <p className="text-xs text-red-500">{(upsert.error as Error).message}</p>
+        <p className="text-xs text-danger">{(upsert.error as Error).message}</p>
       )}
       {upsert.isSuccess && !isDirty && (
-        <p className="text-xs text-green-600">Salvo ✓</p>
+        <p className="text-xs text-success">Salvo ✓</p>
       )}
     </div>
   )

@@ -1,20 +1,26 @@
 import { useAppConfigs } from './hooks/useAppConfigs'
 import { AppConfigRow } from './components/AppConfigRow'
+import { PageHeader } from '@/components/ui/page-header'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function AppConfigPage() {
   const { data: configs, isLoading, error } = useAppConfigs()
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-neutral-900">Configurações do sistema</h2>
-        <p className="text-sm text-neutral-500">
-          Parâmetros globais do sistema. Edite o valor e clique em Salvar.
-        </p>
-      </div>
+      <PageHeader
+        title="Configurações do sistema"
+        description="Parâmetros globais do sistema. Edite o valor e clique em Salvar."
+      />
 
-      {isLoading && <p className="text-sm text-neutral-500">Carregando...</p>}
-      {error && <p className="text-sm text-red-500">Erro ao carregar configurações.</p>}
+      {isLoading && (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full rounded-lg" />
+          ))}
+        </div>
+      )}
+      {error && <p className="text-sm text-danger">Erro ao carregar configurações.</p>}
 
       {configs && (
         <div className="space-y-3">
