@@ -1,7 +1,9 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Separation.Commands.ConfirmSeparationList;
+using SistemaTraction.Application.Separation.Commands.DeleteSeparationList;
 using SistemaTraction.Application.Separation.Commands.DeleteSkuCode;
+using SistemaTraction.Application.Separation.Commands.RenameSeparationList;
 using SistemaTraction.Application.Separation.Commands.UpdateSeparationItems;
 using SistemaTraction.Application.Separation.Commands.UploadSeparationList;
 using SistemaTraction.Application.Separation.Commands.UpsertSkuCode;
@@ -106,6 +108,30 @@ public class SeparationListsController(IMediator mediator) : ControllerBase
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
+    // DELETE api/separation-lists/{id}
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await mediator.Send(new DeleteSeparationListCommand(id), ct);
+            return NoContent();
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    // PATCH api/separation-lists/{id}/rename
+    [HttpPatch("{id:guid}/rename")]
+    public async Task<IActionResult> Rename(Guid id, [FromBody] RenameListRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var result = await mediator.Send(new RenameSeparationListCommand(id, request.FileName), ct);
+            return Ok(result);
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
     // POST api/separation-lists/{id}/confirm
     [HttpPost("{id:guid}/confirm")]
     public async Task<IActionResult> Confirm(Guid id, CancellationToken ct)
@@ -122,3 +148,5 @@ public class SeparationListsController(IMediator mediator) : ControllerBase
 public record UpdateItemsRequest(List<UpdateItemDto> Items);
 
 public record UpsertSkuCodeRequest(Guid? Id, string Code, string Value, string Category, Guid? DtfModelId);
+
+public record RenameListRequest(string FileName);

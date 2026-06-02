@@ -44,5 +44,17 @@ public class SeparationList : BaseEntity
         TouchUpdatedAt();
     }
 
+    public void Rename(string newFileName)
+    {
+        if (string.IsNullOrWhiteSpace(newFileName))
+            throw new DomainException("Nome do arquivo é obrigatório.");
+
+        if (Status.ToString() == "Confirmed")
+            throw new DomainException("Listas confirmadas não podem ser renomeadas.");
+
+        FileName = newFileName.Trim();
+        TouchUpdatedAt();
+    }
+
     internal void AddItem(SeparationItem item) => _items.Add(item);
 }
