@@ -1,13 +1,15 @@
 import { useState } from 'react'
+import { Inbox } from 'lucide-react'
 import type { FinancialEntryDto } from '../types'
 import { formatBRL, formatDate } from '../format'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '@/components/ui/table'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
 
 interface Props {
@@ -21,95 +23,97 @@ export function EntriesTable({ entries, onReverse, isReversing }: Props) {
 
   if (entries.length === 0) {
     return (
-      <div className="rounded-lg border border-neutral-200 bg-white p-6 text-sm text-neutral-500">
-        Nenhum lançamento encontrado para os filtros selecionados.
-      </div>
+      <EmptyState
+        icon={Inbox}
+        title="Nenhum lançamento"
+        description="Nenhum lançamento encontrado para os filtros selecionados."
+      />
     )
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-neutral-50 text-neutral-500">
-          <tr className="text-left">
-            <th className="px-4 py-2 font-medium">Data</th>
-            <th className="px-4 py-2 font-medium">Categoria</th>
-            <th className="px-4 py-2 font-medium">Descrição</th>
-            <th className="px-4 py-2 font-medium text-right">Valor</th>
-            <th className="px-4 py-2 font-medium text-right">Ação</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-neutral-100">
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Data</TableHead>
+            <TableHead>Categoria</TableHead>
+            <TableHead>Descrição</TableHead>
+            <TableHead className="text-right">Valor</TableHead>
+            <TableHead className="text-right">Ação</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {entries.map((e) => (
-            <tr key={e.id} className={e.isReversal ? 'bg-neutral-50/60' : ''}>
-              <td className="px-4 py-2 text-neutral-600 whitespace-nowrap">{formatDate(e.entryDate)}</td>
-              <td className="px-4 py-2">
-                <Badge variant={e.type === 'Income' ? 'default' : 'secondary'}>{e.category}</Badge>
-              </td>
-              <td className="px-4 py-2 text-neutral-700">
+            <TableRow key={e.id} className={e.isReversal ? 'bg-muted/40' : undefined}>
+              <TableCell className="whitespace-nowrap text-muted-foreground">
+                {formatDate(e.entryDate)}
+              </TableCell>
+              <TableCell>
+                <Badge variant={e.type === 'Income' ? 'success' : 'neutral'}>{e.category}</Badge>
+              </TableCell>
+              <TableCell className="text-foreground">
                 {e.description}
-                {e.isReversal && (
-                  <span className="ml-2 text-xs text-neutral-400">(estorno)</span>
-                )}
+                {e.isReversal && <span className="ml-2 text-xs text-muted-foreground">(estorno)</span>}
                 {e.isReversed && !e.isReversal && (
-                  <span className="ml-2 text-xs text-red-400">(estornado)</span>
+                  <span className="ml-2 text-xs text-danger">(estornado)</span>
                 )}
-              </td>
-              <td
-                className={`px-4 py-2 text-right font-medium whitespace-nowrap ${
+              </TableCell>
+              <TableCell
+                className={`whitespace-nowrap text-right font-medium tabular-nums ${
                   e.amount < 0
-                    ? 'text-neutral-400'
+                    ? 'text-muted-foreground'
                     : e.type === 'Income'
-                      ? 'text-green-700'
-                      : 'text-neutral-900'
+                      ? 'text-success'
+                      : 'text-foreground'
                 }`}
               >
                 {e.type === 'Income' ? '+' : '−'}
                 {formatBRL(Math.abs(e.amount))}
-              </td>
-              <td className="px-4 py-2 text-right">
+              </TableCell>
+              <TableCell className="text-right">
                 {!e.isReversal && !e.isReversed && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-red-600 hover:text-red-700"
+                    className="text-destructive hover:text-destructive/80"
                     onClick={() => setToReverse(e)}
                   >
                     Estornar
                   </Button>
                 )}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
 
-      <Dialog open={!!toReverse} onOpenChange={(v) => { if (!v) setToReverse(null) }}>
+      <Dialog open={toReverse !== null} onOpenChange={(o) => !o && setToReverse(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Estornar lançamento</DialogTitle>
           </DialogHeader>
-          <div className="text-sm text-neutral-600 space-y-2">
+          <div className="text-sm text-muted-foreground space-y-2">
             <p>
               Lançamentos financeiros não podem ser excluídos. O estorno cria um novo
               lançamento de valor oposto, mantendo a rastreabilidade.
             </p>
             {toReverse && (
-              <div className="rounded-md bg-neutral-50 border border-neutral-200 p-3">
-                <p className="font-medium text-neutral-900">{toReverse.description}</p>
-                <p className="text-neutral-500">
+              <div className="rounded-md bg-muted border p-3">
+                <p className="font-medium text-foreground">{toReverse.description}</p>
+                <p className="text-muted-foreground">
                   {toReverse.category} — {formatBRL(toReverse.amount)}
                 </p>
               </div>
             )}
           </div>
-          <div className="flex justify-end gap-2 mt-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setToReverse(null)}>
               Cancelar
             </Button>
             <Button
               variant="destructive"
-              disabled={isReversing}
+              isLoading={isReversing}
               onClick={() => {
                 if (toReverse) {
                   onReverse(toReverse.id)
@@ -117,11 +121,11 @@ export function EntriesTable({ entries, onReverse, isReversing }: Props) {
                 }
               }}
             >
-              {isReversing ? 'Estornando...' : 'Confirmar estorno'}
+              Confirmar estorno
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }
