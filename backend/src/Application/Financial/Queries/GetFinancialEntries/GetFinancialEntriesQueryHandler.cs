@@ -25,6 +25,14 @@ public class GetFinancialEntriesQueryHandler(IApplicationDbContext context)
             .OrderByDescending(e => e.EntryDate)
             .ToListAsync(cancellationToken);
 
+        var reversedIds = await context.FinancialEntries
+            .Where(e => e.IsReversal && e.ReferenceId != null)
+            .Select(e => e.ReferenceId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var reversedSet = reversedIds.ToHashSet();
+
         return entries.Select(e => new FinancialEntryDto(
             e.Id,
             e.Type.ToString(),
@@ -34,6 +42,8 @@ public class GetFinancialEntriesQueryHandler(IApplicationDbContext context)
             e.ReferenceId,
             e.ReferenceType,
             e.EntryDate,
+            e.IsReversal,
+            reversedSet.Contains(e.Id),
             e.CreatedAt
         )).ToList();
     }

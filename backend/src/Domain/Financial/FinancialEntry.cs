@@ -11,6 +11,7 @@ public class FinancialEntry : BaseEntity
     public Guid? ReferenceId { get; private set; }
     public string? ReferenceType { get; private set; }
     public DateTime EntryDate { get; private set; }
+    public bool IsReversal { get; private set; }
 
     private FinancialEntry() { }
 
@@ -39,6 +40,27 @@ public class FinancialEntry : BaseEntity
             ReferenceId = referenceId,
             ReferenceType = referenceType,
             EntryDate = DateTime.UtcNow
+        };
+    }
+
+    public static FinancialEntry CreateReversal(FinancialEntry original)
+    {
+        if (original is null)
+            throw new DomainException("Lançamento original é obrigatório para estorno.");
+
+        if (original.IsReversal)
+            throw new DomainException("Não é possível estornar um lançamento que já é um estorno.");
+
+        return new FinancialEntry
+        {
+            Type = original.Type,
+            Category = original.Category,
+            Amount = -original.Amount,
+            Description = $"Estorno: {original.Description}",
+            ReferenceId = original.Id,
+            ReferenceType = nameof(FinancialEntry),
+            EntryDate = DateTime.UtcNow,
+            IsReversal = true
         };
     }
 

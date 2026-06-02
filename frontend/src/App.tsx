@@ -6,8 +6,9 @@ import { DtfModelPage } from '@/features/settings/dtf/DtfModelPage'
 import { DtfStockPage } from '@/features/stock/dtf/DtfStockPage'
 import { AppConfigPage } from '@/features/settings/config/AppConfigPage'
 import { SeparationListPage } from '@/features/separation/SeparationListPage'
+import { FinancialPage } from '@/features/financial/FinancialPage'
 
-type Tab = 'fabric' | 'rolls' | 'cutting' | 'dtf-models' | 'dtf-stock' | 'separation' | 'config'
+type Tab = 'fabric' | 'rolls' | 'cutting' | 'dtf-models' | 'dtf-stock' | 'separation' | 'financial' | 'config'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'fabric',     label: 'Tecidos' },
@@ -16,6 +17,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'dtf-models', label: 'Modelos DTF' },
   { id: 'dtf-stock',  label: 'Estoque DTF' },
   { id: 'separation', label: 'Lista de Separação' },
+  { id: 'financial',  label: 'Financeiro' },
   { id: 'config',     label: 'Configurações' },
 ]
 
@@ -50,6 +52,7 @@ function App() {
       {tab === 'dtf-models' && <DtfModelPage />}
       {tab === 'dtf-stock'  && <DtfStockPage />}
       {tab === 'separation' && <SeparationListPage />}
+      {tab === 'financial'  && <FinancialPage />}
       {tab === 'config'     && <AppConfigPage />}
     </main>
   )

@@ -9,5 +9,7 @@ public record FinancialEntryDto(
     Guid? ReferenceId,
     string? ReferenceType,
     DateTime EntryDate,
+    bool IsReversal,
+    bool IsReversed,
     DateTime CreatedAt
 );

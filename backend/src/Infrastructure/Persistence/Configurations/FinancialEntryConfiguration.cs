@@ -17,8 +17,10 @@ public class FinancialEntryConfiguration : IEntityTypeConfiguration<FinancialEnt
         builder.Property(e => e.Amount).HasPrecision(18, 2).IsRequired();
         builder.Property(e => e.Description).IsRequired().HasMaxLength(500);
         builder.Property(e => e.ReferenceType).HasMaxLength(100);
+        builder.Property(e => e.IsReversal).IsRequired();
 
         builder.HasIndex(e => e.Category);
         builder.HasIndex(e => e.EntryDate);
+        builder.HasIndex(e => e.ReferenceId);
     }
 }
