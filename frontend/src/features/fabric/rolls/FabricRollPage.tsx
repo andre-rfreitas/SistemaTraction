@@ -4,6 +4,7 @@ import { FabricRollForm } from './components/FabricRollForm'
 import { useRegisterFabricRoll } from './hooks/useRegisterFabricRoll'
 import type { RegisterFabricRollResult } from './types'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/ui/page-header'
 import {
   Dialog,
   DialogContent,
@@ -23,15 +24,11 @@ export function FabricRollPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-bold text-neutral-900">Chegada de Bobina</h2>
-          <p className="text-sm text-neutral-500">
-            Registre a entrada de bobinas de tecido e acompanhe o histórico.
-          </p>
-        </div>
-        <Button onClick={() => setOpen(true)}>+ Nova bobina</Button>
-      </div>
+      <PageHeader
+        title="Chegada de Bobina"
+        description="Registre a entrada de bobinas de tecido e acompanhe o histórico."
+        actions={<Button onClick={() => setOpen(true)}>+ Nova bobina</Button>}
+      />
 
       <FabricRollList />
 
@@ -43,15 +40,15 @@ export function FabricRollPage() {
 
           {summary ? (
             <div className="space-y-4">
-              <div className="rounded-md bg-green-50 border border-green-200 p-4 text-sm space-y-2">
-                <p className="font-semibold text-green-800">Bobina registrada com sucesso!</p>
-                <div className="flex justify-between text-green-700">
+              <div className="rounded-md bg-success/10 border border-success/20 p-4 text-sm space-y-2">
+                <p className="font-semibold text-success">Bobina registrada com sucesso!</p>
+                <div className="flex justify-between text-success">
                   <span>Lançamento financeiro (Tecido):</span>
                   <span className="font-medium">
                     R$ {summary.financialEntryAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <p className="text-xs text-green-600">
+                <p className="text-xs text-success/80">
                   Calculado com base no preço/kg cadastrado no tipo de tecido (R${' '}
                   {summary.fabricTypePricePerKg.toFixed(4)}/kg), não no preço real pago.
                 </p>

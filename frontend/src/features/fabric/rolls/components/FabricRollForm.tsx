@@ -9,6 +9,8 @@ import {
 import { useFabricTypes } from '@/features/settings/fabric/hooks/useFabricTypes'
 import type { FabricTypeDto } from '@/features/settings/fabric/types'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 interface Props {
   isLoading: boolean
@@ -48,13 +50,11 @@ export function FabricRollForm({ isLoading, onSubmit }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
-          Tipo de tecido
-        </label>
+      <div className="space-y-1.5">
+        <Label>Tipo de tecido</Label>
         <select
           {...register('fabricTypeId')}
-          className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400"
+          className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
         >
           <option value="">Selecione...</option>
           {fabricTypes.map((t) => (
@@ -64,16 +64,16 @@ export function FabricRollForm({ isLoading, onSubmit }: Props) {
           ))}
         </select>
         {errors.fabricTypeId && (
-          <p className="text-xs text-red-600 mt-1">{errors.fabricTypeId.message}</p>
+          <p className="text-xs text-danger mt-1">{errors.fabricTypeId.message}</p>
         )}
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">Cor</label>
+      <div className="space-y-1.5">
+        <Label>Cor</Label>
         <select
           {...register('fabricColorId')}
           disabled={!selectedType}
-          className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400 disabled:opacity-50"
+          className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:opacity-50"
         >
           <option value="">Selecione...</option>
           {(selectedType?.colors ?? []).map((c) => (
@@ -83,14 +83,14 @@ export function FabricRollForm({ isLoading, onSubmit }: Props) {
           ))}
         </select>
         {errors.fabricColorId && (
-          <p className="text-xs text-red-600 mt-1">{errors.fabricColorId.message}</p>
+          <p className="text-xs text-danger mt-1">{errors.fabricColorId.message}</p>
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">Peso (kg)</label>
-          <input
+        <div className="space-y-1.5">
+          <Label>Peso (kg)</Label>
+          <Input
             type="number"
             step="0.001"
             min="0.001"
@@ -98,18 +98,16 @@ export function FabricRollForm({ isLoading, onSubmit }: Props) {
               onChange: (e) => setWeightKgRaw(e.target.value),
             })}
             placeholder="Ex: 12.500"
-            className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400"
+            error={!!errors.weightKg}
           />
           {errors.weightKg && (
-            <p className="text-xs text-red-600 mt-1">{errors.weightKg.message}</p>
+            <p className="text-xs text-danger mt-1">{errors.weightKg.message}</p>
           )}
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
-            Preço total (R$)
-          </label>
-          <input
+        <div className="space-y-1.5">
+          <Label>Preço total (R$)</Label>
+          <Input
             type="number"
             step="0.01"
             min="0.01"
@@ -117,33 +115,33 @@ export function FabricRollForm({ isLoading, onSubmit }: Props) {
               onChange: (e) => setPriceTotalRaw(e.target.value),
             })}
             placeholder="Ex: 180.00"
-            className="w-full border border-neutral-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-400"
+            error={!!errors.priceTotal}
           />
           {errors.priceTotal && (
-            <p className="text-xs text-red-600 mt-1">{errors.priceTotal.message}</p>
+            <p className="text-xs text-danger mt-1">{errors.priceTotal.message}</p>
           )}
         </div>
       </div>
 
       {pricePerKgPaid !== null && pricePerKgRef !== null && (
-        <div className="rounded-md bg-neutral-50 border border-neutral-200 p-3 text-sm space-y-1">
+        <div className="rounded-md bg-muted/50 border border-border p-3 text-sm space-y-1">
           <div className="flex justify-between">
-            <span className="text-neutral-600">Preço/kg pago:</span>
+            <span className="text-muted-foreground">Preço/kg pago:</span>
             <span className="font-medium">R$ {pricePerKgPaid.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-neutral-600">Preço/kg cadastrado:</span>
+            <span className="text-muted-foreground">Preço/kg cadastrado:</span>
             <span className="font-medium">R$ {pricePerKgRef.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between border-t border-neutral-200 pt-1 mt-1">
-            <span className="text-neutral-600">Diferença:</span>
+          <div className="flex justify-between border-t border-border pt-1 mt-1">
+            <span className="text-muted-foreground">Diferença:</span>
             <span
               className={`font-semibold ${
                 diff! > 0.005
-                  ? 'text-red-600'
+                  ? 'text-danger'
                   : diff! < -0.005
-                  ? 'text-green-600'
-                  : 'text-neutral-700'
+                  ? 'text-success'
+                  : 'text-foreground'
               }`}
             >
               {diff! > 0 ? '+' : ''}R$ {diff!.toFixed(2)}
