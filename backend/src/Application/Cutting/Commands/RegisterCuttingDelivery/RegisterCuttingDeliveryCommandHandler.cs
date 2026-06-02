@@ -59,7 +59,12 @@ public class RegisterCuttingDeliveryCommandHandler(IApplicationDbContext context
             .Select(c => c.Value)
             .FirstOrDefaultAsync(cancellationToken) ?? "P,M,G,G1,GG";
 
-        var message = BuildSewerMessage(order, delivery, sizes.Split(','));
+        var sewerTemplate = await context.AppConfigs
+            .Where(c => c.Key == "wp_template_sewer" && !c.IsDeleted)
+            .Select(c => c.Value)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var message = BuildSewerMessage(order, delivery, sizes.Split(','), sewerTemplate);
 
         string? waMeLink = null;
         if (!string.IsNullOrWhiteSpace(sewerPhone))
@@ -72,23 +77,34 @@ public class RegisterCuttingDeliveryCommandHandler(IApplicationDbContext context
             delivery.Id, totalPieces, cuttingCostTotal, message, waMeLink, sewerPhone, sewerName);
     }
 
-    private static string BuildSewerMessage(CuttingOrder order, CuttingDelivery delivery, string[] sizeOrder)
+    private static string BuildSewerMessage(CuttingOrder order, CuttingDelivery delivery, string[] sizeOrder, string? template)
     {
         var pieces = delivery.GetDeliveredPieces();
         var roll = order.FabricRoll!;
         var totalPieces = delivery.GetTotalPieces();
         var costFormatted = delivery.CuttingCostTotal.ToString("N2", CultureInfo.GetCultureInfo("pt-BR"));
 
-        var lines = new List<string> { $"Pedido {order.OrderNumber}" };
+        var sizesBlock = string.Join("\n", sizeOrder
+            .Where(s => pieces.TryGetValue(s, out var q) && q > 0)
+            .Select(s => $"{pieces[s]} {s}"));
 
-        // One group per delivery (one color+variation)
-        lines.Add($"{roll.FabricColor!.Name} {roll.FabricType!.Variation} - {totalPieces}");
-        foreach (var size in sizeOrder)
+        if (!string.IsNullOrWhiteSpace(template))
         {
-            if (pieces.TryGetValue(size, out var qty) && qty > 0)
-                lines.Add($"{qty} {size}");
+            return template
+                .Replace("\\n", "\n")
+                .Replace("{OrderNumber}", order.OrderNumber.ToString())
+                .Replace("{Color}", roll.FabricColor!.Name)
+                .Replace("{Variation}", roll.FabricType!.Variation)
+                .Replace("{Total}", totalPieces.ToString())
+                .Replace("{SizesBlock}", sizesBlock)
+                .Replace("{Cost}", costFormatted);
         }
 
+        var lines = new List<string> { $"Pedido {order.OrderNumber}" };
+        lines.Add($"{roll.FabricColor!.Name} {roll.FabricType!.Variation} - {totalPieces}");
+        foreach (var size in sizeOrder)
+            if (pieces.TryGetValue(size, out var qty) && qty > 0)
+                lines.Add($"{qty} {size}");
         lines.Add($"Total {totalPieces} camisetas R${costFormatted}");
         return string.Join("\n", lines);
     }

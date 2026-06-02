@@ -48,7 +48,34 @@ public class AppConfigConfiguration : IEntityTypeConfiguration<AppConfig>
 
             Seed(new Guid("cccccccc-0000-0000-0000-000000000007"),
                 "sizes_available", "P,M,G,G1,GG",
-                "Tamanhos disponíveis para produção, separados por vírgula")
+                "Tamanhos disponíveis para produção, separados por vírgula"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000008"),
+                "wp_provider", "manual",
+                "Provedor de WhatsApp: manual (link wa.me) ou nicochat (API)"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000009"),
+                "wp_nicochat_url", "",
+                "URL base da API Nicochat (ex: https://api.nicochat.com)"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-00000000000a"),
+                "wp_nicochat_key", "",
+                "API Key da Nicochat"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-00000000000b"),
+                "wp_template_cutter",
+                "Pedido #{OrderNumber}\n{Color} {Variation}\n{SizesBlock}\nTotal: {Total} peças",
+                "Template da mensagem para o cortador. Variáveis: {OrderNumber}, {Color}, {Variation}, {SizesBlock}, {Total}"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-00000000000c"),
+                "wp_template_sewer",
+                "Pedido {OrderNumber}\n{Color} {Variation} - {Total}\n{SizesBlock}\nTotal {Total} camisetas R${Cost}",
+                "Template da mensagem para o costureiro. Variáveis: {OrderNumber}, {Color}, {Variation}, {Total}, {SizesBlock}, {Cost}"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-00000000000d"),
+                "wp_template_dtf",
+                "Pedido DTF - {Date}\n{SheetsBlock}\nTotal: {TotalSheets} folha(s) — R${TotalCost}",
+                "Template da mensagem para o fornecedor DTF. Variáveis: {Date}, {SheetsBlock}, {TotalSheets}, {TotalCost}")
         );
     }
 

@@ -49,7 +49,12 @@ public class CreateCuttingOrderCommandHandler(IApplicationDbContext context)
             .Select(c => c.Value)
             .FirstOrDefaultAsync(cancellationToken) ?? "Cortador";
 
-        var message = BuildWhatsAppMessage(order, roll, sizes.Split(','));
+        var template = await context.AppConfigs
+            .Where(c => c.Key == "wp_template_cutter" && !c.IsDeleted)
+            .Select(c => c.Value)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var message = BuildWhatsAppMessage(order, roll, sizes.Split(','), template);
 
         string? waMeLink = null;
         if (!string.IsNullOrWhiteSpace(cutterPhone))
@@ -62,22 +67,34 @@ public class CreateCuttingOrderCommandHandler(IApplicationDbContext context)
         return new CreateCuttingOrderResult(order.Id, order.OrderNumber, message, waMeLink, cutterPhone, cutterName);
     }
 
-    private static string BuildWhatsAppMessage(CuttingOrder order, FabricRoll roll, string[] sizeOrder)
+    private static string BuildWhatsAppMessage(CuttingOrder order, FabricRoll roll, string[] sizeOrder, string? template)
     {
         var pieces = order.GetRequestedPieces();
+        var sizesBlock = string.Join("\n", sizeOrder
+            .Where(s => pieces.TryGetValue(s, out var q) && q > 0)
+            .Select(s => $"{pieces[s]} {s}"));
+        var total = order.GetTotalPieces();
+
+        if (!string.IsNullOrWhiteSpace(template))
+        {
+            return template
+                .Replace("\\n", "\n")
+                .Replace("{OrderNumber}", order.OrderNumber.ToString())
+                .Replace("{Color}", roll.FabricColor!.Name)
+                .Replace("{Variation}", roll.FabricType!.Variation)
+                .Replace("{SizesBlock}", sizesBlock)
+                .Replace("{Total}", total.ToString());
+        }
+
         var lines = new List<string>
         {
             $"Pedido #{order.OrderNumber}",
             $"{roll.FabricColor!.Name} {roll.FabricType!.Variation}"
         };
-
         foreach (var size in sizeOrder)
-        {
             if (pieces.TryGetValue(size, out var qty) && qty > 0)
                 lines.Add($"{qty} {size}");
-        }
-
-        lines.Add($"Total: {order.GetTotalPieces()} peças");
+        lines.Add($"Total: {total} peças");
         return string.Join("\n", lines);
     }
 }

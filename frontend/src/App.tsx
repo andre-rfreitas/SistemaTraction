@@ -6,26 +6,27 @@ import { FabricRollPage } from '@/features/fabric/rolls/FabricRollPage'
 import { CuttingOrderPage } from '@/features/cutting/orders/CuttingOrderPage'
 import { DtfModelPage } from '@/features/settings/dtf/DtfModelPage'
 import { DtfStockPage } from '@/features/stock/dtf/DtfStockPage'
-import { AppConfigPage } from '@/features/settings/config/AppConfigPage'
 import { SeparationListPage } from '@/features/separation/SeparationListPage'
 import { FinancialPage } from '@/features/financial/FinancialPage'
-
-const PAGES: Record<TabId, React.ReactNode> = {
-  fabric: <FabricTypePage />,
-  rolls: <FabricRollPage />,
-  cutting: <CuttingOrderPage />,
-  'dtf-models': <DtfModelPage />,
-  'dtf-stock': <DtfStockPage />,
-  separation: <SeparationListPage />,
-  financial: <FinancialPage />,
-  config: <AppConfigPage />,
-}
+import { SettingsPage } from '@/features/settings/SettingsPage'
 
 function App() {
   const [tab, setTab] = useState<TabId>('financial')
+
+  const pages: Record<TabId, React.ReactNode> = {
+    fabric: <FabricTypePage />,
+    rolls: <FabricRollPage />,
+    cutting: <CuttingOrderPage />,
+    'dtf-models': <DtfModelPage />,
+    'dtf-stock': <DtfStockPage />,
+    separation: <SeparationListPage />,
+    financial: <FinancialPage />,
+    config: <SettingsPage onNavigate={setTab} />,
+  }
+
   return (
     <AppShell active={tab} onSelect={setTab}>
-      {PAGES[tab]}
+      {pages[tab]}
     </AppShell>
   )
 }
