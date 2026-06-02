@@ -11,6 +11,8 @@ import type { PeriodPreset } from './types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PageHeader } from '@/components/ui/page-header'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
   DialogContent,
@@ -86,15 +88,13 @@ export function FinancialPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h2 className="text-xl font-bold text-neutral-900">Controle financeiro</h2>
-          <p className="text-sm text-neutral-500">
-            Custos de produção, receitas e saldo do período.
-          </p>
-        </div>
-        <Button onClick={() => setShowForm(true)}>+ Lançamento manual</Button>
-      </div>
+      <PageHeader
+        title="Financeiro"
+        description="Controle de custos, receitas e saldo do período."
+        actions={
+          <Button onClick={() => setShowForm(true)}>+ Lançamento manual</Button>
+        }
+      />
 
       <div className="flex items-end gap-2 flex-wrap">
         <div className="flex gap-1 rounded-md border border-neutral-200 p-1">
@@ -126,7 +126,13 @@ export function FinancialPage() {
         )}
       </div>
 
-      {summary.isLoading && <p className="text-sm text-neutral-500">Carregando resumo...</p>}
+      {summary.isLoading && (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 w-full" />
+          ))}
+        </div>
+      )}
       {summary.isError && (
         <p className="text-sm text-red-500">{(summary.error as Error).message}</p>
       )}
@@ -160,7 +166,7 @@ export function FinancialPage() {
         </div>
 
         {entries.isLoading ? (
-          <p className="text-sm text-neutral-500">Carregando lançamentos...</p>
+          <Skeleton className="h-64 w-full" />
         ) : (
           <EntriesTable
             entries={filtered}
