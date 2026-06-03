@@ -7,6 +7,7 @@ using SistemaTraction.Domain.Common;
 using SistemaTraction.Domain.Dtf;
 using SistemaTraction.Domain.Financial;
 using SistemaTraction.Domain.Separation;
+using SistemaTraction.Domain.Stock;
 
 namespace SistemaTraction.Application.Separation.Commands.ConfirmSeparationList;
 
@@ -52,6 +53,10 @@ public class ConfirmSeparationListCommandHandler(IApplicationDbContext context)
 
             stockItem.UseFromStock(needed);
             shirtDeductions.Add(new ShirtDeductionDto(colorStr, size, needed));
+
+            context.ShirtStockMovements.Add(ShirtStockMovement.Create(
+                stockItem.Id, stockItem.FabricColorId, colorStr, size,
+                -needed, $"Lista de separação confirmada", "Separação", request.SeparationListId));
         }
 
         // ── 2. Process DTF stock ───────────────────────────────────────────────

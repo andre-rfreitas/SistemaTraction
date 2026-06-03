@@ -1,11 +1,11 @@
 import {
-  Boxes, Layers, Scissors, ClipboardList, Wallet, Shirt, Image, Settings,
+  Boxes, Layers, Scissors, ClipboardList, Wallet, Shirt, Image, Settings, Archive,
   type LucideIcon,
 } from 'lucide-react'
 
 export type TabId =
   | 'fabric' | 'rolls' | 'cutting' | 'dtf-models'
-  | 'dtf-stock' | 'separation' | 'financial' | 'config'
+  | 'dtf-stock' | 'shirt-stock' | 'separation' | 'financial' | 'config'
 
 export interface NavItem {
   id: TabId
@@ -23,6 +23,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Estoque',
     items: [
       { id: 'rolls', label: 'Bobinas', icon: Layers },
+      { id: 'shirt-stock', label: 'Camisetas', icon: Archive },
       { id: 'dtf-stock', label: 'Estoque DTF', icon: Boxes },
     ],
   },

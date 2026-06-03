@@ -80,6 +80,7 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
         var colorName = fabricRoll.FabricColor!.Name;
         var typeName = fabricRoll.FabricType!.Name;
         var typeVariation = fabricRoll.FabricType!.Variation;
+        var orderNum = order.OrderNumber;
 
         foreach (var (size, qty) in request.GoodPieces.Where(kv => kv.Value > 0))
         {
@@ -88,12 +89,20 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
                 .FirstOrDefaultAsync(s => s.FabricColorId == fabricColorId && s.Size == normalizedSize, cancellationToken);
 
             if (stockItem is null)
-                context.StockItems.Add(StockItem.Create(fabricColorId, colorName, typeName, typeVariation, normalizedSize, qty));
+            {
+                stockItem = StockItem.Create(fabricColorId, colorName, typeName, typeVariation, normalizedSize, qty);
+                context.StockItems.Add(stockItem);
+            }
             else
+            {
                 stockItem.AddStock(qty);
+            }
+
+            context.ShirtStockMovements.Add(ShirtStockMovement.Create(
+                stockItem.Id, fabricColorId, colorName, normalizedSize,
+                qty, $"Costura pedido #{orderNum}", "Costureiro", order.Id));
         }
 
-        var orderNum = order.OrderNumber;
         var totalGood = request.GoodPieces.Where(kv => kv.Value > 0).Sum(kv => kv.Value);
         var totalDefective = request.DefectivePieces.Where(kv => kv.Value > 0).Sum(kv => kv.Value);
 

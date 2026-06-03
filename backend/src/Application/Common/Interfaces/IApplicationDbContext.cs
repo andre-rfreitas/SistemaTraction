@@ -19,6 +19,7 @@ public interface IApplicationDbContext
     DbSet<CuttingDelivery> CuttingDeliveries { get; }
     DbSet<SewingDelivery> SewingDeliveries { get; }
     DbSet<StockItem> StockItems { get; }
+    DbSet<ShirtStockMovement> ShirtStockMovements { get; }
     DbSet<SeparationList> SeparationLists { get; }
     DbSet<SeparationItem> SeparationItems { get; }
     DbSet<SkuCode> SkuCodes { get; }

@@ -21,6 +21,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CuttingDelivery> CuttingDeliveries => Set<CuttingDelivery>();
     public DbSet<SewingDelivery> SewingDeliveries => Set<SewingDelivery>();
     public DbSet<StockItem> StockItems => Set<StockItem>();
+    public DbSet<ShirtStockMovement> ShirtStockMovements => Set<ShirtStockMovement>();
     public DbSet<SeparationList> SeparationLists => Set<SeparationList>();
     public DbSet<SeparationItem> SeparationItems => Set<SeparationItem>();
     public DbSet<SkuCode> SkuCodes => Set<SkuCode>();
