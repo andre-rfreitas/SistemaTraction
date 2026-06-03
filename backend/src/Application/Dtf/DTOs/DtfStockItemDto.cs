@@ -5,5 +5,6 @@ public record DtfStockItemDto(
     Guid DtfModelId,
     string ModelName,
     string SheetLabel,
-    int CurrentQuantity
+    int CurrentQuantity,
+    int StampsPerSheet
 );

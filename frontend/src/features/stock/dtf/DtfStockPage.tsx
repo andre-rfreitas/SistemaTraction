@@ -3,7 +3,7 @@ import { DtfStockList } from './components/DtfStockList'
 import { DtfStockDetail } from './components/DtfStockDetail'
 import { RegisterMovementForm } from './components/RegisterMovementForm'
 import { useRegisterDtfMovement } from './hooks/useRegisterDtfMovement'
-import type { DtfStockItemDto, DtfMovementType } from './types'
+import type { DtfStockSelection, DtfMovementType } from './types'
 import { PageHeader } from '@/components/ui/page-header'
 import {
   Dialog,
@@ -12,9 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-type SelectedItem =
-  | DtfStockItemDto
-  | { dtfModelId: string; modelName: string; sheetLabel: string }
+type SelectedItem = DtfStockSelection
 
 export function DtfStockPage() {
   const [selected, setSelected] = useState<SelectedItem | null>(null)
@@ -28,7 +26,7 @@ export function DtfStockPage() {
     <div className="space-y-6">
       <PageHeader
         title="Estoque de DTF"
-        description="Posição atual de folhas por modelo. Registre entradas, saídas e ajustes."
+        description="Posição atual em estampas por modelo. Registre entradas (em folhas), saídas e ajustes."
       />
 
       <DtfStockList onSelect={setSelected} />
@@ -50,6 +48,7 @@ export function DtfStockPage() {
                 Registrar movimento
               </p>
               <RegisterMovementForm
+                stampsPerSheet={selected?.stampsPerSheet ?? 1}
                 isLoading={register.isPending}
                 onSubmit={(data) => {
                   if (!selected) return

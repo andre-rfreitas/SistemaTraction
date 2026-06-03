@@ -10,11 +10,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 interface Props {
+  stampsPerSheet: number
   onSubmit: (data: MovementFormData) => void
   isLoading?: boolean
 }
 
-export function RegisterMovementForm({ onSubmit, isLoading }: Props) {
+export function RegisterMovementForm({ stampsPerSheet, onSubmit, isLoading }: Props) {
   const {
     register,
     handleSubmit,
@@ -27,6 +28,8 @@ export function RegisterMovementForm({ onSubmit, isLoading }: Props) {
   })
 
   const type = Number(useWatch({ control, name: 'type' }))
+  const quantity = Number(useWatch({ control, name: 'quantity' })) || 0
+  const isEntrada = type === 1
 
   return (
     <form
@@ -44,8 +47,8 @@ export function RegisterMovementForm({ onSubmit, isLoading }: Props) {
           className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
         >
           <option value={1}>Entrada — recebimento de folhas</option>
-          <option value={2}>Saída — folhas usadas em produção</option>
-          <option value={3}>Ajuste — correção de inventário</option>
+          <option value={2}>Saída — estampas usadas em produção</option>
+          <option value={3}>Ajuste — correção de inventário (estampas)</option>
         </select>
         {errors.type && (
           <p className="text-sm text-danger">{errors.type.message}</p>
@@ -54,7 +57,11 @@ export function RegisterMovementForm({ onSubmit, isLoading }: Props) {
 
       <div className="space-y-1">
         <Label htmlFor="quantity">
-          {type === 3 ? 'Quantidade (use negativo para reduzir)' : 'Quantidade'}
+          {isEntrada
+            ? 'Folhas recebidas'
+            : type === 3
+              ? 'Estampas (use negativo para reduzir)'
+              : 'Estampas'}
         </Label>
         <Input
           id="quantity"
@@ -63,6 +70,11 @@ export function RegisterMovementForm({ onSubmit, isLoading }: Props) {
           step={1}
           {...register('quantity')}
         />
+        {isEntrada && quantity > 0 && (
+          <p className="text-xs text-muted-foreground">
+            = {quantity * stampsPerSheet} estampas ({stampsPerSheet} por folha)
+          </p>
+        )}
         {errors.quantity && (
           <p className="text-sm text-danger">{errors.quantity.message}</p>
         )}

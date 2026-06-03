@@ -19,7 +19,8 @@ public class GetDtfStockItemsQueryHandler(IApplicationDbContext context)
                 i.DtfModelId,
                 i.DtfModel.Name,
                 i.DtfModel.SheetLabel,
-                i.CurrentQuantity))
+                i.CurrentQuantity,
+                i.DtfModel.StampsPerSheet))
             .ToListAsync(cancellationToken);
     }
 }

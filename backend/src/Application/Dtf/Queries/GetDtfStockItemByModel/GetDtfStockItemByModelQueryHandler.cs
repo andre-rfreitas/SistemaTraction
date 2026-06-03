@@ -18,7 +18,8 @@ public class GetDtfStockItemByModelQueryHandler(IApplicationDbContext context)
                 i.DtfModelId,
                 i.DtfModel.Name,
                 i.DtfModel.SheetLabel,
-                i.CurrentQuantity))
+                i.CurrentQuantity,
+                i.DtfModel.StampsPerSheet))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (item is null) return null;
@@ -27,7 +28,7 @@ public class GetDtfStockItemByModelQueryHandler(IApplicationDbContext context)
             .Where(m => m.DtfStockItemId == item.Id && !m.IsDeleted)
             .OrderByDescending(m => m.CreatedAt)
             .Take(50)
-            .Select(m => new DtfStockMovementDto(m.Id, m.Type, m.Delta, m.Reason, m.CreatedAt))
+            .Select(m => new DtfStockMovementDto(m.Id, m.Type, m.Delta, m.Reason, m.CreatedAt, m.SheetCount))
             .ToListAsync(cancellationToken);
 
         return new DtfStockItemDetailDto(item, movements);

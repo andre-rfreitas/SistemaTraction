@@ -17,11 +17,13 @@ public class DtfStockItem : BaseEntity
         new() { DtfModelId = dtfModelId };
 
     /// <summary>
-    /// Registra uma movimentação de estoque (append-only).
-    /// Para Entrada/Saida: quantity deve ser positivo.
-    /// Para Ajuste: quantity é o delta assinado (positivo ou negativo).
+    /// Registra uma movimentação de estoque em estampas (append-only).
+    /// Para Entrada/Saida: quantity (estampas) deve ser positivo.
+    /// Para Ajuste: quantity é o delta assinado em estampas (positivo ou negativo).
+    /// sheetCount registra o nº de folhas na Entrada (null em Saida/Ajuste).
     /// </summary>
-    public DtfStockMovement AddMovement(DtfMovementType type, int quantity, string? reason = null)
+    public DtfStockMovement AddMovement(
+        DtfMovementType type, int quantity, string? reason = null, int? sheetCount = null)
     {
         if (type != DtfMovementType.Ajuste && quantity <= 0)
             throw new DomainException("Quantidade deve ser maior que zero.");
@@ -44,7 +46,7 @@ public class DtfStockItem : BaseEntity
         CurrentQuantity += delta;
         TouchUpdatedAt();
 
-        var movement = DtfStockMovement.Create(Id, type, delta, reason);
+        var movement = DtfStockMovement.Create(Id, type, delta, reason, sheetCount);
         _movements.Add(movement);
         return movement;
     }

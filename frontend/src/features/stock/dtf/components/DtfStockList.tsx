@@ -1,5 +1,5 @@
 import { useDtfStock } from '../hooks/useDtfStock'
-import type { DtfStockItemDto } from '../types'
+import type { DtfStockSelection } from '../types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -9,7 +9,7 @@ import { useDtfModels } from '@/features/settings/dtf/hooks/useDtfModels'
 import { useAppConfigs } from '@/features/settings/config/hooks/useAppConfigs'
 
 interface Props {
-  onSelect: (item: DtfStockItemDto | { dtfModelId: string; modelName: string; sheetLabel: string }) => void
+  onSelect: (item: DtfStockSelection) => void
 }
 
 export function DtfStockList({ onSelect }: Props) {
@@ -18,7 +18,7 @@ export function DtfStockList({ onSelect }: Props) {
   const { data: configs } = useAppConfigs()
 
   const threshold = Number(
-    configs?.find((c) => c.key === 'stock_alert_threshold')?.value ?? 15
+    configs?.find((c) => c.key === 'dtf_stock_alert_threshold')?.value ?? 100
   )
 
   if (loadingStock || loadingModels)
@@ -73,7 +73,10 @@ export function DtfStockList({ onSelect }: Props) {
                 <p className={`text-2xl font-bold tabular-nums ${isLow ? 'text-danger' : 'text-foreground'}`}>
                   {qty}
                 </p>
-                <p className="text-xs text-muted-foreground">folhas</p>
+                <p className="text-xs text-muted-foreground">estampas</p>
+                <p className="text-xs text-muted-foreground">
+                  ≈ {Math.floor(qty / model.stampsPerSheet)} folhas
+                </p>
                 {isLow && hasStock && (
                   <p className="text-xs text-warning font-medium">⚠ estoque baixo</p>
                 )}
@@ -87,6 +90,7 @@ export function DtfStockList({ onSelect }: Props) {
                       dtfModelId: model.id,
                       modelName: model.name,
                       sheetLabel: model.sheetLabel,
+                      stampsPerSheet: model.stampsPerSheet,
                     }
                   )
                 }

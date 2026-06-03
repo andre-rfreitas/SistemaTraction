@@ -6,7 +6,12 @@ export interface DtfStockItemDto {
   modelName: string
   sheetLabel: string
   currentQuantity: number
+  stampsPerSheet: number
 }
+
+export type DtfStockSelection =
+  | DtfStockItemDto
+  | Pick<DtfStockItemDto, 'dtfModelId' | 'modelName' | 'sheetLabel' | 'stampsPerSheet'>
 
 export interface DtfStockMovementDto {
   id: string
@@ -14,6 +19,7 @@ export interface DtfStockMovementDto {
   delta: number
   reason: string | null
   createdAt: string
+  sheetCount: number | null
 }
 
 export interface DtfStockItemDetailDto {

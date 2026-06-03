@@ -15,5 +15,6 @@ public class DtfStockMovementConfiguration : IEntityTypeConfiguration<DtfStockMo
         builder.Property(m => m.Type).IsRequired();
         builder.Property(m => m.Delta).IsRequired();
         builder.Property(m => m.Reason).HasMaxLength(500);
+        builder.Property(m => m.SheetCount);
     }
 }

@@ -7,5 +7,6 @@ public record DtfStockMovementDto(
     DtfMovementType Type,
     int Delta,
     string? Reason,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    int? SheetCount
 );
