@@ -27,7 +27,16 @@ public class RegisterDtfMovementCommandHandler(IApplicationDbContext context)
         DtfStockMovement movement;
         if (request.Type == DtfMovementType.Entrada)
         {
-            var stamps = request.Quantity * model.StampsPerSheet;
+            int stamps;
+            try
+            {
+                stamps = checked(request.Quantity * model.StampsPerSheet);
+            }
+            catch (OverflowException)
+            {
+                throw new DomainException("Quantidade de folhas muito alta para conversão em estampas.");
+            }
+
             movement = stockItem.AddMovement(
                 DtfMovementType.Entrada, stamps, request.Reason, sheetCount: request.Quantity);
         }

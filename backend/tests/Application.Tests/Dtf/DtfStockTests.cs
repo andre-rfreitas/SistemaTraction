@@ -112,6 +112,9 @@ public class DtfStockTests : IDisposable
 
         var item = _context.DtfStockItems.First(i => i.DtfModelId == _modelId);
         item.CurrentQuantity.Should().Be(95);
+
+        var ajuste = _context.DtfStockMovements.Single(m => m.Type == DtfMovementType.Ajuste);
+        ajuste.SheetCount.Should().BeNull();
     }
 
     [Fact]

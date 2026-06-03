@@ -16,6 +16,10 @@ public class RegisterDtfMovementCommandValidator : AbstractValidator<RegisterDtf
             .Must((cmd, qty) => cmd.Type == DtfMovementType.Ajuste || qty > 0)
             .WithMessage("Quantidade deve ser maior que zero para Entrada e Saída.");
 
+        RuleFor(x => x.Quantity)
+            .LessThanOrEqualTo(1_000_000)
+            .WithMessage("Quantidade máxima por movimento é 1.000.000.");
+
         RuleFor(x => x.Reason).MaximumLength(500);
     }
 }
