@@ -1,5 +1,5 @@
 import { useDtfStock } from '../hooks/useDtfStock'
-import type { DtfStockItemDto } from '../types'
+import type { DtfStockSelection } from '../types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -9,11 +9,7 @@ import { useDtfModels } from '@/features/settings/dtf/hooks/useDtfModels'
 import { useAppConfigs } from '@/features/settings/config/hooks/useAppConfigs'
 
 interface Props {
-  onSelect: (
-    item:
-      | DtfStockItemDto
-      | { dtfModelId: string; modelName: string; sheetLabel: string; stampsPerSheet: number }
-  ) => void
+  onSelect: (item: DtfStockSelection) => void
 }
 
 export function DtfStockList({ onSelect }: Props) {

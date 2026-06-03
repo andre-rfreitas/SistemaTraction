@@ -3,7 +3,7 @@ import { DtfStockList } from './components/DtfStockList'
 import { DtfStockDetail } from './components/DtfStockDetail'
 import { RegisterMovementForm } from './components/RegisterMovementForm'
 import { useRegisterDtfMovement } from './hooks/useRegisterDtfMovement'
-import type { DtfStockItemDto, DtfMovementType } from './types'
+import type { DtfStockSelection, DtfMovementType } from './types'
 import { PageHeader } from '@/components/ui/page-header'
 import {
   Dialog,
@@ -12,9 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-type SelectedItem =
-  | DtfStockItemDto
-  | { dtfModelId: string; modelName: string; sheetLabel: string; stampsPerSheet: number }
+type SelectedItem = DtfStockSelection
 
 export function DtfStockPage() {
   const [selected, setSelected] = useState<SelectedItem | null>(null)

@@ -9,6 +9,10 @@ export interface DtfStockItemDto {
   stampsPerSheet: number
 }
 
+export type DtfStockSelection =
+  | DtfStockItemDto
+  | Pick<DtfStockItemDto, 'dtfModelId' | 'modelName' | 'sheetLabel' | 'stampsPerSheet'>
+
 export interface DtfStockMovementDto {
   id: string
   type: DtfMovementType
