@@ -39,8 +39,13 @@ export function DtfStockDetail({ dtfModelId }: Props) {
             <div className="flex items-center gap-3">
               <span className={`font-medium w-14 ${cls}`}>{label}</span>
               <span className={`font-mono font-semibold ${cls}`}>
-                {sign}{m.delta}
+                {sign}{m.delta} estampas
               </span>
+              {m.sheetCount != null && (
+                <span className="text-muted-foreground text-xs">
+                  ({m.sheetCount} folhas)
+                </span>
+              )}
               {m.reason && (
                 <span className="text-muted-foreground truncate max-w-[160px]">
                   {m.reason}

@@ -14,7 +14,7 @@ import {
 
 type SelectedItem =
   | DtfStockItemDto
-  | { dtfModelId: string; modelName: string; sheetLabel: string }
+  | { dtfModelId: string; modelName: string; sheetLabel: string; stampsPerSheet: number }
 
 export function DtfStockPage() {
   const [selected, setSelected] = useState<SelectedItem | null>(null)
@@ -28,7 +28,7 @@ export function DtfStockPage() {
     <div className="space-y-6">
       <PageHeader
         title="Estoque de DTF"
-        description="Posição atual de folhas por modelo. Registre entradas, saídas e ajustes."
+        description="Posição atual em estampas por modelo. Registre entradas (em folhas), saídas e ajustes."
       />
 
       <DtfStockList onSelect={setSelected} />
@@ -50,6 +50,7 @@ export function DtfStockPage() {
                 Registrar movimento
               </p>
               <RegisterMovementForm
+                stampsPerSheet={selected?.stampsPerSheet ?? 1}
                 isLoading={register.isPending}
                 onSubmit={(data) => {
                   if (!selected) return

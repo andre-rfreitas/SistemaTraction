@@ -6,6 +6,7 @@ export interface DtfStockItemDto {
   modelName: string
   sheetLabel: string
   currentQuantity: number
+  stampsPerSheet: number
 }
 
 export interface DtfStockMovementDto {
@@ -14,6 +15,7 @@ export interface DtfStockMovementDto {
   delta: number
   reason: string | null
   createdAt: string
+  sheetCount: number | null
 }
 
 export interface DtfStockItemDetailDto {
