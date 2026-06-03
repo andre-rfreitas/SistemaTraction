@@ -38,7 +38,7 @@ public class DtfStockTests : IDisposable
             CancellationToken.None);
 
         var item = _context.DtfStockItems.First(i => i.DtfModelId == _modelId);
-        item.CurrentQuantity.Should().Be(10);
+        item.CurrentQuantity.Should().Be(90); // 10 folhas * 9 estampas
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public class DtfStockTests : IDisposable
         count.Should().Be(1, "deve existir apenas um StockItem por modelo");
 
         var item = _context.DtfStockItems.First(i => i.DtfModelId == _modelId);
-        item.CurrentQuantity.Should().Be(8);
+        item.CurrentQuantity.Should().Be(72); // (5 + 3) folhas * 9
     }
 
     [Fact]
@@ -64,14 +64,14 @@ public class DtfStockTests : IDisposable
     {
         await _registerHandler.Handle(
             new RegisterDtfMovementCommand(_modelId, DtfMovementType.Entrada, 20, null),
-            CancellationToken.None);
+            CancellationToken.None); // 180 estampas
 
         await _registerHandler.Handle(
             new RegisterDtfMovementCommand(_modelId, DtfMovementType.Saida, 7, "Produção"),
-            CancellationToken.None);
+            CancellationToken.None); // -7 estampas
 
         var item = _context.DtfStockItems.First(i => i.DtfModelId == _modelId);
-        item.CurrentQuantity.Should().Be(13);
+        item.CurrentQuantity.Should().Be(173);
     }
 
     [Fact]
@@ -79,10 +79,10 @@ public class DtfStockTests : IDisposable
     {
         await _registerHandler.Handle(
             new RegisterDtfMovementCommand(_modelId, DtfMovementType.Entrada, 5, null),
-            CancellationToken.None);
+            CancellationToken.None); // 45 estampas
 
         var act = () => _registerHandler.Handle(
-            new RegisterDtfMovementCommand(_modelId, DtfMovementType.Saida, 10, null),
+            new RegisterDtfMovementCommand(_modelId, DtfMovementType.Saida, 100, null),
             CancellationToken.None);
 
         await act.Should().ThrowAsync<DomainException>()
@@ -104,14 +104,14 @@ public class DtfStockTests : IDisposable
     {
         await _registerHandler.Handle(
             new RegisterDtfMovementCommand(_modelId, DtfMovementType.Entrada, 10, null),
-            CancellationToken.None);
+            CancellationToken.None); // 90 estampas
 
         await _registerHandler.Handle(
             new RegisterDtfMovementCommand(_modelId, DtfMovementType.Ajuste, 5, "Recontagem"),
-            CancellationToken.None);
+            CancellationToken.None); // +5 estampas
 
         var item = _context.DtfStockItems.First(i => i.DtfModelId == _modelId);
-        item.CurrentQuantity.Should().Be(15);
+        item.CurrentQuantity.Should().Be(95);
     }
 
     [Fact]
@@ -119,14 +119,14 @@ public class DtfStockTests : IDisposable
     {
         await _registerHandler.Handle(
             new RegisterDtfMovementCommand(_modelId, DtfMovementType.Entrada, 10, null),
-            CancellationToken.None);
+            CancellationToken.None); // 90 estampas
 
         await _registerHandler.Handle(
             new RegisterDtfMovementCommand(_modelId, DtfMovementType.Ajuste, -3, "Perda"),
             CancellationToken.None);
 
         var item = _context.DtfStockItems.First(i => i.DtfModelId == _modelId);
-        item.CurrentQuantity.Should().Be(7);
+        item.CurrentQuantity.Should().Be(87);
     }
 
     [Fact]
@@ -144,11 +144,11 @@ public class DtfStockTests : IDisposable
     public async Task AjusteNegativo_EstoqueInsuficiente_ThrowsDomainException()
     {
         await _registerHandler.Handle(
-            new RegisterDtfMovementCommand(_modelId, DtfMovementType.Entrada, 3, null),
-            CancellationToken.None);
+            new RegisterDtfMovementCommand(_modelId, DtfMovementType.Entrada, 1, null),
+            CancellationToken.None); // 9 estampas
 
         var act = () => _registerHandler.Handle(
-            new RegisterDtfMovementCommand(_modelId, DtfMovementType.Ajuste, -5, "Erro"),
+            new RegisterDtfMovementCommand(_modelId, DtfMovementType.Ajuste, -50, "Erro"),
             CancellationToken.None);
 
         await act.Should().ThrowAsync<DomainException>()
@@ -178,7 +178,8 @@ public class DtfStockTests : IDisposable
         items.Should().HaveCount(1);
         items[0].ModelName.Should().Be("Angel");
         items[0].SheetLabel.Should().Be("Folha 1");
-        items[0].CurrentQuantity.Should().Be(10);
+        items[0].CurrentQuantity.Should().Be(90);
+        items[0].StampsPerSheet.Should().Be(9);
     }
 
     [Fact]
@@ -186,20 +187,22 @@ public class DtfStockTests : IDisposable
     {
         await _registerHandler.Handle(
             new RegisterDtfMovementCommand(_modelId, DtfMovementType.Entrada, 20, "Compra"),
-            CancellationToken.None);
+            CancellationToken.None); // +180 estampas, SheetCount 20
 
         await _registerHandler.Handle(
             new RegisterDtfMovementCommand(_modelId, DtfMovementType.Saida, 5, "Produção"),
-            CancellationToken.None);
+            CancellationToken.None); // -5 estampas
 
         var detail = await _getByModelHandler.Handle(
             new GetDtfStockItemByModelQuery(_modelId), CancellationToken.None);
 
         detail.Should().NotBeNull();
-        detail!.Item.CurrentQuantity.Should().Be(15);
+        detail!.Item.CurrentQuantity.Should().Be(175);
         detail.Movements.Should().HaveCount(2);
         detail.Movements[0].Delta.Should().Be(-5);  // mais recente primeiro
-        detail.Movements[1].Delta.Should().Be(20);
+        detail.Movements[0].SheetCount.Should().BeNull();
+        detail.Movements[1].Delta.Should().Be(180);
+        detail.Movements[1].SheetCount.Should().Be(20);
     }
 
     [Fact]
@@ -216,15 +219,30 @@ public class DtfStockTests : IDisposable
     {
         await _registerHandler.Handle(
             new RegisterDtfMovementCommand(_modelId, DtfMovementType.Entrada, 10, null),
-            CancellationToken.None);
+            CancellationToken.None); // +90
 
         await _registerHandler.Handle(
             new RegisterDtfMovementCommand(_modelId, DtfMovementType.Saida, 3, null),
-            CancellationToken.None);
+            CancellationToken.None); // -3
 
         var movements = _context.DtfStockMovements.ToList();
         movements.Should().HaveCount(2, "cada operação gera exatamente um registro novo");
-        movements.Select(m => m.Delta).Should().BeEquivalentTo([10, -3]);
+        movements.Select(m => m.Delta).Should().BeEquivalentTo([90, -3]);
+    }
+
+    [Fact]
+    public async Task Entrada_ConverteFolhasParaEstampasERegistraSheetCount()
+    {
+        await _registerHandler.Handle(
+            new RegisterDtfMovementCommand(_modelId, DtfMovementType.Entrada, 5, "Compra"),
+            CancellationToken.None);
+
+        var movement = _context.DtfStockMovements.Single();
+        movement.Delta.Should().Be(45);       // 5 folhas * 9 estampas
+        movement.SheetCount.Should().Be(5);
+
+        var item = _context.DtfStockItems.First(i => i.DtfModelId == _modelId);
+        item.CurrentQuantity.Should().Be(45);
     }
 
     public void Dispose() => _context.Dispose();
