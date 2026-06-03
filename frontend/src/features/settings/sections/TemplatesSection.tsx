@@ -5,7 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { AppConfigDto } from '../config/types'
 
-const TEMPLATES = [
+type TemplateDef = {
+  key: string
+  label: string
+  variables: string[]
+  sampleVars: Record<string, string>
+}
+
+const TEMPLATES: TemplateDef[] = [
   {
     key: 'wp_template_cutter',
     label: 'Mensagem para o Cortador',
