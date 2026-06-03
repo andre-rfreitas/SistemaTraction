@@ -75,7 +75,11 @@ public class AppConfigConfiguration : IEntityTypeConfiguration<AppConfig>
             Seed(new Guid("cccccccc-0000-0000-0000-00000000000d"),
                 "wp_template_dtf",
                 "Pedido DTF - {Date}\n{SheetsBlock}\nTotal: {TotalSheets} folha(s) — R${TotalCost}",
-                "Template da mensagem para o fornecedor DTF. Variáveis: {Date}, {SheetsBlock}, {TotalSheets}, {TotalCost}")
+                "Template da mensagem para o fornecedor DTF. Variáveis: {Date}, {SheetsBlock}, {TotalSheets}, {TotalCost}"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-00000000000e"),
+                "dtf_stock_alert_threshold", "100",
+                "Quantidade mínima de estampas DTF antes de disparar alerta de reposição")
         );
     }
 
