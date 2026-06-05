@@ -7,6 +7,7 @@ using SistemaTraction.Domain.Financial;
 using SistemaTraction.Domain.Separation;
 using SistemaTraction.Domain.Sewing;
 using SistemaTraction.Domain.Stock;
+using SistemaTraction.Domain.Supplies;
 
 namespace SistemaTraction.Application.Common.Interfaces;
 
@@ -28,6 +29,10 @@ public interface IApplicationDbContext
     DbSet<DtfStockMovement> DtfStockMovements { get; }
     DbSet<AppConfig> AppConfigs { get; }
     DbSet<FinancialEntry> FinancialEntries { get; }
+    DbSet<SupplyType> SupplyTypes { get; }
+    DbSet<SupplyStockItem> SupplyStockItems { get; }
+    DbSet<SupplyStockMovement> SupplyStockMovements { get; }
+    DbSet<SupplyOrderConfig> SupplyOrderConfigs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

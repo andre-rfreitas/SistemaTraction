@@ -10,6 +10,8 @@ import { SeparationListPage } from '@/features/separation/SeparationListPage'
 import { FinancialPage } from '@/features/financial/FinancialPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { ShirtStockPage } from '@/features/stock/shirts/ShirtStockPage'
+import { SupplyStockPage } from '@/features/stock/supplies/SupplyStockPage'
+import { SupplyTypePage } from '@/features/settings/supplies/SupplyTypePage'
 
 function App() {
   const [tab, setTab] = useState<TabId>('financial')
@@ -21,6 +23,8 @@ function App() {
     'dtf-models': <DtfModelPage />,
     'dtf-stock': <DtfStockPage />,
     'shirt-stock': <ShirtStockPage />,
+    'supply-stock': <SupplyStockPage />,
+    'supply-types': <SupplyTypePage />,
     separation: <SeparationListPage />,
     financial: <FinancialPage />,
     config: <SettingsPage onNavigate={setTab} />,

@@ -6,6 +6,8 @@ import { useStockCheck } from './hooks/useStockCheck'
 import { useConfirmSeparationList } from './hooks/useConfirmSeparationList'
 import { useDeleteSeparationList } from './hooks/useDeleteSeparationList'
 import { useRenameSeparationList } from './hooks/useRenameSeparationList'
+import { useSupplyDeductionPreview } from './hooks/useSupplyDeductionPreview'
+import { useDeductSuppliesForSeparation } from './hooks/useDeductSuppliesForSeparation'
 import { SkuConfigPanel } from './components/SkuConfigPanel'
 import type {
   SeparationListSummary,
@@ -55,7 +57,7 @@ export function SeparationListPage() {
 }
 
 // ── Wizard ─────────────────────────────────────────────────────────────────────
-type Step = 'list' | 'upload' | 'review' | 'stock-check' | 'confirm-modal' | 'done'
+type Step = 'list' | 'upload' | 'review' | 'stock-check' | 'supply-deduction' | 'confirm-modal' | 'done'
 
 const STATUS_LABEL: Record<string, string> = {
   Pending: 'Pendente', Confirmed: 'Confirmada', Cancelled: 'Cancelada',
@@ -74,6 +76,7 @@ function SeparationWizard() {
   const [confirmResult, setConfirmResult] = useState<SeparationConfirmResult | null>(null)
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [supplyDeductions, setSupplyDeductions] = useState<{ supplyStockItemId: string; quantity: number; name: string; unit: string }[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // All hooks called unconditionally
@@ -81,7 +84,10 @@ function SeparationWizard() {
   const { data: dtfModels = [] } = useDtfModels()
   const upload = useUploadSeparationList()
   const updateItems = useUpdateSeparationItems()
-  const stockCheckQuery = useStockCheck(step === 'stock-check' || step === 'confirm-modal' ? currentList?.id ?? null : null)
+  const stockCheckQuery = useStockCheck(step === 'stock-check' || step === 'supply-deduction' || step === 'confirm-modal' ? currentList?.id ?? null : null)
+  const totalOrders = currentList?.items.reduce((sum, i) => sum + (i.quantity ?? 0), 0) ?? 0
+  const supplyPreviewQuery = useSupplyDeductionPreview(step === 'supply-deduction' ? totalOrders : null)
+  const deductSupplies = useDeductSuppliesForSeparation()
   const confirm = useConfirmSeparationList()
 
   function handleFileSelect(file: File) {
@@ -102,7 +108,17 @@ function SeparationWizard() {
   function handleConfirm() {
     if (!currentList) return
     confirm.mutate(currentList.id, {
-      onSuccess: (result) => { setConfirmResult(result); setStep('done') },
+      onSuccess: (result) => {
+        if (supplyDeductions.length > 0) {
+          deductSupplies.mutate(
+            supplyDeductions.filter(d => d.quantity > 0),
+            { onSuccess: () => { setConfirmResult(result); setStep('done') } }
+          )
+        } else {
+          setConfirmResult(result)
+          setStep('done')
+        }
+      },
     })
   }
 
@@ -115,7 +131,7 @@ function SeparationWizard() {
   function handleReset() {
     if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl)
     setPdfBlobUrl(null); setCurrentList(null); setEditedItems([])
-    setConfirmResult(null); setStep('list')
+    setConfirmResult(null); setSupplyDeductions([]); setStep('list')
   }
 
   if (step === 'list') {
@@ -341,12 +357,106 @@ function SeparationWizard() {
 
             <div className="flex gap-2 pt-2">
               <Button variant="outline" onClick={() => setStep('review')} className="flex-1">← Editar lista</Button>
-              <Button onClick={() => setStep('confirm-modal')} disabled={!check.canConfirm} className="flex-1">
+              <Button onClick={() => setStep('supply-deduction')} disabled={!check.canConfirm} className="flex-1">
                 Confirmar lista →
               </Button>
             </div>
           </>
         )}
+      </div>
+    )
+  }
+
+  // ── SUPPLY DEDUCTION ──────────────────────────────────────────────────────
+  if (step === 'supply-deduction') {
+    const preview = supplyPreviewQuery.data ?? []
+
+    if (supplyPreviewQuery.isLoading) return (
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-foreground">Desconto de embalagens</h2>
+        <p className="text-sm text-muted-foreground">Calculando...</p>
+      </div>
+    )
+
+    const editableDeductions = supplyDeductions.length > 0
+      ? supplyDeductions
+      : preview.map(p => ({ supplyStockItemId: p.supplyStockItemId, quantity: p.totalQuantity, name: p.name, unit: p.unit }))
+
+    function updateQty(supplyStockItemId: string, qty: number) {
+      setSupplyDeductions(
+        (editableDeductions.length > 0 ? editableDeductions : preview.map(p => ({
+          supplyStockItemId: p.supplyStockItemId, quantity: p.totalQuantity, name: p.name, unit: p.unit
+        }))).map(d => d.supplyStockItemId === supplyStockItemId ? { ...d, quantity: qty } : d)
+      )
+    }
+
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setStep('stock-check')} className="text-sm text-muted-foreground hover:text-foreground">← Voltar</button>
+          <h2 className="text-xl font-bold text-foreground">Desconto de embalagens</h2>
+        </div>
+
+        {preview.length === 0 ? (
+          <div className="rounded-md bg-muted p-4 text-sm text-muted-foreground">
+            Nenhum insumo configurado por pedido. Configure em Configurações → Embalagens.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+              Insumos a descontar ({totalOrders} pedido{totalOrders !== 1 ? 's' : ''})
+            </p>
+            <div className="border border-border rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Insumo</th>
+                    <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground">Qtd por pedido</th>
+                    <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(editableDeductions.length > 0 ? editableDeductions : preview.map(p => ({
+                    supplyStockItemId: p.supplyStockItemId, quantity: p.totalQuantity, name: p.name, unit: p.unit
+                  }))).map((d, i) => (
+                    <tr key={d.supplyStockItemId} className={i % 2 === 0 ? 'bg-card' : 'bg-muted/50'}>
+                      <td className="px-3 py-2 font-medium">{d.name}</td>
+                      <td className="px-3 py-2 text-center text-muted-foreground">
+                        {preview.find(p => p.supplyStockItemId === d.supplyStockItemId)?.quantityPerOrder ?? '—'} {d.unit}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <input
+                          type="number"
+                          min="0"
+                          value={d.quantity}
+                          onChange={(e) => updateQty(d.supplyStockItemId, parseInt(e.target.value) || 0)}
+                          className="w-16 text-sm border border-input rounded px-2 py-1 text-center bg-background"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setStep('stock-check')} className="flex-1">← Voltar</Button>
+          <Button
+            onClick={() => {
+              if (editableDeductions.length === 0 && preview.length > 0) {
+                setSupplyDeductions(preview.map(p => ({
+                  supplyStockItemId: p.supplyStockItemId, quantity: p.totalQuantity, name: p.name, unit: p.unit
+                })))
+              }
+              setStep('confirm-modal')
+            }}
+            className="flex-1"
+          >
+            Continuar →
+          </Button>
+        </div>
       </div>
     )
   }

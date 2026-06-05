@@ -8,6 +8,7 @@ using SistemaTraction.Domain.Financial;
 using SistemaTraction.Domain.Separation;
 using SistemaTraction.Domain.Sewing;
 using SistemaTraction.Domain.Stock;
+using SistemaTraction.Domain.Supplies;
 
 namespace SistemaTraction.Infrastructure.Persistence;
 
@@ -30,6 +31,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<DtfStockMovement> DtfStockMovements => Set<DtfStockMovement>();
     public DbSet<AppConfig> AppConfigs => Set<AppConfig>();
     public DbSet<FinancialEntry> FinancialEntries => Set<FinancialEntry>();
+    public DbSet<SupplyType> SupplyTypes => Set<SupplyType>();
+    public DbSet<SupplyStockItem> SupplyStockItems => Set<SupplyStockItem>();
+    public DbSet<SupplyStockMovement> SupplyStockMovements => Set<SupplyStockMovement>();
+    public DbSet<SupplyOrderConfig> SupplyOrderConfigs => Set<SupplyOrderConfig>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

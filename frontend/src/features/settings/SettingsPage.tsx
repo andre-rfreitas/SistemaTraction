@@ -1,19 +1,21 @@
 import { useState } from 'react'
-import { Shirt, Image, DollarSign, MessageSquare, FileText, Package, ChevronRight } from 'lucide-react'
+import { Shirt, Image, DollarSign, MessageSquare, FileText, Package, ChevronRight, Tag } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { PricingSection } from './sections/PricingSection'
 import { WhatsAppSection } from './sections/WhatsAppSection'
 import { TemplatesSection } from './sections/TemplatesSection'
 import { StockSection } from './sections/StockSection'
+import { SupplyOrderConfigSection } from './sections/SupplyOrderConfigSection'
 import type { TabId } from '@/components/layout/nav'
 
-type SettingsTab = 'pricing' | 'whatsapp' | 'templates' | 'stock'
+type SettingsTab = 'pricing' | 'whatsapp' | 'templates' | 'stock' | 'embalagens'
 
 const TABS: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
   { id: 'pricing', label: 'Preços', icon: DollarSign },
   { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
   { id: 'templates', label: 'Templates', icon: FileText },
   { id: 'stock', label: 'Estoque', icon: Package },
+  { id: 'embalagens', label: 'Embalagens', icon: Tag },
 ]
 
 interface Props {
@@ -44,6 +46,12 @@ export function SettingsPage({ onNavigate }: Props) {
           description="Gerenciar estampas e folhas DTF"
           onClick={() => onNavigate('dtf-models')}
         />
+        <QuickLink
+          icon={Tag}
+          label="Tipos de Insumo"
+          description="Gerenciar embalagens e materiais"
+          onClick={() => onNavigate('supply-types')}
+        />
       </div>
 
       {/* Tab bar */}
@@ -70,6 +78,7 @@ export function SettingsPage({ onNavigate }: Props) {
         {active === 'whatsapp' && <WhatsAppSection />}
         {active === 'templates' && <TemplatesSection />}
         {active === 'stock' && <StockSection />}
+        {active === 'embalagens' && <SupplyOrderConfigSection />}
       </div>
     </div>
   )

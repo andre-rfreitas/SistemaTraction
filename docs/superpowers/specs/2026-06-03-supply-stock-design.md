@@ -86,7 +86,7 @@ Ao registrar uma **entrada** de estoque, o `RegisterSupplyMovementCommand` retor
   "suggestedDescription": "Compra: Envelope de Segurança (50 un)"
 }
 ```
-O frontend decide se cria o lançamento financeiro via `POST /financial/entries` (fluxo já existente). Nenhuma lógica financeira é executada automaticamente no backend para entradas — a categoria usada é o próprio nome do tipo (`supplyType.Name`).
+`suggestedAmount` é sempre `null` — o sistema não conhece o preço pago, então o usuário informa o valor no Dialog. O frontend decide se cria o lançamento financeiro via `POST /financial/entries` (fluxo já existente). Nenhuma lógica financeira é executada automaticamente no backend para entradas — a categoria usada é o próprio nome do tipo (`supplyType.Name`).
 
 ### Endpoints da API
 

@@ -8,6 +8,7 @@ using SistemaTraction.Domain.Financial;
 using SistemaTraction.Domain.Separation;
 using SistemaTraction.Domain.Sewing;
 using SistemaTraction.Domain.Stock;
+using SistemaTraction.Domain.Supplies;
 
 namespace SistemaTraction.Application.Tests;
 
@@ -31,6 +32,10 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<DtfStockMovement> DtfStockMovements => Set<DtfStockMovement>();
     public DbSet<AppConfig> AppConfigs => Set<AppConfig>();
     public DbSet<FinancialEntry> FinancialEntries => Set<FinancialEntry>();
+    public DbSet<SupplyType> SupplyTypes => Set<SupplyType>();
+    public DbSet<SupplyStockItem> SupplyStockItems => Set<SupplyStockItem>();
+    public DbSet<SupplyStockMovement> SupplyStockMovements => Set<SupplyStockMovement>();
+    public DbSet<SupplyOrderConfig> SupplyOrderConfigs => Set<SupplyOrderConfig>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -147,6 +152,33 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
         {
             b.HasKey(e => e.Id);
             b.Property(e => e.Type).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<SupplyType>(b => b.HasKey(t => t.Id));
+
+        modelBuilder.Entity<SupplyStockItem>(b =>
+        {
+            b.HasKey(i => i.Id);
+            b.HasOne(i => i.SupplyType).WithOne().HasForeignKey<SupplyStockItem>(i => i.SupplyTypeId);
+            b.HasMany(i => i.Movements)
+             .WithOne(m => m.SupplyStockItem)
+             .HasForeignKey(m => m.SupplyStockItemId);
+            b.Navigation(i => i.Movements)
+             .HasField("_movements")
+             .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        modelBuilder.Entity<SupplyStockMovement>(b =>
+        {
+            b.HasKey(m => m.Id);
+            b.Property(m => m.Type).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<SupplyOrderConfig>(b =>
+        {
+            b.HasKey(c => c.Id);
+            b.HasOne(c => c.SupplyType).WithOne().HasForeignKey<SupplyOrderConfig>(c => c.SupplyTypeId);
+            b.HasIndex(c => c.SupplyTypeId).IsUnique();
         });
     }
 }
