@@ -55,13 +55,29 @@ export function CuttingOrderList({ onRegisterDelivery, onRegisterSewingDelivery 
           <div key={o.id} className="border border-border rounded-lg p-3 bg-card">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="font-bold text-foreground text-sm">#{o.orderNumber}</span>
-                  <span className="text-sm text-foreground">
-                    {o.fabricColorName} {o.fabricTypeName} {o.fabricTypeVariation}
-                  </span>
-                  <span className="text-xs text-muted-foreground">— {o.fabricRollWeightKg.toFixed(3)} kg</span>
+                  <Badge variant={STATUS_VARIANT[o.status] ?? 'neutral'} className="sm:hidden">
+                    {STATUS_LABEL[o.status] ?? o.status}
+                  </Badge>
                 </div>
+
+                {o.items.length === 1 ? (
+                  <p className="text-sm text-foreground">
+                    {o.items[0].fabricColorName} {o.items[0].fabricTypeName} {o.items[0].fabricTypeVariation}
+                    <span className="text-xs text-muted-foreground ml-1">— {o.items[0].fabricRollWeightKg.toFixed(3)} kg</span>
+                  </p>
+                ) : (
+                  <div className="space-y-0.5">
+                    {o.items.map((item) => (
+                      <p key={item.id} className="text-sm text-foreground">
+                        {item.fabricColorName} {item.fabricTypeName} {item.fabricTypeVariation}
+                        <span className="text-xs text-muted-foreground ml-1">— {item.fabricRollWeightKg.toFixed(3)} kg</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {activePieces.map(([size, qty]) => (
                     <Badge key={size} variant="neutral">
@@ -74,7 +90,7 @@ export function CuttingOrderList({ onRegisterDelivery, onRegisterSewingDelivery 
               </div>
 
               <div className="shrink-0 flex flex-col items-end gap-2">
-                <Badge variant={STATUS_VARIANT[o.status] ?? 'neutral'}>
+                <Badge variant={STATUS_VARIANT[o.status] ?? 'neutral'} className="hidden sm:inline-flex">
                   {STATUS_LABEL[o.status] ?? o.status}
                 </Badge>
                 <p className="text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleDateString('pt-BR')}</p>

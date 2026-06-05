@@ -20,15 +20,22 @@ export interface CuttingRecommendationHistoryItemDto {
   actualDeliveredPieces: Record<string, number> | null
 }
 
-export interface CuttingOrderDto {
+export interface CuttingOrderItemDto {
   id: string
-  orderNumber: number
   fabricRollId: string
   fabricTypeName: string
   fabricTypeVariation: string
   fabricColorName: string
   fabricColorHexCode: string | null
   fabricRollWeightKg: number
+  requestedPieces: Record<string, number>
+  totalPieces: number
+}
+
+export interface CuttingOrderDto {
+  id: string
+  orderNumber: number
+  items: CuttingOrderItemDto[]
   requestedPieces: Record<string, number>
   deliveredPieces: Record<string, number> | null
   totalPieces: number

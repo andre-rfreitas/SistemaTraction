@@ -20,6 +20,7 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<FabricColor> FabricColors => Set<FabricColor>();
     public DbSet<FabricRoll> FabricRolls => Set<FabricRoll>();
     public DbSet<CuttingOrder> CuttingOrders => Set<CuttingOrder>();
+    public DbSet<CuttingOrderItem> CuttingOrderItems => Set<CuttingOrderItem>();
     public DbSet<CuttingDelivery> CuttingDeliveries => Set<CuttingDelivery>();
     public DbSet<SewingDelivery> SewingDeliveries => Set<SewingDelivery>();
     public DbSet<StockItem> StockItems => Set<StockItem>();
@@ -67,7 +68,18 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
         {
             b.HasKey(o => o.Id);
             b.Property(o => o.Status).HasConversion<string>();
-            b.HasOne(o => o.FabricRoll).WithMany().HasForeignKey(o => o.FabricRollId);
+        });
+
+        modelBuilder.Entity<CuttingOrder>(b =>
+        {
+            b.Navigation(o => o.Items).HasField("_items").UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        modelBuilder.Entity<CuttingOrderItem>(b =>
+        {
+            b.HasKey(i => i.Id);
+            b.HasOne(i => i.FabricRoll).WithMany().HasForeignKey(i => i.FabricRollId);
+            b.HasOne<CuttingOrder>().WithMany(o => o.Items).HasForeignKey(i => i.CuttingOrderId);
         });
 
         modelBuilder.Entity<CuttingDelivery>(b =>

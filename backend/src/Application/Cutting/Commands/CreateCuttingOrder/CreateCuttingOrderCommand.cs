@@ -3,9 +3,13 @@ using SistemaTraction.Application.Cutting.DTOs;
 
 namespace SistemaTraction.Application.Cutting.Commands.CreateCuttingOrder;
 
-public record CreateCuttingOrderCommand(
+public record CreateCuttingOrderItemInput(
     Guid FabricRollId,
-    Dictionary<string, int> RequestedPieces,
+    Dictionary<string, int> RequestedPieces
+);
+
+public record CreateCuttingOrderCommand(
+    List<CreateCuttingOrderItemInput> Items,
     string? Notes,
     Dictionary<string, int>? RecommendedPieces = null,
     int? RecommendationDays = null,

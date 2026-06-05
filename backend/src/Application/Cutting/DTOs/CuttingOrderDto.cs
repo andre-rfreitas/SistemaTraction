@@ -22,15 +22,22 @@ public record CuttingRecommendationHistoryItemDto(
     Dictionary<string, int>? ActualDeliveredPieces
 );
 
-public record CuttingOrderDto(
+public record CuttingOrderItemDto(
     Guid Id,
-    int OrderNumber,
     Guid FabricRollId,
     string FabricTypeName,
     string FabricTypeVariation,
     string FabricColorName,
     string? FabricColorHexCode,
     decimal FabricRollWeightKg,
+    Dictionary<string, int> RequestedPieces,
+    int TotalPieces
+);
+
+public record CuttingOrderDto(
+    Guid Id,
+    int OrderNumber,
+    List<CuttingOrderItemDto> Items,
     Dictionary<string, int> RequestedPieces,
     Dictionary<string, int>? DeliveredPieces,
     int TotalPieces,

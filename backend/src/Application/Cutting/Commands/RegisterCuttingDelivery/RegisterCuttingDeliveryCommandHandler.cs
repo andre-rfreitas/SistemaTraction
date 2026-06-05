@@ -15,8 +15,8 @@ public class RegisterCuttingDeliveryCommandHandler(IApplicationDbContext context
     public async Task<RegisterCuttingDeliveryResult> Handle(RegisterCuttingDeliveryCommand request, CancellationToken cancellationToken)
     {
         var order = await context.CuttingOrders
-            .Include(o => o.FabricRoll).ThenInclude(r => r!.FabricType)
-            .Include(o => o.FabricRoll).ThenInclude(r => r!.FabricColor)
+            .Include(o => o.Items).ThenInclude(i => i.FabricRoll).ThenInclude(r => r!.FabricType)
+            .Include(o => o.Items).ThenInclude(i => i.FabricRoll).ThenInclude(r => r!.FabricColor)
             .FirstOrDefaultAsync(o => o.Id == request.CuttingOrderId && !o.IsDeleted, cancellationToken)
             ?? throw new DomainException("Pedido de corte não encontrado.");
 
@@ -35,12 +35,15 @@ public class RegisterCuttingDeliveryCommandHandler(IApplicationDbContext context
         var delivery = CuttingDelivery.Create(request.CuttingOrderId, request.DeliveredPieces, cuttingCostTotal);
         context.CuttingDeliveries.Add(delivery);
 
-        var description = $"Corte Pedido #{order.OrderNumber} — {order.FabricRoll!.FabricColor!.Name} {order.FabricRoll.FabricType!.Variation} — {totalPieces} peças";
+        var rollsSummary = string.Join(", ", order.Items.Select(i =>
+            $"{i.FabricRoll!.FabricColor!.Name} {i.FabricRoll.FabricType!.Variation}"));
+        var description = $"Corte Pedido #{order.OrderNumber} — {rollsSummary} — {totalPieces} peças";
         var entry = FinancialEntry.CreateExpense("Corte", cuttingCostTotal, description, delivery.Id, "CuttingDelivery");
         context.FinancialEntries.Add(entry);
 
         order.MarkDelivered();
-        order.FabricRoll!.MarkConsumed();
+        foreach (var item in order.Items)
+            item.FabricRoll!.MarkConsumed();
 
         await context.SaveChangesAsync(cancellationToken);
 
@@ -80,7 +83,6 @@ public class RegisterCuttingDeliveryCommandHandler(IApplicationDbContext context
     private static string BuildSewerMessage(CuttingOrder order, CuttingDelivery delivery, string[] sizeOrder, string? template)
     {
         var pieces = delivery.GetDeliveredPieces();
-        var roll = order.FabricRoll!;
         var totalPieces = delivery.GetTotalPieces();
         var costFormatted = delivery.CuttingCostTotal.ToString("N2", CultureInfo.GetCultureInfo("pt-BR"));
 
@@ -88,20 +90,25 @@ public class RegisterCuttingDeliveryCommandHandler(IApplicationDbContext context
             .Where(s => pieces.TryGetValue(s, out var q) && q > 0)
             .Select(s => $"{pieces[s]} {s}"));
 
-        if (!string.IsNullOrWhiteSpace(template))
+        var firstItem = order.Items.FirstOrDefault();
+
+        if (order.Items.Count == 1 && !string.IsNullOrWhiteSpace(template) && firstItem is not null)
         {
             return template
                 .Replace("\\n", "\n")
                 .Replace("{OrderNumber}", order.OrderNumber.ToString())
-                .Replace("{Color}", roll.FabricColor!.Name)
-                .Replace("{Variation}", roll.FabricType!.Variation)
+                .Replace("{Color}", firstItem.FabricRoll!.FabricColor!.Name)
+                .Replace("{Variation}", firstItem.FabricRoll!.FabricType!.Variation)
                 .Replace("{Total}", totalPieces.ToString())
                 .Replace("{SizesBlock}", sizesBlock)
                 .Replace("{Cost}", costFormatted);
         }
 
+        var rollsSummary = string.Join(", ", order.Items.Select(i =>
+            $"{i.FabricRoll!.FabricColor!.Name} {i.FabricRoll.FabricType!.Variation}"));
+
         var lines = new List<string> { $"Pedido {order.OrderNumber}" };
-        lines.Add($"{roll.FabricColor!.Name} {roll.FabricType!.Variation} - {totalPieces}");
+        lines.Add($"{rollsSummary} - {totalPieces}");
         foreach (var size in sizeOrder)
             if (pieces.TryGetValue(size, out var qty) && qty > 0)
                 lines.Add($"{qty} {size}");

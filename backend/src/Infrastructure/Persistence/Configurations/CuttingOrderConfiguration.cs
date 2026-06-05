@@ -13,7 +13,6 @@ public class CuttingOrderConfiguration : IEntityTypeConfiguration<CuttingOrder>
         builder.HasKey(o => o.Id);
 
         builder.Property(o => o.OrderNumber).IsRequired();
-        builder.Property(o => o.RequestedPiecesJson).IsRequired().HasColumnType("nvarchar(max)");
         builder.Property(o => o.Status).HasConversion<string>().IsRequired();
         builder.Property(o => o.Notes).HasMaxLength(500);
         builder.Property(o => o.RecommendedPiecesJson).HasColumnType("nvarchar(max)");
@@ -21,10 +20,5 @@ public class CuttingOrderConfiguration : IEntityTypeConfiguration<CuttingOrder>
         builder.Property(o => o.RecommendationBasedOnOrders);
 
         builder.HasIndex(o => o.OrderNumber).IsUnique();
-
-        builder.HasOne(o => o.FabricRoll)
-            .WithMany()
-            .HasForeignKey(o => o.FabricRollId)
-            .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -61,10 +61,10 @@ public class CuttingOrdersController(IMediator mediator) : ControllerBase
     {
         try
         {
+            var items = request.Items.Select(i => new CreateCuttingOrderItemInput(i.FabricRollId, i.RequestedPieces)).ToList();
             var result = await mediator.Send(
                 new CreateCuttingOrderCommand(
-                    request.FabricRollId,
-                    request.RequestedPieces,
+                    items,
                     request.Notes,
                     request.RecommendedPieces,
                     request.RecommendationDays,
@@ -112,9 +112,13 @@ public class CuttingOrdersController(IMediator mediator) : ControllerBase
     }
 }
 
-public record CreateCuttingOrderRequest(
+public record CreateCuttingOrderItemRequest(
     Guid FabricRollId,
-    Dictionary<string, int> RequestedPieces,
+    Dictionary<string, int> RequestedPieces
+);
+
+public record CreateCuttingOrderRequest(
+    List<CreateCuttingOrderItemRequest> Items,
     string? Notes,
     Dictionary<string, int>? RecommendedPieces = null,
     int? RecommendationDays = null,

@@ -13,20 +13,29 @@ public class CreateCuttingOrderCommandHandler(IApplicationDbContext context)
 {
     public async Task<CreateCuttingOrderResult> Handle(CreateCuttingOrderCommand request, CancellationToken cancellationToken)
     {
-        var roll = await context.FabricRolls
+        var rollIds = request.Items.Select(i => i.FabricRollId).ToList();
+        var rolls = await context.FabricRolls
             .Include(r => r.FabricType)
             .Include(r => r.FabricColor)
-            .FirstOrDefaultAsync(r => r.Id == request.FabricRollId && !r.IsDeleted, cancellationToken)
-            ?? throw new DomainException("Bobina não encontrada.");
+            .Where(r => rollIds.Contains(r.Id) && !r.IsDeleted)
+            .ToListAsync(cancellationToken);
 
-        if (roll.Status != FabricRollStatus.Available)
-            throw new DomainException("Apenas bobinas disponíveis podem ser enviadas ao corte.");
+        if (rolls.Count != rollIds.Count)
+            throw new DomainException("Uma ou mais bobinas não foram encontradas.");
+
+        var unavailable = rolls.FirstOrDefault(r => r.Status != FabricRollStatus.Available);
+        if (unavailable is not null)
+            throw new DomainException($"A bobina {unavailable.FabricColor!.Name} {unavailable.FabricType!.Variation} não está disponível para corte.");
 
         var orderNumber = await context.CuttingOrders.AnyAsync(cancellationToken)
             ? await context.CuttingOrders.MaxAsync(o => o.OrderNumber, cancellationToken) + 1
             : 1;
 
-        var order = CuttingOrder.Create(orderNumber, request.FabricRollId, request.RequestedPieces, request.Notes);
+        var itemInputs = request.Items
+            .Select(i => (i.FabricRollId, i.RequestedPieces))
+            .ToList();
+
+        var order = CuttingOrder.Create(orderNumber, itemInputs, request.Notes);
 
         if (request.RecommendedPieces is not null)
             order.SetRecommendationSnapshot(request.RecommendedPieces, request.RecommendationDays, request.RecommendationBasedOnOrders);
@@ -54,7 +63,8 @@ public class CreateCuttingOrderCommandHandler(IApplicationDbContext context)
             .Select(c => c.Value)
             .FirstOrDefaultAsync(cancellationToken);
 
-        var message = BuildWhatsAppMessage(order, roll, sizes.Split(','), template);
+        var rollMap = rolls.ToDictionary(r => r.Id);
+        var message = BuildWhatsAppMessage(order, request.Items, rollMap, sizes.Split(','), template);
 
         string? waMeLink = null;
         if (!string.IsNullOrWhiteSpace(cutterPhone))
@@ -67,16 +77,22 @@ public class CreateCuttingOrderCommandHandler(IApplicationDbContext context)
         return new CreateCuttingOrderResult(order.Id, order.OrderNumber, message, waMeLink, cutterPhone, cutterName);
     }
 
-    private static string BuildWhatsAppMessage(CuttingOrder order, FabricRoll roll, string[] sizeOrder, string? template)
+    private static string BuildWhatsAppMessage(
+        CuttingOrder order,
+        List<CreateCuttingOrderItemInput> items,
+        Dictionary<Guid, FabricRoll> rollMap,
+        string[] sizeOrder,
+        string? template)
     {
-        var pieces = order.GetRequestedPieces();
-        var sizesBlock = string.Join("\n", sizeOrder
-            .Where(s => pieces.TryGetValue(s, out var q) && q > 0)
-            .Select(s => $"{pieces[s]} {s}"));
-        var total = order.GetTotalPieces();
-
-        if (!string.IsNullOrWhiteSpace(template))
+        if (items.Count == 1 && !string.IsNullOrWhiteSpace(template))
         {
+            var roll = rollMap[items[0].FabricRollId];
+            var pieces = items[0].RequestedPieces;
+            var sizesBlock = string.Join("\n", sizeOrder
+                .Where(s => pieces.TryGetValue(s, out var q) && q > 0)
+                .Select(s => $"{pieces[s]} {s}"));
+            var total = pieces.Values.Sum();
+
             return template
                 .Replace("\\n", "\n")
                 .Replace("{OrderNumber}", order.OrderNumber.ToString())
@@ -86,15 +102,21 @@ public class CreateCuttingOrderCommandHandler(IApplicationDbContext context)
                 .Replace("{Total}", total.ToString());
         }
 
-        var lines = new List<string>
+        var lines = new List<string> { $"Pedido #{order.OrderNumber}" };
+        var grandTotal = 0;
+
+        foreach (var item in items)
         {
-            $"Pedido #{order.OrderNumber}",
-            $"{roll.FabricColor!.Name} {roll.FabricType!.Variation}"
-        };
-        foreach (var size in sizeOrder)
-            if (pieces.TryGetValue(size, out var qty) && qty > 0)
-                lines.Add($"{qty} {size}");
-        lines.Add($"Total: {total} peças");
+            var roll = rollMap[item.FabricRollId];
+            lines.Add($"{roll.FabricColor!.Name} {roll.FabricType!.Variation}");
+            foreach (var size in sizeOrder)
+                if (item.RequestedPieces.TryGetValue(size, out var qty) && qty > 0)
+                    lines.Add($"  {qty} {size}");
+            var subtotal = item.RequestedPieces.Values.Sum();
+            grandTotal += subtotal;
+        }
+
+        lines.Add($"Total: {grandTotal} peças");
         return string.Join("\n", lines);
     }
 }

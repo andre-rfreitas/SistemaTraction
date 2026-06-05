@@ -19,6 +19,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<FabricColor> FabricColors => Set<FabricColor>();
     public DbSet<FabricRoll> FabricRolls => Set<FabricRoll>();
     public DbSet<CuttingOrder> CuttingOrders => Set<CuttingOrder>();
+    public DbSet<CuttingOrderItem> CuttingOrderItems => Set<CuttingOrderItem>();
     public DbSet<CuttingDelivery> CuttingDeliveries => Set<CuttingDelivery>();
     public DbSet<SewingDelivery> SewingDeliveries => Set<SewingDelivery>();
     public DbSet<StockItem> StockItems => Set<StockItem>();

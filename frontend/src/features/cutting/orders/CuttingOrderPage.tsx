@@ -16,7 +16,7 @@ import type {
   RegisterCuttingDeliveryResult,
   RegisterSewingDeliveryResult,
 } from './types'
-import type { RecommendationSnapshot } from './components/CuttingOrderForm'
+import type { RecommendationSnapshot, CuttingOrderItemInput } from './components/CuttingOrderForm'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -114,11 +114,10 @@ export function CuttingOrderPage() {
 
           {orderStep === 'form' && (
             <CuttingOrderForm
-              onConfirm={(rollId, pieces, notes, recommendation: RecommendationSnapshot | null) =>
+              onConfirm={(items: CuttingOrderItemInput[], notes: string, recommendation: RecommendationSnapshot | null) =>
                 createOrder.mutate(
                   {
-                    fabricRollId: rollId,
-                    requestedPieces: pieces,
+                    items: items.map((i) => ({ fabricRollId: i.rollId, requestedPieces: i.pieces })),
                     notes: notes || undefined,
                     recommendedPieces: recommendation?.pieces ?? null,
                     recommendationDays: recommendation?.days ?? null,

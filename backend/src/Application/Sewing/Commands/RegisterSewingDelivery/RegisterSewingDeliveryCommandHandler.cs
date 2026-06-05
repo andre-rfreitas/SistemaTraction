@@ -20,8 +20,8 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
         CancellationToken cancellationToken)
     {
         var order = await context.CuttingOrders
-            .Include(o => o.FabricRoll).ThenInclude(r => r!.FabricType)
-            .Include(o => o.FabricRoll).ThenInclude(r => r!.FabricColor)
+            .Include(o => o.Items).ThenInclude(i => i.FabricRoll).ThenInclude(r => r!.FabricType)
+            .Include(o => o.Items).ThenInclude(i => i.FabricRoll).ThenInclude(r => r!.FabricColor)
             .FirstOrDefaultAsync(o => o.Id == request.OrderId && !o.IsDeleted, cancellationToken)
             ?? throw new DomainException("Pedido não encontrado.");
 
@@ -51,16 +51,14 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
         decimal SewingPrice(string size) =>
             size.Equals("G1", StringComparison.OrdinalIgnoreCase) ? sewingPriceG1 : sewingPriceDefault;
 
-        // Sewing cost = good pieces × price per size
         var sewingCostTotal = request.GoodPieces
             .Where(kv => kv.Value > 0)
             .Sum(kv => (decimal)kv.Value * SewingPrice(kv.Key));
 
-        // Defect cost = per-piece (fabric + cutting + sewing) × defective qty
-        var fabricRoll = order.FabricRoll!;
         var totalDeliveredPieces = cuttingDelivery.GetTotalPieces();
+        var totalFabricPrice = order.Items.Sum(i => i.FabricRoll!.PriceTotal);
         var fabricCostPerPiece = totalDeliveredPieces > 0
-            ? fabricRoll.PriceTotal / totalDeliveredPieces
+            ? totalFabricPrice / totalDeliveredPieces
             : 0m;
 
         var defectCostTotal = request.DefectivePieces
@@ -75,11 +73,12 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
             defectCostTotal);
         context.SewingDeliveries.Add(sewingDelivery);
 
-        // Update stock for each size with good pieces
-        var fabricColorId = fabricRoll.FabricColorId;
-        var colorName = fabricRoll.FabricColor!.Name;
-        var typeName = fabricRoll.FabricType!.Name;
-        var typeVariation = fabricRoll.FabricType!.Variation;
+        // Use first item's color for stock — covers the common case where all rolls share the same color
+        var firstItem = order.Items.First();
+        var fabricColorId = firstItem.FabricRoll!.FabricColorId;
+        var colorName = firstItem.FabricRoll!.FabricColor!.Name;
+        var typeName = firstItem.FabricRoll!.FabricType!.Name;
+        var typeVariation = firstItem.FabricRoll!.FabricType!.Variation;
         var orderNum = order.OrderNumber;
 
         foreach (var (size, qty) in request.GoodPieces.Where(kv => kv.Value > 0))

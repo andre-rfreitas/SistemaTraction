@@ -17,6 +17,7 @@ public interface IApplicationDbContext
     DbSet<FabricColor> FabricColors { get; }
     DbSet<FabricRoll> FabricRolls { get; }
     DbSet<CuttingOrder> CuttingOrders { get; }
+    DbSet<CuttingOrderItem> CuttingOrderItems { get; }
     DbSet<CuttingDelivery> CuttingDeliveries { get; }
     DbSet<SewingDelivery> SewingDeliveries { get; }
     DbSet<StockItem> StockItems { get; }

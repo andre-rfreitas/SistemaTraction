@@ -12,7 +12,7 @@ public class GetCuttingRecommendationHistoryQueryHandler(IApplicationDbContext c
         GetCuttingRecommendationHistoryQuery request, CancellationToken cancellationToken)
     {
         var orders = await context.CuttingOrders
-            .Include(o => o.FabricRoll).ThenInclude(r => r!.FabricColor)
+            .Include(o => o.Items).ThenInclude(i => i.FabricRoll).ThenInclude(r => r!.FabricColor)
             .Where(o => !o.IsDeleted && o.RecommendedPiecesJson != null)
             .OrderByDescending(o => o.CreatedAt)
             .Take(request.Take)
@@ -29,10 +29,11 @@ public class GetCuttingRecommendationHistoryQueryHandler(IApplicationDbContext c
         return orders.Select(o =>
         {
             deliveryByOrder.TryGetValue(o.Id, out var delivery);
+            var firstColor = o.Items.FirstOrDefault()?.FabricRoll?.FabricColor?.Name ?? "";
             return new CuttingRecommendationHistoryItemDto(
                 CuttingOrderId: o.Id,
                 OrderNumber: o.OrderNumber,
-                FabricColorName: o.FabricRoll?.FabricColor?.Name ?? "",
+                FabricColorName: firstColor,
                 CreatedAt: o.CreatedAt,
                 DaysUsed: o.RecommendationDays ?? 0,
                 BasedOnOrders: o.RecommendationBasedOnOrders ?? 0,

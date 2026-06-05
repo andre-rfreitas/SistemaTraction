@@ -1,14 +1,11 @@
 using System.Text.Json;
 using SistemaTraction.Domain.Common;
-using SistemaTraction.Domain.Fabric;
 
 namespace SistemaTraction.Domain.Cutting;
 
 public class CuttingOrder : BaseEntity
 {
     public int OrderNumber { get; private set; }
-    public Guid FabricRollId { get; private set; }
-    public string RequestedPiecesJson { get; private set; } = "{}";
     public CuttingOrderStatus Status { get; private set; }
     public DateTime? SentAt { get; private set; }
     public string? Notes { get; private set; }
@@ -17,26 +14,38 @@ public class CuttingOrder : BaseEntity
     public int? RecommendationDays { get; private set; }
     public int? RecommendationBasedOnOrders { get; private set; }
 
-    public FabricRoll? FabricRoll { get; private set; }
+    private readonly List<CuttingOrderItem> _items = [];
+    public IReadOnlyList<CuttingOrderItem> Items => _items.AsReadOnly();
 
     private CuttingOrder() { }
 
-    public static CuttingOrder Create(int orderNumber, Guid fabricRollId, Dictionary<string, int> requestedPieces, string? notes = null)
+    public static CuttingOrder Create(
+        int orderNumber,
+        List<(Guid FabricRollId, Dictionary<string, int> Pieces)> items,
+        string? notes = null)
     {
-        if (requestedPieces.Values.Any(v => v < 0))
-            throw new DomainException("Quantidades não podem ser negativas.");
+        if (items.Count == 0)
+            throw new DomainException("O pedido deve ter pelo menos uma bobina.");
 
-        if (requestedPieces.Values.Sum() == 0)
-            throw new DomainException("O pedido deve ter pelo menos uma peça.");
+        foreach (var (_, pieces) in items)
+        {
+            if (pieces.Values.Any(v => v < 0))
+                throw new DomainException("Quantidades não podem ser negativas.");
+            if (pieces.Values.Sum() == 0)
+                throw new DomainException("Cada bobina deve ter pelo menos uma peça.");
+        }
 
-        return new CuttingOrder
+        var order = new CuttingOrder
         {
             OrderNumber = orderNumber,
-            FabricRollId = fabricRollId,
-            RequestedPiecesJson = JsonSerializer.Serialize(requestedPieces),
             Status = CuttingOrderStatus.Draft,
             Notes = notes?.Trim()
         };
+
+        foreach (var (rollId, pieces) in items)
+            order._items.Add(CuttingOrderItem.Create(order.Id, rollId, pieces));
+
+        return order;
     }
 
     public void SetRecommendationSnapshot(Dictionary<string, int>? recommendedPieces, int? days, int? basedOnOrders)
@@ -50,15 +59,20 @@ public class CuttingOrder : BaseEntity
     }
 
     public Dictionary<string, int> GetRequestedPieces()
-        => JsonSerializer.Deserialize<Dictionary<string, int>>(RequestedPiecesJson) ?? [];
+    {
+        var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in _items)
+            foreach (var (size, qty) in item.GetRequestedPieces())
+                result[size] = result.GetValueOrDefault(size) + qty;
+        return result;
+    }
 
     public Dictionary<string, int>? GetRecommendedPieces()
         => RecommendedPiecesJson is not null
             ? JsonSerializer.Deserialize<Dictionary<string, int>>(RecommendedPiecesJson)
             : null;
 
-    public int GetTotalPieces()
-        => GetRequestedPieces().Values.Sum();
+    public int GetTotalPieces() => _items.Sum(i => i.GetTotalPieces());
 
     public void MarkSent()
     {

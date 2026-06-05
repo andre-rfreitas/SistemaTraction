@@ -13,6 +13,12 @@ interface Props {
   onCancel: () => void
 }
 
+function orderRollsSummary(order: CuttingOrderDto) {
+  return order.items
+    .map((i) => `${i.fabricColorName} ${i.fabricTypeName} ${i.fabricTypeVariation}`)
+    .join(', ')
+}
+
 export function CuttingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Props) {
   const [pieces, setPieces] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {}
@@ -41,9 +47,7 @@ export function CuttingDeliveryForm({ order, isLoading, onConfirm, onCancel }: P
         <div className="rounded-md border border-border bg-muted/50 p-4 space-y-3">
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">Pedido #{order.orderNumber}</p>
-            <p className="text-sm font-semibold text-foreground">
-              {order.fabricColorName} {order.fabricTypeName} {order.fabricTypeVariation}
-            </p>
+            <p className="text-sm font-semibold text-foreground">{orderRollsSummary(order)}</p>
           </div>
 
           <div>
@@ -80,7 +84,7 @@ export function CuttingDeliveryForm({ order, isLoading, onConfirm, onCancel }: P
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Ao confirmar: FinancialEntry "Corte" será lançado, pedido marcado como Entregue e bobina como Consumida.
+          Ao confirmar: FinancialEntry "Corte" será lançado, pedido marcado como Entregue e bobina(s) como Consumida(s).
         </p>
 
         <div className="flex gap-2">
@@ -98,7 +102,7 @@ export function CuttingDeliveryForm({ order, isLoading, onConfirm, onCancel }: P
   return (
     <div className="space-y-5">
       <div className="rounded-md bg-info/10 border border-info/20 px-3 py-2 text-sm text-info">
-        Pedido #{order.orderNumber} — {order.fabricColorName} {order.fabricTypeName} {order.fabricTypeVariation}
+        Pedido #{order.orderNumber} — {orderRollsSummary(order)}
       </div>
 
       <div>

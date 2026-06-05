@@ -42,7 +42,7 @@ public class RegisterSewingDeliveryCommandHandlerTests : IDisposable
         await _context.SaveChangesAsync();
 
         roll.StartCutting();
-        var order = CuttingOrder.Create(1, roll.Id, new Dictionary<string, int> { ["P"] = 10, ["M"] = 10 });
+        var order = CuttingOrder.Create(1, [(roll.Id, new Dictionary<string, int> { ["P"] = 10, ["M"] = 10 })]);
         _context.CuttingOrders.Add(order);
         await _context.SaveChangesAsync();
 
@@ -167,7 +167,7 @@ public class RegisterSewingDeliveryCommandHandlerTests : IDisposable
 
         var roll = FabricRoll.Create(fabricType.Id, fabricColor.Id, 5m, 100m);
         _context.FabricRolls.Add(roll);
-        var order = CuttingOrder.Create(99, roll.Id, new Dictionary<string, int> { ["M"] = 5 });
+        var order = CuttingOrder.Create(99, [(roll.Id, new Dictionary<string, int> { ["M"] = 5 })]);
         _context.CuttingOrders.Add(order);
         await _context.SaveChangesAsync();
 

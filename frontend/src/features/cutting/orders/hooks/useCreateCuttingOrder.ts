@@ -2,9 +2,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import type { CreateCuttingOrderResult } from '../types'
 
-export interface CreateCuttingOrderPayload {
+export interface CreateCuttingOrderItemPayload {
   fabricRollId: string
   requestedPieces: Record<string, number>
+}
+
+export interface CreateCuttingOrderPayload {
+  items: CreateCuttingOrderItemPayload[]
   notes?: string
   recommendedPieces?: Record<string, number> | null
   recommendationDays?: number | null
