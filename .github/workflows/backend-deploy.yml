@@ -1,15 +1,22 @@
-name: Deploy Backend → Azure App Service
+name: Deploy Backend → Azure Container Apps
 
 on:
   push:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'Dockerfile'
       - '.github/workflows/backend-deploy.yml'
+
+env:
+  IMAGE: ghcr.io/andre-rfreitas/sistema-traction-api:latest
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout
@@ -20,21 +27,32 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Restore
-        run: dotnet restore backend/src/API/SistemaTraction.API.csproj
-
-      - name: Build
-        run: dotnet build backend/src/API/SistemaTraction.API.csproj --configuration Release --no-restore
-
       - name: Test
-        run: dotnet test backend/tests/Application.Tests/SistemaTraction.Application.Tests.csproj --configuration Release --no-build --verbosity normal
+        run: dotnet test backend/tests/Application.Tests/SistemaTraction.Application.Tests.csproj --configuration Release --verbosity normal
 
-      - name: Publish
-        run: dotnet publish backend/src/API/SistemaTraction.API.csproj --configuration Release --no-build --output ./publish
-
-      - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          app-name: 'sistema-traction-api'
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./publish
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ env.IMAGE }}
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          containerAppName: sistema-traction-api
+          resourceGroup: rg-sistema-traction
+          imageToDeploy: ${{ env.IMAGE }}

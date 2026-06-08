@@ -1,0 +1,8 @@
+**/.git
+**/.vs
+**/bin
+**/obj
+**/.env
+**/node_modules
+frontend/
+docs/

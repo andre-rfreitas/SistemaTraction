@@ -2,169 +2,198 @@
 
 Guia passo a passo para criar os recursos no Azure e configurar o deploy automático.
 
+## Arquitetura
+
+| Componente | Serviço | Custo |
+|---|---|---|
+| Frontend | Azure Static Web Apps | Grátis |
+| Backend .NET | Azure Container Apps | ~R$0-15/mês |
+| Banco | Azure SQL Database Basic | ~R$25/mês |
+| **Total** | | **~R$25-40/mês** |
+
+---
+
 ## Pré-requisitos
 
-- Conta Azure (criar em portal.azure.com — tem R$900 de crédito grátis por 30 dias para novos usuários)
-- Repositório no GitHub com o código do projeto
-- Git configurado localmente
+- Conta Azure com assinatura ativa (portal.azure.com)
+- Azure CLI instalado e logado: `az login`
+- GitHub CLI instalado e logado: `gh auth login`
+- Repositório no GitHub: github.com/andre-rfreitas/SistemaTraction
 
 ---
 
 ## 1. Criar Resource Group
 
-Em portal.azure.com → buscar "Resource groups" → Criar:
-- Name: `rg-sistema-traction`
-- Region: Brazil South
+```bash
+az group create --name rg-sistema-traction --location brazilsouth
+```
 
 ---
 
 ## 2. Criar Azure SQL Database
 
-Portal → buscar "SQL databases" → Criar:
+No portal.azure.com → buscar "SQL databases" → Criar:
 
 | Campo | Valor |
 |---|---|
 | Resource group | `rg-sistema-traction` |
 | Database name | `sistema-traction-db` |
-| Server | Criar novo: nome único (ex: `sistema-traction-sql`), SQL authentication, definir usuário e senha fortes |
-| Compute + storage | Clique em "Configure database" → **Basic (5 DTUs)** |
-| Networking | Allow Azure services and resources to access this server = **Yes** |
+| Server | Criar novo: `sistema-traction-sql`, SQL authentication, usuário e senha fortes |
+| Compute + storage | Basic (5 DTUs) |
+| Backup redundancy | Locally redundant |
+| Networking | Ponto de extremidade público, Allow Azure services = Yes |
 
-Após criação:
-- Portal → SQL Database → **Connection strings** → ADO.NET → copiar a string
-- Ela terá o formato: `Server=tcp:sistema-traction-sql.database.windows.net,1433;Database=sistema-traction-db;User ID=SEU_USUARIO;Password=SUA_SENHA;Encrypt=True;`
+Após criar, copiar a connection string ADO.NET (autenticação SQL) em:
+Portal → SQL Database → Cadeias de conexão → ADO.NET
 
 ---
 
-## 3. Criar Azure App Service (backend .NET)
+## 3. Tornar a imagem Docker pública no GitHub
 
-Portal → buscar "App Services" → Criar:
+O Container Apps vai baixar a imagem do GitHub Container Registry (ghcr.io). Para isso a imagem precisa ser pública:
+
+1. Acesse: github.com/andre-rfreitas?tab=packages
+2. Após o primeiro deploy, o pacote `sistema-traction-api` aparecerá aqui
+3. Clique nele → Package settings → Change visibility → **Public**
+
+> A imagem contém apenas o binário compilado, não o código-fonte.
+
+---
+
+## 4. Criar Azure Container Apps
+
+```bash
+# Instalar extensão (só na primeira vez)
+az extension add --name containerapp --upgrade
+
+# Registrar providers
+az provider register --namespace Microsoft.App
+az provider register --namespace Microsoft.OperationalInsights
+
+# Criar environment
+az containerapp env create \
+  --name sistema-traction-env \
+  --resource-group rg-sistema-traction \
+  --location brazilsouth
+
+# Criar o container app (imagem placeholder — o GitHub Actions vai atualizar)
+az containerapp create \
+  --name sistema-traction-api \
+  --resource-group rg-sistema-traction \
+  --environment sistema-traction-env \
+  --image mcr.microsoft.com/dotnet/samples:aspnetapp \
+  --target-port 8080 \
+  --ingress external \
+  --min-replicas 0 \
+  --max-replicas 2 \
+  --env-vars \
+    ASPNETCORE_ENVIRONMENT=Production \
+    "ConnectionStrings__DefaultConnection=SUA_CONNECTION_STRING_AQUI" \
+    "AllowedCorsOrigins=https://NOME-DO-APP.azurestaticapps.net"
+```
+
+> Substitua `SUA_CONNECTION_STRING_AQUI` pela string do passo 2 (com a senha real).
+> O `AllowedCorsOrigins` será atualizado após criar o Static Web App (passo 6).
+
+Pegar a URL do backend:
+```bash
+az containerapp show \
+  --name sistema-traction-api \
+  --resource-group rg-sistema-traction \
+  --query properties.configuration.ingress.fqdn \
+  --output tsv
+```
+
+Guarde essa URL (ex: `sistema-traction-api.azurecontainerapps.io`).
+
+---
+
+## 5. Criar credenciais para o GitHub Actions
+
+```bash
+az ad sp create-for-rbac \
+  --name "sistema-traction-deploy" \
+  --role contributor \
+  --scopes /subscriptions/$(az account show --query id -o tsv)/resourceGroups/rg-sistema-traction \
+  --sdk-auth
+```
+
+Copie o JSON completo retornado. No GitHub:
+- Settings → Secrets and variables → Actions → New repository secret
+- Nome: `AZURE_CREDENTIALS`
+- Valor: JSON completo copiado
+
+---
+
+## 6. Criar Azure Static Web Apps (frontend)
+
+No portal.azure.com → buscar "Static Web Apps" → Criar:
 
 | Campo | Valor |
 |---|---|
 | Resource group | `rg-sistema-traction` |
-| Name | `sistema-traction-api` ← **deve bater exatamente com o workflow do GitHub Actions** |
-| Publish | Code |
-| Runtime stack | **.NET 9** |
-| OS | Linux |
-| Region | Brazil South |
-| Pricing plan | **Basic B1** (~R$70/mês) |
-
-### Configurar variáveis de ambiente (App Settings)
-
-Portal → App Service → **Configuration** → Application settings → New application setting:
-
-| Nome | Valor |
-|---|---|
-| `ConnectionStrings__DefaultConnection` | String completa do passo 2 (com usuário e senha) |
-| `ASPNETCORE_ENVIRONMENT` | `Production` |
-| `AllowedCorsOrigins` | Preencher após criar o Static Web App (passo 4) |
-
-Clicar em **Save**.
-
-### Baixar Publish Profile
-
-Portal → App Service → Overview → **Get publish profile** → baixa arquivo `.PublishSettings`
-
-No GitHub: **Settings → Secrets and variables → Actions → New repository secret**
-- Nome: `AZURE_WEBAPP_PUBLISH_PROFILE`
-- Valor: conteúdo do arquivo `.PublishSettings` (abrir no bloco de notas e copiar tudo)
-
----
-
-## 4. Criar Azure Static Web Apps (frontend React)
-
-Portal → buscar "Static Web Apps" → Criar:
-
-| Campo | Valor |
-|---|---|
-| Resource group | `rg-sistema-traction` |
-| Name | qualquer (ex: `sistema-traction`) |
+| Name | `sistema-traction` |
 | Plan type | **Free** |
 | Region | East US 2 |
-| Source | GitHub → autorizar → selecionar repositório e branch `main` |
+| Source | GitHub → autorizar → repo SistemaTraction, branch main |
 | App location | `/frontend` |
 | Output location | `dist` |
 | API location | (deixar vazio) |
 
-Criar.
+Após criar:
+- **Deletar** o workflow gerado automaticamente pelo Azure no repositório
+- Copiar a URL gerada (ex: `https://sistema-traction-abc123.azurestaticapps.net`)
+- Pegar o token: Portal → Static Web App → Manage deployment token
 
-**Após criar:**
-- O Azure vai criar um workflow automático no seu repositório — **deletar esse arquivo** (nosso workflow em `.github/workflows/frontend-deploy.yml` já faz isso)
-- Copiar a **URL gerada** (ex: `https://sistema-traction-abc123.azurestaticapps.net`)
-
-### Pegar o token de deploy
-
-Portal → Static Web App → **Manage deployment token** → copiar
-
-No GitHub: Settings → Secrets → New secret
-- Nome: `AZURE_STATIC_WEB_APPS_API_TOKEN`
-- Valor: token copiado
+No GitHub, adicionar secrets:
+| Secret | Valor |
+|---|---|
+| `AZURE_STATIC_WEB_APPS_API_TOKEN` | token do Static Web App |
+| `VITE_API_URL` | `https://sistema-traction-api.REGIÃO.azurecontainerapps.io` (URL do passo 4) |
 
 ---
 
-## 5. Atualizar CORS com a URL real do Static Web App
+## 7. Atualizar CORS com a URL do Static Web App
 
-Agora que você tem a URL do Static Web App (ex: `https://sistema-traction-abc123.azurestaticapps.net`):
+```bash
+az containerapp update \
+  --name sistema-traction-api \
+  --resource-group rg-sistema-traction \
+  --set-env-vars "AllowedCorsOrigins=https://sistema-traction-abc123.azurestaticapps.net"
+```
 
-**No código** — editar `backend/src/API/appsettings.Production.json`:
+Atualizar também `backend/src/API/appsettings.Production.json`:
 ```json
 {
   "AllowedCorsOrigins": "https://sistema-traction-abc123.azurestaticapps.net"
 }
 ```
 
-**No Azure** — App Service → Configuration → Application settings:
-- `AllowedCorsOrigins` = `https://sistema-traction-abc123.azurestaticapps.net`
-
 ---
 
-## 6. Configurar todos os secrets do GitHub
-
-GitHub: **Settings → Secrets and variables → Actions**
-
-| Secret | Como obter |
-|---|---|
-| `AZURE_WEBAPP_PUBLISH_PROFILE` | App Service → Get publish profile (passo 3) |
-| `AZURE_STATIC_WEB_APPS_API_TOKEN` | Static Web App → Manage deployment token (passo 4) |
-| `VITE_API_URL` | `https://sistema-traction-api.azurewebsites.net` (sem barra no final) |
-
----
-
-## 7. Fazer o primeiro deploy
+## 8. Fazer o primeiro deploy
 
 ```bash
 git add .
-git commit -m "config: preparação para deploy Azure"
+git commit -m "config: atualizar CORS para URL de produção"
 git push origin main
 ```
 
-Isso dispara os dois workflows. Acompanhar em: **GitHub → Actions**.
+Acompanhar em: GitHub → Actions → ver os dois workflows rodando.
 
 ---
 
-## 8. Verificar
+## 9. Verificar
 
-1. `https://sistema-traction-api.azurewebsites.net/scalar/v1` → documentação da API
-2. `https://sistema-traction-NOME.azurestaticapps.net` → sistema funcionando
-
----
-
-## Custos mensais estimados
-
-| Recurso | Plano | Custo |
-|---|---|---|
-| Azure App Service | B1 Basic | ~R$70/mês |
-| Azure SQL Database | Basic 5 DTU | ~R$25/mês |
-| Azure Static Web Apps | Free | R$0 |
-| **Total** | | **~R$95/mês** |
+1. `https://sistema-traction-api.REGIÃO.azurecontainerapps.io/scalar/v1` → documentação da API
+2. `https://sistema-traction-abc123.azurestaticapps.net` → sistema funcionando
 
 ---
 
-## Domínio personalizado (opcional)
+## Secrets do GitHub — resumo final
 
-Após o sistema estar no ar, é possível configurar `sistema.minhaempresa.com.br`:
-- App Service → Custom domains
-- Static Web App → Custom domains
-
-Sem custo adicional do Azure (só o custo do domínio em si).
+| Secret | Como obter |
+|---|---|
+| `AZURE_CREDENTIALS` | Saída do comando `az ad sp create-for-rbac` (passo 5) |
+| `AZURE_STATIC_WEB_APPS_API_TOKEN` | Static Web App → Manage deployment token (passo 6) |
+| `VITE_API_URL` | URL do Container App sem `/` no final (passo 4) |
