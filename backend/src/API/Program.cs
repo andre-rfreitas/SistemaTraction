@@ -27,9 +27,14 @@ builder.Services.AddOpenApi(); // .NET 9 built-in OpenAPI
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-        policy.WithOrigins("http://localhost:5173")
+    {
+        var origins = builder.Configuration["AllowedCorsOrigins"]
+            ?.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            ?? ["http://localhost:5173"];
+        policy.WithOrigins(origins)
               .AllowAnyHeader()
-              .AllowAnyMethod());
+              .AllowAnyMethod();
+    });
 });
 
 var app = builder.Build();
