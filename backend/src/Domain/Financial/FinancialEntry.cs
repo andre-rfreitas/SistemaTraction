@@ -91,4 +91,33 @@ public class FinancialEntry : BaseEntity
             EntryDate = DateTime.UtcNow
         };
     }
+
+    public static FinancialEntry CreateIncome(
+        string category,
+        decimal amount,
+        string description,
+        DateTime entryDate,
+        Guid? referenceId = null,
+        string? referenceType = null)
+    {
+        if (string.IsNullOrWhiteSpace(category))
+            throw new DomainException("Categoria do lançamento financeiro não pode ser vazia.");
+
+        if (amount <= 0)
+            throw new DomainException("Valor do lançamento deve ser maior que zero.");
+
+        if (string.IsNullOrWhiteSpace(description))
+            throw new DomainException("Descrição do lançamento não pode ser vazia.");
+
+        return new FinancialEntry
+        {
+            Type = FinancialEntryType.Income,
+            Category = category.Trim(),
+            Amount = amount,
+            Description = description.Trim(),
+            ReferenceId = referenceId,
+            ReferenceType = referenceType,
+            EntryDate = entryDate
+        };
+    }
 }

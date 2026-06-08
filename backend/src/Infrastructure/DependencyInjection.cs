@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SistemaTraction.Application.Common.Interfaces;
 using SistemaTraction.Infrastructure.Pdf;
 using SistemaTraction.Infrastructure.Persistence;
+using SistemaTraction.Infrastructure.Shopify;
 using SistemaTraction.Infrastructure.WhatsApp;
 
 namespace SistemaTraction.Infrastructure;
@@ -20,6 +21,9 @@ public static class DependencyInjection
 
         services.AddScoped<IWhatsAppService, NicochatWhatsAppService>();
         services.AddScoped<IPdfParser, PdfPigParser>();
+
+        services.AddHttpClient("shopify");
+        services.AddScoped<IShopifyService, ShopifyService>();
 
         return services;
     }

@@ -2,8 +2,10 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Financial.Commands.CreateFinancialEntry;
 using SistemaTraction.Application.Financial.Commands.ReverseFinancialEntry;
+using SistemaTraction.Application.Financial.Commands.SyncShopifyOrders;
 using SistemaTraction.Application.Financial.Queries.GetFinancialEntries;
 using SistemaTraction.Application.Financial.Queries.GetFinancialSummary;
+using SistemaTraction.Application.Financial.Queries.GetShopifyStatus;
 using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
@@ -56,6 +58,26 @@ public class FinancialController(IMediator mediator) : ControllerBase
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }
+
+    // POST api/financial/shopify/sync
+    [HttpPost("shopify/sync")]
+    public async Task<IActionResult> ShopifySync([FromBody] ShopifySyncRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var result = await mediator.Send(new SyncShopifyOrdersCommand(request.From, request.To), ct);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    // GET api/financial/shopify/status
+    [HttpGet("shopify/status")]
+    public async Task<IActionResult> ShopifyStatus(CancellationToken ct)
+    {
+        var result = await mediator.Send(new GetShopifyStatusQuery(), ct);
+        return Ok(result);
+    }
 }
 
 public record CreateFinancialEntryRequest(
@@ -64,3 +86,5 @@ public record CreateFinancialEntryRequest(
     decimal Amount,
     string Description
 );
+
+public record ShopifySyncRequest(DateOnly From, DateOnly To);

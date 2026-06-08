@@ -79,7 +79,31 @@ public class AppConfigConfiguration : IEntityTypeConfiguration<AppConfig>
 
             Seed(new Guid("cccccccc-0000-0000-0000-00000000000e"),
                 "dtf_stock_alert_threshold", "100",
-                "Quantidade mínima de estampas DTF antes de disparar alerta de reposição")
+                "Quantidade mínima de estampas DTF antes de disparar alerta de reposição"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-00000000000f"),
+                "shopify_store_url", "",
+                "URL da loja Shopify (ex: minha-loja.myshopify.com)"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000010"),
+                "shopify_access_token", "",
+                "Token de acesso da API privada Shopify"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000011"),
+                "shopify_api_version", "2026-01",
+                "Versão da Shopify Admin API"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000012"),
+                "shopify_last_sync", "",
+                "Data/hora do último sync de pedidos Shopify"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000013"),
+                "shopify_last_sync_imported", "0",
+                "Quantidade de pedidos importados no último sync"),
+
+            Seed(new Guid("cccccccc-0000-0000-0000-000000000014"),
+                "shopify_last_sync_amount", "0",
+                "Valor total importado no último sync (R$)")
         );
     }
 

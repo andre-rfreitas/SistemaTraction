@@ -35,6 +35,20 @@ export interface FinancialSummaryDto {
   expenseByCategory: CategoryTotalDto[]
 }
 
+export interface ShopifySyncResultDto {
+  totalImported: number
+  totalSkipped: number
+  totalAmount: number
+  errors: string[]
+}
+
+export interface ShopifyStatusDto {
+  configured: boolean
+  lastSync: string | null
+  lastSyncImported: number
+  lastSyncAmount: number
+}
+
 export type PeriodPreset = 'week' | 'month' | 'custom'
 
 export const CATEGORY_COLORS: Record<string, string> = {

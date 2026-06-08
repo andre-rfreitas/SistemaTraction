@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { Shirt, Image, DollarSign, MessageSquare, FileText, Package, ChevronRight, Tag } from 'lucide-react'
+import { Shirt, Image, DollarSign, MessageSquare, FileText, Package, ChevronRight, Tag, ShoppingBag } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { PricingSection } from './sections/PricingSection'
 import { WhatsAppSection } from './sections/WhatsAppSection'
 import { TemplatesSection } from './sections/TemplatesSection'
 import { StockSection } from './sections/StockSection'
 import { SupplyOrderConfigSection } from './sections/SupplyOrderConfigSection'
+import { ShopifySection } from './sections/ShopifySection'
 import type { TabId } from '@/components/layout/nav'
 
-type SettingsTab = 'pricing' | 'whatsapp' | 'templates' | 'stock' | 'embalagens'
+type SettingsTab = 'pricing' | 'whatsapp' | 'templates' | 'stock' | 'embalagens' | 'shopify'
 
 const TABS: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
   { id: 'pricing', label: 'Preços', icon: DollarSign },
@@ -16,6 +17,7 @@ const TABS: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
   { id: 'templates', label: 'Templates', icon: FileText },
   { id: 'stock', label: 'Estoque', icon: Package },
   { id: 'embalagens', label: 'Embalagens', icon: Tag },
+  { id: 'shopify', label: 'Shopify', icon: ShoppingBag },
 ]
 
 interface Props {
@@ -79,6 +81,7 @@ export function SettingsPage({ onNavigate }: Props) {
         {active === 'templates' && <TemplatesSection />}
         {active === 'stock' && <StockSection />}
         {active === 'embalagens' && <SupplyOrderConfigSection />}
+        {active === 'shopify' && <ShopifySection />}
       </div>
     </div>
   )

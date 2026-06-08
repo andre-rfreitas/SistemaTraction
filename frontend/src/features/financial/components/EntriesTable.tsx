@@ -12,6 +12,18 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
 
+function ShopifyBadge({ sourceName }: { sourceName: string }) {
+  const label = sourceName.includes('tiktok') ? 'Shopify — TikTok' : 'Shopify — Web'
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-[#96BF48]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#5a8c0e]">
+      <svg viewBox="0 0 24 24" className="h-2.5 w-2.5 shrink-0" fill="currentColor">
+        <path d="M15.337 3.054c-.07 0-.14.003-.213.008a2.944 2.944 0 00-.588.1 2.29 2.29 0 00-.823.415c-.508-.102-1.128.159-1.581.989l-.04.075-.044.07C11.638 5.1 11.3 5.9 11.3 7c0 .028 0 .057.002.086l4.784 1.479c.048-1.871-.46-4.068-.749-5.511zM5.596 22.5l13.808-2.5-4.696-16.517-9.112-1.039L5.596 22.5z" />
+      </svg>
+      {label}
+    </span>
+  )
+}
+
 interface Props {
   entries: FinancialEntryDto[]
   onReverse: (id: string) => void
@@ -50,7 +62,12 @@ export function EntriesTable({ entries, onReverse, isReversing }: Props) {
                 {formatDate(e.entryDate)}
               </TableCell>
               <TableCell>
-                <Badge variant={e.type === 'Income' ? 'success' : 'neutral'}>{e.category}</Badge>
+                <div className="flex flex-col gap-1">
+                  <Badge variant={e.type === 'Income' ? 'success' : 'neutral'}>{e.category}</Badge>
+                  {e.referenceType === 'ShopifyOrder' && (
+                    <ShopifyBadge sourceName={e.category} />
+                  )}
+                </div>
               </TableCell>
               <TableCell className="text-foreground">
                 {e.description}
@@ -72,7 +89,7 @@ export function EntriesTable({ entries, onReverse, isReversing }: Props) {
                 {formatBRL(Math.abs(e.amount))}
               </TableCell>
               <TableCell className="text-right">
-                {!e.isReversal && !e.isReversed && (
+                {!e.isReversal && !e.isReversed && e.referenceType !== 'ShopifyOrder' && (
                   <Button
                     variant="ghost"
                     size="sm"

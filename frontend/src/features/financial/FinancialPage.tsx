@@ -7,6 +7,7 @@ import { SummaryCards } from './components/SummaryCards'
 import { CategoryChart } from './components/CategoryChart'
 import { EntriesTable } from './components/EntriesTable'
 import { ManualEntryForm } from './components/ManualEntryForm'
+import { ShopifySyncCard } from './components/ShopifySyncCard'
 import type { PeriodPreset } from './types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -141,6 +142,14 @@ export function FinancialPage() {
           <SummaryCards summary={summary.data} />
           <CategoryChart data={summary.data.expenseByCategory} />
         </>
+      )}
+
+      {entries.data && (
+        <ShopifySyncCard
+          entries={entries.data}
+          periodFrom={range.from}
+          periodTo={range.to}
+        />
       )}
 
       <div className="space-y-3">
