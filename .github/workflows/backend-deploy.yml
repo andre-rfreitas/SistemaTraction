@@ -52,8 +52,10 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Container Apps
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          containerAppName: sistema-traction-api
-          resourceGroup: rg-sistema-traction
-          imageToDeploy: ${{ env.IMAGE }}
+        run: |
+          az extension add --name containerapp --upgrade --only-show-errors
+          az containerapp update \
+            --name sistema-traction-api \
+            --resource-group rg-sistema-traction \
+            --image ${{ env.IMAGE }} \
+            --output none
