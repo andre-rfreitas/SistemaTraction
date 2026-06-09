@@ -61,6 +61,12 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference(); // UI em /scalar/v1
 }
 
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("Vary", "Origin");
+    await next();
+});
+
 app.UseCors();
 app.UseAuthorization();
 app.MapControllers();
