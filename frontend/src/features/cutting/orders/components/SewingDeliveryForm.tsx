@@ -20,6 +20,7 @@ interface Props {
 
 export function SewingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Props) {
   const [step, setStep] = useState<Step>('pieces')
+  const firstItem = order.items[0]
 
   // Step 1: total received from sewer (pre-fill from deliveredPieces if available)
   const [received, setReceived] = useState<Record<string, number>>(() => {
@@ -59,8 +60,8 @@ export function SewingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Pr
     return (
       <div className="space-y-5">
         <div className="rounded-md bg-info/10 border border-info/20 px-3 py-2 text-sm text-info">
-          Pedido #{order.orderNumber} — {order.fabricColorName} {order.fabricTypeName}{' '}
-          {order.fabricTypeVariation}
+          Pedido #{order.orderNumber} — {firstItem?.fabricColorName} {firstItem?.fabricTypeName}{' '}
+          {firstItem?.fabricTypeVariation}
         </div>
 
         <div>
@@ -202,7 +203,7 @@ export function SewingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Pr
             Pedido #{order.orderNumber}
           </p>
           <p className="text-sm font-semibold text-foreground">
-            {order.fabricColorName} {order.fabricTypeName} {order.fabricTypeVariation}
+            {firstItem?.fabricColorName} {firstItem?.fabricTypeName} {firstItem?.fabricTypeVariation}
           </p>
         </div>
 
