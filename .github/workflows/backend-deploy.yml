@@ -54,6 +54,13 @@ jobs:
       - name: Deploy to Azure Container Apps
         run: |
           az extension add --name containerapp --upgrade --only-show-errors
+          az containerapp registry set \
+            --name sistema-traction-api \
+            --resource-group rg-sistema-traction \
+            --server ghcr.io \
+            --username ${{ github.actor }} \
+            --password ${{ secrets.GHCR_READ_TOKEN }} \
+            --output none
           az containerapp update \
             --name sistema-traction-api \
             --resource-group rg-sistema-traction \
