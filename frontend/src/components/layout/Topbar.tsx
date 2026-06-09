@@ -1,6 +1,7 @@
-import { Menu, PanelLeftClose, PanelLeft } from 'lucide-react'
+import { LogOut, Menu, PanelLeft, PanelLeftClose } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { useLogout } from '@/features/auth/hooks/useLogout'
 
 interface TopbarProps {
   title: string
@@ -10,6 +11,8 @@ interface TopbarProps {
 }
 
 export function Topbar({ title, collapsed, onToggleCollapse, onOpenMobile }: TopbarProps) {
+  const { mutate: logout, isPending } = useLogout()
+
   return (
     <header className="flex h-14 items-center gap-2 border-b border-border bg-background/80 px-4 backdrop-blur">
       <Button
@@ -31,8 +34,17 @@ export function Topbar({ title, collapsed, onToggleCollapse, onOpenMobile }: Top
         {collapsed ? <PanelLeft className="size-4" /> : <PanelLeftClose className="size-4" />}
       </Button>
       <span className="text-sm font-medium text-foreground">{title}</span>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1">
         <ThemeToggle />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => logout()}
+          disabled={isPending}
+          aria-label="Sair"
+        >
+          <LogOut className="size-4" />
+        </Button>
       </div>
     </header>
   )

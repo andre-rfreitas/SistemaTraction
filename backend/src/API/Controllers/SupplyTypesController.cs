@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Supplies.Commands.CreateSupplyType;
 using SistemaTraction.Application.Supplies.Commands.DeleteSupplyType;
@@ -8,6 +9,7 @@ using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/supply-types")]
 public class SupplyTypesController(IMediator mediator) : ControllerBase

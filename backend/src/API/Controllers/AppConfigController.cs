@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Config.Commands.UpsertAppConfig;
 using SistemaTraction.Application.Config.Queries.GetAppConfigByKey;
@@ -7,6 +8,7 @@ using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/config")]
 public class AppConfigController(IMediator mediator) : ControllerBase

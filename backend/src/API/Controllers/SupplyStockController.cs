@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Supplies.Commands.RegisterSupplyMovement;
 using SistemaTraction.Application.Supplies.Queries.GetSupplyStockItems;
@@ -8,6 +9,7 @@ using SistemaTraction.Domain.Supplies;
 
 namespace SistemaTraction.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/supply-stock")]
 public class SupplyStockController(IMediator mediator) : ControllerBase

@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Dtf.Commands.RegisterDtfMovement;
 using SistemaTraction.Application.Dtf.Queries.GetDtfStockItemByModel;
@@ -8,6 +9,7 @@ using SistemaTraction.Domain.Dtf;
 
 namespace SistemaTraction.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/dtf-stock")]
 public class DtfStockController(IMediator mediator) : ControllerBase

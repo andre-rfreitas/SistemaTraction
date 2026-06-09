@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Cutting.Commands.CreateCuttingOrder;
 using SistemaTraction.Application.Cutting.Commands.RegisterCuttingDelivery;
@@ -12,6 +13,7 @@ using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/cutting-orders")]
 public class CuttingOrdersController(IMediator mediator) : ControllerBase

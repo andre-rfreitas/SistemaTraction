@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Fabric.Commands.RegisterFabricRoll;
 using SistemaTraction.Application.Fabric.Queries.GetFabricRollById;
@@ -7,6 +8,7 @@ using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/fabric-rolls")]
 public class FabricRollsController(IMediator mediator) : ControllerBase

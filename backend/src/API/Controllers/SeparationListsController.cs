@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Separation.Commands.ConfirmSeparationList;
 using SistemaTraction.Application.Separation.Commands.DeleteSeparationList;
@@ -15,6 +16,7 @@ using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/separation-lists")]
 public class SeparationListsController(IMediator mediator) : ControllerBase

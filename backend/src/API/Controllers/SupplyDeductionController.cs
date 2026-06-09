@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Supplies.Commands.DeductSuppliesForSeparation;
 using SistemaTraction.Application.Supplies.Queries.GetSupplyDeductionPreview;
@@ -6,6 +7,7 @@ using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/supply-deduction")]
 public class SupplyDeductionController(IMediator mediator) : ControllerBase

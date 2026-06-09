@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Dtf.Commands.CreateDtfModel;
 using SistemaTraction.Application.Dtf.Commands.DeleteDtfModel;
@@ -9,6 +10,7 @@ using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/dtf-models")]
 public class DtfModelsController(IMediator mediator) : ControllerBase

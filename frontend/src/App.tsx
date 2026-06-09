@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
+import { useAuth } from '@/lib/auth'
+import { LoginPage } from '@/features/auth/LoginPage'
 import type { TabId } from '@/components/layout/nav'
 import { FabricTypePage } from '@/features/settings/fabric/FabricTypePage'
 import { FabricRollPage } from '@/features/fabric/rolls/FabricRollPage'
@@ -14,7 +16,20 @@ import { SupplyStockPage } from '@/features/stock/supplies/SupplyStockPage'
 import { SupplyTypePage } from '@/features/settings/supplies/SupplyTypePage'
 
 function App() {
+  const { isAuthenticated, isLoading } = useAuth()
   const [tab, setTab] = useState<TabId>('financial')
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />
+  }
 
   const pages: Record<TabId, React.ReactNode> = {
     fabric: <FabricTypePage />,

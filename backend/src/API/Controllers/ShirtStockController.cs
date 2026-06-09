@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Stock.Commands.AdjustShirtStock;
 using SistemaTraction.Application.Stock.Queries.GetShirtStock;
@@ -7,6 +8,7 @@ using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/stock/shirts")]
 public class ShirtStockController(IMediator mediator) : ControllerBase

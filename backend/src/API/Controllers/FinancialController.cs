@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Financial.Commands.CreateFinancialEntry;
 using SistemaTraction.Application.Financial.Commands.ReverseFinancialEntry;
@@ -10,6 +11,7 @@ using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/financial")]
 public class FinancialController(IMediator mediator) : ControllerBase

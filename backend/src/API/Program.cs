@@ -1,8 +1,13 @@
+using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Serilog;
 using SistemaTraction.Application;
+using SistemaTraction.Application.Common.Interfaces;
 using SistemaTraction.Infrastructure;
 using SistemaTraction.Infrastructure.Persistence;
 
@@ -19,10 +24,54 @@ builder.Host.UseSerilog((ctx, lc) => lc
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// Auth settings — lidos uma vez ao iniciar, falha rápido se não configurados
+builder.Services.AddSingleton<IAuthSettings>(new AuthSettings(
+    builder.Configuration["AUTH_PASSWORD_HASH"]
+        ?? throw new InvalidOperationException("AUTH_PASSWORD_HASH não configurado"),
+    builder.Configuration["JWT_SECRET"]
+        ?? throw new InvalidOperationException("JWT_SECRET não configurado")));
+
+// JWT authentication — lê token do cookie auth_token
+var jwtSecret = builder.Configuration["JWT_SECRET"]
+    ?? throw new InvalidOperationException("JWT_SECRET não configurado");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                ctx.Token = ctx.Request.Cookies["auth_token"];
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+// Rate limiter — 5 tentativas de login por minuto por IP
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("login", o =>
+    {
+        o.PermitLimit = 5;
+        o.Window = TimeSpan.FromMinutes(1);
+        o.QueueLimit = 0;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
         opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-builder.Services.AddOpenApi(); // .NET 9 built-in OpenAPI
+builder.Services.AddOpenApi();
 
 builder.Services.AddCors(options =>
 {
@@ -33,13 +82,13 @@ builder.Services.AddCors(options =>
             ?? ["http://localhost:5173"];
         policy.WithOrigins(origins)
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
-// Aplica migrations automaticamente ao iniciar (cria o banco se não existir)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -58,7 +107,7 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.MapScalarApiReference(); // UI em /scalar/v1
+    app.MapScalarApiReference();
 }
 
 app.Use(async (context, next) =>
@@ -68,7 +117,11 @@ app.Use(async (context, next) =>
 });
 
 app.UseCors();
+app.UseRateLimiter();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+internal record AuthSettings(string PasswordHash, string JwtSecret) : IAuthSettings;

@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Fabric.Commands.CreateFabricColor;
 using SistemaTraction.Application.Fabric.Commands.CreateFabricType;
@@ -12,6 +13,7 @@ using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/fabric-types")]
 public class FabricTypesController(IMediator mediator) : ControllerBase
