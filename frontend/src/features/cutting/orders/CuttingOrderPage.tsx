@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { CuttingOrderList } from './components/CuttingOrderList'
 import { CuttingOrderForm } from './components/CuttingOrderForm'
+import { CuttingOrderEditForm } from './components/CuttingOrderEditForm'
 import { CuttingDeliveryForm } from './components/CuttingDeliveryForm'
 import { SewingDeliveryForm } from './components/SewingDeliveryForm'
 import { WhatsAppMessageReview } from './components/WhatsAppMessageReview'
 import { WhatsAppSewerReview } from './components/WhatsAppSewerReview'
 import { RecommendationAccuracyHistory } from './components/RecommendationAccuracyHistory'
 import { useCreateCuttingOrder } from './hooks/useCreateCuttingOrder'
+import { useUpdateCuttingOrder } from './hooks/useUpdateCuttingOrder'
+import { useCancelCuttingOrder } from './hooks/useCancelCuttingOrder'
 import { useSendCuttingOrder } from './hooks/useSendCuttingOrder'
 import { useRegisterCuttingDelivery } from './hooks/useRegisterCuttingDelivery'
 import { useRegisterSewingDelivery } from './hooks/useRegisterSewingDelivery'
@@ -37,6 +40,13 @@ export function CuttingOrderPage() {
   const [orderStep, setOrderStep] = useState<OrderStep>('form')
   const [orderResult, setOrderResult] = useState<CreateCuttingOrderResult | null>(null)
 
+  // Edit flow
+  const [editOpen, setEditOpen] = useState(false)
+  const [editOrder, setEditOrder] = useState<CuttingOrderDto | null>(null)
+
+  // Cancel confirmation
+  const [cancelOrder, setCancelOrder] = useState<CuttingOrderDto | null>(null)
+
   // Cutter delivery flow
   const [deliveryOpen, setDeliveryOpen] = useState(false)
   const [deliveryStep, setDeliveryStep] = useState<DeliveryStep>('delivery-form')
@@ -50,6 +60,8 @@ export function CuttingOrderPage() {
   const [sewingResult, setSewingResult] = useState<RegisterSewingDeliveryResult | null>(null)
 
   const createOrder = useCreateCuttingOrder()
+  const updateOrder = useUpdateCuttingOrder()
+  const cancelOrderMutation = useCancelCuttingOrder()
   const sendOrder = useSendCuttingOrder()
   const registerDelivery = useRegisterCuttingDelivery()
   const registerSewing = useRegisterSewingDelivery()
@@ -58,6 +70,27 @@ export function CuttingOrderPage() {
     setOrderOpen(false)
     setOrderStep('form')
     setOrderResult(null)
+  }
+
+  function handleEditOpen(order: CuttingOrderDto) {
+    setEditOrder(order)
+    setEditOpen(true)
+  }
+
+  function handleEditClose() {
+    setEditOpen(false)
+    setEditOrder(null)
+  }
+
+  function handleCancelOpen(order: CuttingOrderDto) {
+    setCancelOrder(order)
+  }
+
+  function handleCancelConfirm() {
+    if (!cancelOrder) return
+    cancelOrderMutation.mutate(cancelOrder.id, {
+      onSuccess: () => setCancelOrder(null),
+    })
   }
 
   function handleDeliveryOpen(order: CuttingOrderDto) {
@@ -99,6 +132,8 @@ export function CuttingOrderPage() {
       <CuttingOrderList
         onRegisterDelivery={handleDeliveryOpen}
         onRegisterSewingDelivery={handleSewingOpen}
+        onEdit={handleEditOpen}
+        onCancel={handleCancelOpen}
       />
 
       <RecommendationAccuracyHistory />
@@ -138,6 +173,59 @@ export function CuttingOrderPage() {
               onDone={handleOrderClose}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: editar pedido */}
+      <Dialog open={editOpen} onOpenChange={(v) => { if (!v) handleEditClose() }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar pedido #{editOrder?.orderNumber}</DialogTitle>
+          </DialogHeader>
+          {editOrder && (
+            <CuttingOrderEditForm
+              order={editOrder}
+              isLoading={updateOrder.isPending}
+              onConfirm={(input) =>
+                updateOrder.mutate(input, { onSuccess: handleEditClose })
+              }
+              onCancel={handleEditClose}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: confirmar cancelamento */}
+      <Dialog open={!!cancelOrder} onOpenChange={(v) => { if (!v) setCancelOrder(null) }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Cancelar pedido #{cancelOrder?.orderNumber}?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {cancelOrder?.status === 'SentToCutter'
+                ? 'O pedido foi enviado ao cortador. As bobinas serão revertidas para disponível.'
+                : 'O rascunho será removido permanentemente.'}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setCancelOrder(null)}
+                disabled={cancelOrderMutation.isPending}
+                className="flex-1"
+              >
+                Voltar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleCancelConfirm}
+                disabled={cancelOrderMutation.isPending}
+                className="flex-1"
+              >
+                {cancelOrderMutation.isPending ? 'Cancelando...' : 'Confirmar cancelamento'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

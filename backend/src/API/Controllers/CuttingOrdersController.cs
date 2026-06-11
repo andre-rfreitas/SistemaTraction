@@ -1,9 +1,11 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SistemaTraction.Application.Cutting.Commands.CancelCuttingOrder;
 using SistemaTraction.Application.Cutting.Commands.CreateCuttingOrder;
 using SistemaTraction.Application.Cutting.Commands.RegisterCuttingDelivery;
 using SistemaTraction.Application.Cutting.Commands.SendCuttingOrder;
+using SistemaTraction.Application.Cutting.Commands.UpdateCuttingOrder;
 using SistemaTraction.Application.Cutting.Queries.GetCuttingOrderById;
 using SistemaTraction.Application.Cutting.Queries.GetCuttingOrders;
 using SistemaTraction.Application.Cutting.Queries.GetCuttingRecommendation;
@@ -76,6 +78,31 @@ public class CuttingOrdersController(IMediator mediator) : ControllerBase
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
+    // PUT api/cutting-orders/{id}
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCuttingOrderRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var items = request.Items.Select(i => new UpdateCuttingOrderItemInput(i.FabricRollId, i.RequestedPieces)).ToList();
+            await mediator.Send(new UpdateCuttingOrderCommand(id, items, request.Notes), ct);
+            return NoContent();
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    // DELETE api/cutting-orders/{id}
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await mediator.Send(new CancelCuttingOrderCommand(id), ct);
+            return NoContent();
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
     // POST api/cutting-orders/{id}/send
     [HttpPost("{id:guid}/send")]
     public async Task<IActionResult> Send(Guid id, CancellationToken ct)
@@ -134,6 +161,9 @@ public record CreateCuttingOrderRequest(
 
 public record RegisterDeliveryItemRequest(Guid FabricRollId, Dictionary<string, int> DeliveredPieces);
 public record RegisterDeliveryRequest(List<RegisterDeliveryItemRequest> Items);
+
+public record UpdateCuttingOrderItemRequest(Guid FabricRollId, Dictionary<string, int> RequestedPieces);
+public record UpdateCuttingOrderRequest(List<UpdateCuttingOrderItemRequest> Items, string? Notes);
 
 public record RegisterSewingDeliveryItemRequest(
     Guid FabricRollId,

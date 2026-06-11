@@ -22,6 +22,16 @@ public class CuttingOrderItem : BaseEntity
             RequestedPiecesJson = JsonSerializer.Serialize(pieces)
         };
 
+    public void UpdatePieces(Dictionary<string, int> pieces)
+    {
+        if (pieces.Values.Any(v => v < 0))
+            throw new DomainException("Quantidades não podem ser negativas.");
+        if (pieces.Values.Sum() == 0)
+            throw new DomainException("Cada bobina deve ter pelo menos uma peça.");
+        RequestedPiecesJson = JsonSerializer.Serialize(pieces);
+        TouchUpdatedAt();
+    }
+
     public Dictionary<string, int> GetRequestedPieces()
         => JsonSerializer.Deserialize<Dictionary<string, int>>(RequestedPiecesJson) ?? [];
 

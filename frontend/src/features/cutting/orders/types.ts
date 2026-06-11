@@ -78,6 +78,17 @@ export interface SewingItemResult {
   defectivePieces: Record<string, number>
 }
 
+export interface UpdateCuttingOrderItemInput {
+  fabricRollId: string
+  requestedPieces: Record<string, number>
+}
+
+export interface UpdateCuttingOrderInput {
+  orderId: string
+  items: UpdateCuttingOrderItemInput[]
+  notes?: string
+}
+
 export interface RegisterSewingDeliveryResult {
   sewingDeliveryId: string
   totalGoodPieces: number

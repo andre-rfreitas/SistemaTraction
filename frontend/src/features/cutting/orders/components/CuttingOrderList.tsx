@@ -23,9 +23,11 @@ const STATUS_VARIANT: Record<string, BadgeProps['variant']> = {
 interface Props {
   onRegisterDelivery: (order: CuttingOrderDto) => void
   onRegisterSewingDelivery: (order: CuttingOrderDto) => void
+  onEdit: (order: CuttingOrderDto) => void
+  onCancel: (order: CuttingOrderDto) => void
 }
 
-export function CuttingOrderList({ onRegisterDelivery, onRegisterSewingDelivery }: Props) {
+export function CuttingOrderList({ onRegisterDelivery, onRegisterSewingDelivery, onEdit, onCancel }: Props) {
   const { data: orders = [], isLoading } = useCuttingOrders()
 
   if (isLoading) {
@@ -51,6 +53,9 @@ export function CuttingOrderList({ onRegisterDelivery, onRegisterSewingDelivery 
     <div className="space-y-2">
       {orders.map((o) => {
         const activePieces = Object.entries(o.requestedPieces).filter(([, qty]) => qty > 0)
+        const canEdit = o.status === 'Draft'
+        const canCancel = o.status === 'Draft' || o.status === 'SentToCutter'
+
         return (
           <div key={o.id} className="border border-border rounded-lg p-3 bg-card">
             <div className="flex items-start justify-between gap-3">
@@ -94,6 +99,7 @@ export function CuttingOrderList({ onRegisterDelivery, onRegisterSewingDelivery 
                   {STATUS_LABEL[o.status] ?? o.status}
                 </Badge>
                 <p className="text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleDateString('pt-BR')}</p>
+
                 {o.status === 'SentToCutter' && (
                   <Button
                     size="sm"
@@ -112,6 +118,26 @@ export function CuttingOrderList({ onRegisterDelivery, onRegisterSewingDelivery 
                     className="text-xs h-7 px-2 border-warning/40 text-warning hover:bg-warning/10"
                   >
                     Entrega do costureiro
+                  </Button>
+                )}
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onEdit(o)}
+                    className="text-xs h-7 px-2"
+                  >
+                    Editar
+                  </Button>
+                )}
+                {canCancel && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onCancel(o)}
+                    className="text-xs h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    Cancelar
                   </Button>
                 )}
               </div>

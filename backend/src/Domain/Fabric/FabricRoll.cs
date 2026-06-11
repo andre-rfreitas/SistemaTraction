@@ -62,6 +62,14 @@ public class FabricRoll : BaseEntity
         TouchUpdatedAt();
     }
 
+    public void RevertToAvailable()
+    {
+        if (Status != FabricRollStatus.InCutting)
+            throw new DomainException("Apenas bobinas em corte podem ser revertidas para disponível.");
+        Status = FabricRollStatus.Available;
+        TouchUpdatedAt();
+    }
+
     public void MarkConsumed()
     {
         if (Status == FabricRollStatus.Consumed)

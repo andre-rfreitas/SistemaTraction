@@ -74,6 +74,33 @@ public class CuttingOrder : BaseEntity
 
     public int GetTotalPieces() => _items.Sum(i => i.GetTotalPieces());
 
+    public void UpdateItems(List<(Guid FabricRollId, Dictionary<string, int> Pieces)> items)
+    {
+        if (Status != CuttingOrderStatus.Draft)
+            throw new DomainException("Apenas pedidos em rascunho podem ser editados.");
+
+        foreach (var (rollId, pieces) in items)
+        {
+            var item = _items.FirstOrDefault(i => i.FabricRollId == rollId)
+                ?? throw new DomainException($"Bobina não encontrada no pedido.");
+            item.UpdatePieces(pieces);
+        }
+        TouchUpdatedAt();
+    }
+
+    public void UpdateNotes(string? notes)
+    {
+        Notes = notes?.Trim();
+        TouchUpdatedAt();
+    }
+
+    public void Cancel()
+    {
+        if (Status == CuttingOrderStatus.Delivered || Status == CuttingOrderStatus.SewingDelivered)
+            throw new DomainException("Pedidos já entregues não podem ser cancelados.");
+        MarkAsDeleted();
+    }
+
     public void MarkSent()
     {
         if (Status != CuttingOrderStatus.Draft)
