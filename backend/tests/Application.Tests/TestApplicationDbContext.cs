@@ -37,6 +37,8 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<SupplyStockItem> SupplyStockItems => Set<SupplyStockItem>();
     public DbSet<SupplyStockMovement> SupplyStockMovements => Set<SupplyStockMovement>();
     public DbSet<SupplyOrderConfig> SupplyOrderConfigs => Set<SupplyOrderConfig>();
+    public DbSet<Sewer> Sewers => Set<Sewer>();
+    public DbSet<SewerProductType> SewerProductTypes => Set<SewerProductType>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -192,5 +194,19 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
             b.HasOne(c => c.SupplyType).WithOne().HasForeignKey<SupplyOrderConfig>(c => c.SupplyTypeId);
             b.HasIndex(c => c.SupplyTypeId).IsUnique();
         });
+
+        modelBuilder.Entity<Sewer>(b =>
+        {
+            b.HasKey(s => s.Id);
+            b.HasMany(s => s.ProductTypes)
+             .WithOne(pt => pt.Sewer)
+             .HasForeignKey(pt => pt.SewerId)
+             .OnDelete(DeleteBehavior.Cascade);
+            b.Navigation(s => s.ProductTypes)
+             .HasField("_productTypes")
+             .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        modelBuilder.Entity<SewerProductType>(b => b.HasKey(pt => pt.Id));
     }
 }

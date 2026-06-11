@@ -4,6 +4,7 @@ using SistemaTraction.Domain.Common;
 using SistemaTraction.Domain.Config;
 using SistemaTraction.Domain.Cutting;
 using SistemaTraction.Domain.Fabric;
+using SistemaTraction.Domain.Sewing;
 
 namespace SistemaTraction.Application.Tests.Sewing;
 
@@ -26,10 +27,12 @@ public class RegisterSewingDeliveryCommandHandlerTests : IDisposable
             AppConfig.Create("sewing_price_g1", "6.30"),
             AppConfig.Create("cutting_price_default", "1.00")
         );
+        var sewer = Sewer.Create("Costureira Teste", null);
+        _context.Sewers.Add(sewer);
         _context.SaveChanges();
     }
 
-    private async Task<(CuttingOrder order, CuttingDelivery delivery)> SeedOrderWithDelivery(
+    private async Task<(CuttingOrder order, CuttingDelivery delivery, Guid rollId)> SeedOrderWithDelivery(
         Dictionary<string, int>? deliveredPieces = null)
     {
         var fabricType = FabricType.Create("Malha", "Regular", 20m, 15m, null);
@@ -57,17 +60,18 @@ public class RegisterSewingDeliveryCommandHandlerTests : IDisposable
         roll.MarkConsumed();
         await _context.SaveChangesAsync();
 
-        return (order, cd);
+        return (order, cd, roll.Id);
     }
 
     [Fact]
     public async Task Handle_ValidCommand_CreatesSewingDelivery()
     {
-        var (order, _) = await SeedOrderWithDelivery();
+        var (order, _, rollId) = await SeedOrderWithDelivery();
         var goodPieces = new Dictionary<string, int> { ["P"] = 8, ["M"] = 9 };
         var defectivePieces = new Dictionary<string, int> { ["P"] = 1, ["M"] = 1 };
 
-        var command = new RegisterSewingDeliveryCommand(order.Id, goodPieces, defectivePieces);
+        var command = new RegisterSewingDeliveryCommand(order.Id,
+            [new RegisterSewingDeliveryItemInput(rollId, goodPieces, defectivePieces)]);
         var result = await _handler.Handle(command, CancellationToken.None);
 
         result.TotalGoodPieces.Should().Be(17);
@@ -78,11 +82,12 @@ public class RegisterSewingDeliveryCommandHandlerTests : IDisposable
     [Fact]
     public async Task Handle_ValidCommand_UpdatesStockItems()
     {
-        var (order, _) = await SeedOrderWithDelivery();
+        var (order, _, rollId) = await SeedOrderWithDelivery();
         var goodPieces = new Dictionary<string, int> { ["P"] = 5, ["M"] = 7 };
 
         await _handler.Handle(
-            new RegisterSewingDeliveryCommand(order.Id, goodPieces, new Dictionary<string, int>()),
+            new RegisterSewingDeliveryCommand(order.Id,
+                [new RegisterSewingDeliveryItemInput(rollId, goodPieces, new Dictionary<string, int>())]),
             CancellationToken.None);
 
         var stockP = _context.StockItems.FirstOrDefault(s => s.Size == "P");
@@ -97,12 +102,13 @@ public class RegisterSewingDeliveryCommandHandlerTests : IDisposable
     [Fact]
     public async Task Handle_ValidCommand_CreatesFinancialEntries()
     {
-        var (order, _) = await SeedOrderWithDelivery();
+        var (order, _, rollId) = await SeedOrderWithDelivery();
         var goodPieces = new Dictionary<string, int> { ["M"] = 10 };
         var defectivePieces = new Dictionary<string, int> { ["M"] = 2 };
 
         await _handler.Handle(
-            new RegisterSewingDeliveryCommand(order.Id, goodPieces, defectivePieces),
+            new RegisterSewingDeliveryCommand(order.Id,
+                [new RegisterSewingDeliveryItemInput(rollId, goodPieces, defectivePieces)]),
             CancellationToken.None);
 
         var entries = _context.FinancialEntries.ToList();
@@ -113,12 +119,11 @@ public class RegisterSewingDeliveryCommandHandlerTests : IDisposable
     [Fact]
     public async Task Handle_ValidCommand_MarksOrderSewingDelivered()
     {
-        var (order, _) = await SeedOrderWithDelivery();
+        var (order, _, rollId) = await SeedOrderWithDelivery();
 
         await _handler.Handle(
             new RegisterSewingDeliveryCommand(order.Id,
-                new Dictionary<string, int> { ["P"] = 5 },
-                new Dictionary<string, int>()),
+                [new RegisterSewingDeliveryItemInput(rollId, new Dictionary<string, int> { ["P"] = 5 }, new Dictionary<string, int>())]),
             CancellationToken.None);
 
         var updated = await _context.CuttingOrders.FindAsync(order.Id);
@@ -128,15 +133,13 @@ public class RegisterSewingDeliveryCommandHandlerTests : IDisposable
     [Fact]
     public async Task Handle_DefectCost_CalculatesCorrectly()
     {
-        // FabricRoll PriceTotal=200, delivered pieces=19 → fabricCostPerPiece=200/19≈10.526
-        // cutting=1.00, sewing=5.60
-        // 1 defective P → cost = (200/19 + 1.00 + 5.60) * 1
-        var (order, delivery) = await SeedOrderWithDelivery(new Dictionary<string, int> { ["P"] = 9, ["M"] = 10 });
+        var (order, _, rollId) = await SeedOrderWithDelivery(new Dictionary<string, int> { ["P"] = 9, ["M"] = 10 });
         var goodPieces = new Dictionary<string, int> { ["P"] = 8, ["M"] = 10 };
         var defectivePieces = new Dictionary<string, int> { ["P"] = 1 };
 
         var result = await _handler.Handle(
-            new RegisterSewingDeliveryCommand(order.Id, goodPieces, defectivePieces),
+            new RegisterSewingDeliveryCommand(order.Id,
+                [new RegisterSewingDeliveryItemInput(rollId, goodPieces, defectivePieces)]),
             CancellationToken.None);
 
         var fabricCostPerPiece = 200m / 19m;
@@ -147,11 +150,12 @@ public class RegisterSewingDeliveryCommandHandlerTests : IDisposable
     [Fact]
     public async Task Handle_G1SizeUsesDifferentPrice()
     {
-        var (order, _) = await SeedOrderWithDelivery(new Dictionary<string, int> { ["G1"] = 10 });
+        var (order, _, rollId) = await SeedOrderWithDelivery(new Dictionary<string, int> { ["G1"] = 10 });
         var goodPieces = new Dictionary<string, int> { ["G1"] = 10 };
 
         var result = await _handler.Handle(
-            new RegisterSewingDeliveryCommand(order.Id, goodPieces, new Dictionary<string, int>()),
+            new RegisterSewingDeliveryCommand(order.Id,
+                [new RegisterSewingDeliveryItemInput(rollId, goodPieces, new Dictionary<string, int>())]),
             CancellationToken.None);
 
         result.SewingCostTotal.Should().Be(10 * 6.30m);
@@ -175,8 +179,7 @@ public class RegisterSewingDeliveryCommandHandlerTests : IDisposable
         await _context.SaveChangesAsync();
 
         var command = new RegisterSewingDeliveryCommand(order.Id,
-            new Dictionary<string, int> { ["M"] = 5 },
-            new Dictionary<string, int>());
+            [new RegisterSewingDeliveryItemInput(roll.Id, new Dictionary<string, int> { ["M"] = 5 }, new Dictionary<string, int>())]);
 
         var act = () => _handler.Handle(command, CancellationToken.None);
         await act.Should().ThrowAsync<DomainException>()
@@ -186,14 +189,12 @@ public class RegisterSewingDeliveryCommandHandlerTests : IDisposable
     [Fact]
     public async Task Handle_DuplicateDelivery_ThrowsDomainException()
     {
-        var (order, _) = await SeedOrderWithDelivery();
+        var (order, _, rollId) = await SeedOrderWithDelivery();
         var cmd = new RegisterSewingDeliveryCommand(order.Id,
-            new Dictionary<string, int> { ["P"] = 5 },
-            new Dictionary<string, int>());
+            [new RegisterSewingDeliveryItemInput(rollId, new Dictionary<string, int> { ["P"] = 5 }, new Dictionary<string, int>())]);
 
         await _handler.Handle(cmd, CancellationToken.None);
 
-        // After first delivery the order is SewingDelivered — any attempt is rejected
         var act = () => _handler.Handle(cmd, CancellationToken.None);
         await act.Should().ThrowAsync<DomainException>();
     }
