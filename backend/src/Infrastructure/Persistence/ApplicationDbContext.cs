@@ -36,6 +36,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<SupplyStockItem> SupplyStockItems => Set<SupplyStockItem>();
     public DbSet<SupplyStockMovement> SupplyStockMovements => Set<SupplyStockMovement>();
     public DbSet<SupplyOrderConfig> SupplyOrderConfigs => Set<SupplyOrderConfig>();
+    public DbSet<Sewer> Sewers => Set<Sewer>();
+    public DbSet<SewerProductType> SewerProductTypes => Set<SewerProductType>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

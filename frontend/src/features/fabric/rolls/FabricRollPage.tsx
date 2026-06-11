@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { FabricRollList } from './components/FabricRollList'
 import { FabricRollForm } from './components/FabricRollForm'
 import { useRegisterFabricRoll } from './hooks/useRegisterFabricRoll'
-import type { RegisterFabricRollResult } from './types'
+import { useUpdateFabricRoll } from './hooks/useUpdateFabricRoll'
+import type { FabricRollDto, RegisterFabricRollResult } from './types'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
 import {
@@ -14,13 +15,23 @@ import {
 
 export function FabricRollPage() {
   const [open, setOpen] = useState(false)
+  const [editingRoll, setEditingRoll] = useState<FabricRollDto | null>(null)
   const [summary, setSummary] = useState<RegisterFabricRollResult | null>(null)
   const register = useRegisterFabricRoll()
+  const update = useUpdateFabricRoll()
 
   function handleClose() {
     setOpen(false)
+    setEditingRoll(null)
     setSummary(null)
   }
+
+  function handleEdit(roll: FabricRollDto) {
+    setEditingRoll(roll)
+    setOpen(true)
+  }
+
+  const isEditing = editingRoll !== null
 
   return (
     <div className="space-y-6">
@@ -30,12 +41,14 @@ export function FabricRollPage() {
         actions={<Button onClick={() => setOpen(true)}>+ Nova bobina</Button>}
       />
 
-      <FabricRollList />
+      <FabricRollList onEdit={handleEdit} />
 
       <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose() }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Registrar chegada de bobina</DialogTitle>
+            <DialogTitle>
+              {isEditing ? 'Editar bobina' : 'Registrar chegada de bobina'}
+            </DialogTitle>
           </DialogHeader>
 
           {summary ? (
@@ -57,6 +70,24 @@ export function FabricRollPage() {
                 Fechar
               </Button>
             </div>
+          ) : isEditing ? (
+            <FabricRollForm
+              key={editingRoll.id}
+              isLoading={update.isPending}
+              submitLabel="Salvar alterações"
+              defaultValues={{
+                fabricTypeId: editingRoll.fabricTypeId,
+                fabricColorId: editingRoll.fabricColorId,
+                weightKg: editingRoll.weightKg,
+                priceTotal: editingRoll.priceTotal,
+              }}
+              onSubmit={(data) => {
+                update.mutate(
+                  { id: editingRoll.id, data },
+                  { onSuccess: handleClose },
+                )
+              }}
+            />
           ) : (
             <FabricRollForm
               isLoading={register.isPending}

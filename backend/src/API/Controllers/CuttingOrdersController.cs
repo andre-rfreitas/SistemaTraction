@@ -94,7 +94,10 @@ public class CuttingOrdersController(IMediator mediator) : ControllerBase
     {
         try
         {
-            var result = await mediator.Send(new RegisterCuttingDeliveryCommand(id, request.DeliveredPieces), ct);
+            var items = request.Items
+                .Select(i => new RegisterCuttingDeliveryItemInput(i.FabricRollId, i.DeliveredPieces))
+                .ToList();
+            var result = await mediator.Send(new RegisterCuttingDeliveryCommand(id, items), ct);
             return Ok(result);
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
@@ -106,8 +109,10 @@ public class CuttingOrdersController(IMediator mediator) : ControllerBase
     {
         try
         {
-            var result = await mediator.Send(
-                new RegisterSewingDeliveryCommand(id, request.GoodPieces, request.DefectivePieces), ct);
+            var items = request.Items
+                .Select(i => new RegisterSewingDeliveryItemInput(i.FabricRollId, i.GoodPieces, i.DefectivePieces))
+                .ToList();
+            var result = await mediator.Send(new RegisterSewingDeliveryCommand(id, items), ct);
             return Ok(result);
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
@@ -127,9 +132,13 @@ public record CreateCuttingOrderRequest(
     int? RecommendationBasedOnOrders = null
 );
 
-public record RegisterDeliveryRequest(Dictionary<string, int> DeliveredPieces);
+public record RegisterDeliveryItemRequest(Guid FabricRollId, Dictionary<string, int> DeliveredPieces);
+public record RegisterDeliveryRequest(List<RegisterDeliveryItemRequest> Items);
 
-public record RegisterSewingDeliveryRequest(
+public record RegisterSewingDeliveryItemRequest(
+    Guid FabricRollId,
     Dictionary<string, int> GoodPieces,
     Dictionary<string, int> DefectivePieces
 );
+
+public record RegisterSewingDeliveryRequest(List<RegisterSewingDeliveryItemRequest> Items);

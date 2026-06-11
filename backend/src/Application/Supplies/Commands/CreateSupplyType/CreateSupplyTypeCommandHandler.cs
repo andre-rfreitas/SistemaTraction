@@ -9,7 +9,7 @@ public class CreateSupplyTypeCommandHandler(IApplicationDbContext context)
 {
     public async Task<Guid> Handle(CreateSupplyTypeCommand request, CancellationToken cancellationToken)
     {
-        var supplyType = SupplyType.Create(request.Name, request.Unit);
+        var supplyType = SupplyType.Create(request.Name, request.Unit, request.PricePerUnit);
         context.SupplyTypes.Add(supplyType);
 
         var stockItem = SupplyStockItem.Create(supplyType.Id);

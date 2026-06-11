@@ -23,20 +23,27 @@ public class RegisterCuttingDeliveryCommandHandler(IApplicationDbContext context
         if (order.Status != CuttingOrderStatus.SentToCutter)
             throw new DomainException("Apenas pedidos enviados ao cortador podem receber entrega.");
 
+        var rollIds = request.Items.Select(i => i.FabricRollId).ToHashSet();
+        var unknownRoll = rollIds.FirstOrDefault(id => !order.Items.Any(oi => oi.FabricRollId == id));
+        if (unknownRoll != default)
+            throw new DomainException("Bobina não pertence a este pedido.");
+
+        var aggregated = AggregatePieces(request.Items);
+        var totalPieces = aggregated.Values.Sum();
+
         var cuttingPrice = await context.AppConfigs
             .Where(c => c.Key == "cutting_price_default" && !c.IsDeleted)
             .Select(c => c.Value)
             .FirstOrDefaultAsync(cancellationToken) ?? "1.00";
 
         var pricePerPiece = decimal.Parse(cuttingPrice, CultureInfo.InvariantCulture);
-        var totalPieces = request.DeliveredPieces.Values.Sum();
         var cuttingCostTotal = totalPieces * pricePerPiece;
 
-        var delivery = CuttingDelivery.Create(request.CuttingOrderId, request.DeliveredPieces, cuttingCostTotal);
+        var delivery = CuttingDelivery.Create(request.CuttingOrderId, aggregated, cuttingCostTotal);
         context.CuttingDeliveries.Add(delivery);
 
         var rollsSummary = string.Join(", ", order.Items.Select(i =>
-            $"{i.FabricRoll!.FabricColor!.Name} {i.FabricRoll.FabricType!.Variation}"));
+            $"{i.FabricRoll!.FabricType!.Variation} {i.FabricRoll.FabricColor!.Name}"));
         var description = $"Corte Pedido #{order.OrderNumber} — {rollsSummary} — {totalPieces} peças";
         var entry = FinancialEntry.CreateExpense("Corte", cuttingCostTotal, description, delivery.Id, "CuttingDelivery");
         context.FinancialEntries.Add(entry);
@@ -62,12 +69,7 @@ public class RegisterCuttingDeliveryCommandHandler(IApplicationDbContext context
             .Select(c => c.Value)
             .FirstOrDefaultAsync(cancellationToken) ?? "P,M,G,G1,GG";
 
-        var sewerTemplate = await context.AppConfigs
-            .Where(c => c.Key == "wp_template_sewer" && !c.IsDeleted)
-            .Select(c => c.Value)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        var message = BuildSewerMessage(order, delivery, sizes.Split(','), sewerTemplate);
+        var message = BuildSewerMessage(order, request.Items, sizes.Split(','));
 
         string? waMeLink = null;
         if (!string.IsNullOrWhiteSpace(sewerPhone))
@@ -80,39 +82,62 @@ public class RegisterCuttingDeliveryCommandHandler(IApplicationDbContext context
             delivery.Id, totalPieces, cuttingCostTotal, message, waMeLink, sewerPhone, sewerName);
     }
 
-    private static string BuildSewerMessage(CuttingOrder order, CuttingDelivery delivery, string[] sizeOrder, string? template)
+    private static Dictionary<string, int> AggregatePieces(List<RegisterCuttingDeliveryItemInput> items)
     {
-        var pieces = delivery.GetDeliveredPieces();
-        var totalPieces = delivery.GetTotalPieces();
-        var costFormatted = delivery.CuttingCostTotal.ToString("N2", CultureInfo.GetCultureInfo("pt-BR"));
+        var result = new Dictionary<string, int>();
+        foreach (var item in items)
+            foreach (var (size, qty) in item.DeliveredPieces)
+                result[size] = result.GetValueOrDefault(size) + qty;
+        return result;
+    }
 
-        var sizesBlock = string.Join("\n", sizeOrder
-            .Where(s => pieces.TryGetValue(s, out var q) && q > 0)
-            .Select(s => $"{pieces[s]} {s}"));
+    private static string BuildSewerMessage(
+        CuttingOrder order,
+        List<RegisterCuttingDeliveryItemInput> items,
+        string[] sizeOrder)
+    {
+        var lines = new List<string> { $"Pedido {order.OrderNumber}" };
 
-        var firstItem = order.Items.FirstOrDefault();
+        var grandTotalByType = new Dictionary<string, int>();
+        var grandTotal = 0;
 
-        if (order.Items.Count == 1 && !string.IsNullOrWhiteSpace(template) && firstItem is not null)
+        foreach (var requestItem in items)
         {
-            return template
-                .Replace("\\n", "\n")
-                .Replace("{OrderNumber}", order.OrderNumber.ToString())
-                .Replace("{Color}", firstItem.FabricRoll!.FabricColor!.Name)
-                .Replace("{Variation}", firstItem.FabricRoll!.FabricType!.Variation)
-                .Replace("{Total}", totalPieces.ToString())
-                .Replace("{SizesBlock}", sizesBlock)
-                .Replace("{Cost}", costFormatted);
+            var orderItem = order.Items.FirstOrDefault(oi => oi.FabricRollId == requestItem.FabricRollId);
+            if (orderItem is null) continue;
+
+            var colorName = orderItem.FabricRoll!.FabricColor!.Name;
+            var typeName = orderItem.FabricRoll.FabricType!.Name;
+            var subtotal = requestItem.DeliveredPieces.Values.Sum();
+            if (subtotal == 0) continue;
+
+            lines.Add(string.Empty);
+            lines.Add($"Camisetas {colorName} {typeName}");
+
+            foreach (var size in sizeOrder)
+                if (requestItem.DeliveredPieces.TryGetValue(size, out var qty) && qty > 0)
+                    lines.Add($"{qty} {size}");
+
+            lines.Add($"Total {subtotal}");
+
+            grandTotalByType[typeName] = grandTotalByType.GetValueOrDefault(typeName) + subtotal;
+            grandTotal += subtotal;
         }
 
-        var rollsSummary = string.Join(", ", order.Items.Select(i =>
-            $"{i.FabricRoll!.FabricColor!.Name} {i.FabricRoll.FabricType!.Variation}"));
+        lines.Add(string.Empty);
 
-        var lines = new List<string> { $"Pedido {order.OrderNumber}" };
-        lines.Add($"{rollsSummary} - {totalPieces}");
-        foreach (var size in sizeOrder)
-            if (pieces.TryGetValue(size, out var qty) && qty > 0)
-                lines.Add($"{qty} {size}");
-        lines.Add($"Total {totalPieces} camisetas R${costFormatted}");
+        if (grandTotalByType.Count == 1)
+        {
+            var (typeName, typeTotal) = grandTotalByType.First();
+            lines.Add($"Total camisetas {typeName}: {typeTotal}");
+        }
+        else
+        {
+            foreach (var (typeName, typeTotal) in grandTotalByType)
+                lines.Add($"Total {typeName}: {typeTotal}");
+            lines.Add($"Total geral: {grandTotal} camisetas");
+        }
+
         return string.Join("\n", lines);
     }
 }

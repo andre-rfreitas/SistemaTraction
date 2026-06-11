@@ -26,7 +26,7 @@ public class SupplyTypesController(IMediator mediator) : ControllerBase
     {
         try
         {
-            var id = await mediator.Send(new CreateSupplyTypeCommand(request.Name, request.Unit), ct);
+            var id = await mediator.Send(new CreateSupplyTypeCommand(request.Name, request.Unit, request.PricePerUnit), ct);
             return Ok(new { id });
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
@@ -37,7 +37,7 @@ public class SupplyTypesController(IMediator mediator) : ControllerBase
     {
         try
         {
-            await mediator.Send(new UpdateSupplyTypeCommand(id, request.Name, request.Unit), ct);
+            await mediator.Send(new UpdateSupplyTypeCommand(id, request.Name, request.Unit, request.PricePerUnit), ct);
             return NoContent();
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
@@ -55,5 +55,5 @@ public class SupplyTypesController(IMediator mediator) : ControllerBase
     }
 }
 
-public record CreateSupplyTypeRequest(string Name, string Unit);
-public record UpdateSupplyTypeRequest(string Name, string Unit);
+public record CreateSupplyTypeRequest(string Name, string Unit, decimal? PricePerUnit);
+public record UpdateSupplyTypeRequest(string Name, string Unit, decimal? PricePerUnit);

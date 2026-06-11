@@ -33,9 +33,9 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
         if (alreadyDelivered)
             throw new DomainException("Este pedido já possui entrega do costureiro registrada.");
 
-        var cuttingDelivery = await context.CuttingDeliveries
-            .FirstOrDefaultAsync(d => d.CuttingOrderId == request.OrderId, cancellationToken)
-            ?? throw new DomainException("Entrega do cortador não encontrada para este pedido.");
+        var hasActiveSewer = await context.Sewers.AnyAsync(s => s.IsActive, cancellationToken);
+        if (!hasActiveSewer)
+            throw new DomainException("Nenhuma costureira cadastrada. Cadastre uma costureira antes de registrar a entrega.");
 
         var configs = await context.AppConfigs
             .Where(c => !c.IsDeleted && (
@@ -51,66 +51,92 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
         decimal SewingPrice(string size) =>
             size.Equals("G1", StringComparison.OrdinalIgnoreCase) ? sewingPriceG1 : sewingPriceDefault;
 
-        var sewingCostTotal = request.GoodPieces
+        // Aggregate totals
+        var allGood = AggregatePieces(request.Items.Select(i => i.GoodPieces));
+        var allDefective = AggregatePieces(request.Items.Select(i => i.DefectivePieces));
+
+        var sewingCostTotal = allGood
             .Where(kv => kv.Value > 0)
             .Sum(kv => (decimal)kv.Value * SewingPrice(kv.Key));
 
-        var totalDeliveredPieces = cuttingDelivery.GetTotalPieces();
-        var totalFabricPrice = order.Items.Sum(i => i.FabricRoll!.PriceTotal);
-        var fabricCostPerPiece = totalDeliveredPieces > 0
-            ? totalFabricPrice / totalDeliveredPieces
-            : 0m;
+        // Pre-calculate defect cost per roll so we can pass the total to SewingDelivery.Create()
+        decimal defectCostTotal = 0m;
+        foreach (var input in request.Items)
+        {
+            var orderItem = order.Items.FirstOrDefault(oi => oi.FabricRollId == input.FabricRollId);
+            if (orderItem is null) continue;
 
-        var defectCostTotal = request.DefectivePieces
-            .Where(kv => kv.Value > 0)
-            .Sum(kv => (decimal)kv.Value * (fabricCostPerPiece + cuttingPrice + SewingPrice(kv.Key)));
+            var itemTotalPieces = input.GoodPieces.Values.Sum() + input.DefectivePieces.Values.Sum();
+            var fabricCostPerPiece = itemTotalPieces > 0 ? orderItem.FabricRoll!.PriceTotal / itemTotalPieces : 0m;
+
+            defectCostTotal += input.DefectivePieces
+                .Where(kv => kv.Value > 0)
+                .Sum(kv => (decimal)kv.Value * (fabricCostPerPiece + cuttingPrice + SewingPrice(kv.Key)));
+        }
 
         var sewingDelivery = SewingDelivery.Create(
             request.OrderId,
-            request.GoodPieces,
-            request.DefectivePieces,
+            allGood,
+            allDefective,
             sewingCostTotal,
             defectCostTotal);
         context.SewingDeliveries.Add(sewingDelivery);
 
-        // Use first item's color for stock — covers the common case where all rolls share the same color
-        var firstItem = order.Items.First();
-        var fabricColorId = firstItem.FabricRoll!.FabricColorId;
-        var colorName = firstItem.FabricRoll!.FabricColor!.Name;
-        var typeName = firstItem.FabricRoll!.FabricType!.Name;
-        var typeVariation = firstItem.FabricRoll!.FabricType!.Variation;
-        var orderNum = order.OrderNumber;
+        // Per-roll: add stock to the correct color
+        var itemResults = new List<SewingItemResult>();
 
-        foreach (var (size, qty) in request.GoodPieces.Where(kv => kv.Value > 0))
+        foreach (var input in request.Items)
         {
-            var normalizedSize = size.ToUpper();
-            var stockItem = await context.StockItems
-                .FirstOrDefaultAsync(s => s.FabricColorId == fabricColorId && s.Size == normalizedSize, cancellationToken);
+            var orderItem = order.Items.FirstOrDefault(oi => oi.FabricRollId == input.FabricRollId);
+            if (orderItem is null) continue;
 
-            if (stockItem is null)
+            var roll = orderItem.FabricRoll!;
+            var fabricColorId = roll.FabricColorId;
+            var colorName = roll.FabricColor!.Name;
+            var hexCode = roll.FabricColor.HexCode;
+            var typeName = roll.FabricType!.Name;
+            var typeVariation = roll.FabricType.Variation;
+
+            foreach (var (size, qty) in input.GoodPieces.Where(kv => kv.Value > 0))
             {
-                stockItem = StockItem.Create(fabricColorId, colorName, typeName, typeVariation, normalizedSize, qty);
-                context.StockItems.Add(stockItem);
-            }
-            else
-            {
-                stockItem.AddStock(qty);
+                var normalizedSize = size.ToUpper();
+                var stockItem = await context.StockItems
+                    .FirstOrDefaultAsync(s => s.FabricColorId == fabricColorId && s.Size == normalizedSize, cancellationToken);
+
+                if (stockItem is null)
+                {
+                    stockItem = StockItem.Create(fabricColorId, colorName, typeName, typeVariation, normalizedSize, qty);
+                    context.StockItems.Add(stockItem);
+                }
+                else
+                {
+                    stockItem.AddStock(qty);
+                }
+
+                context.ShirtStockMovements.Add(ShirtStockMovement.Create(
+                    stockItem.Id, fabricColorId, colorName, normalizedSize,
+                    qty, $"Costura pedido #{order.OrderNumber}", "Costureiro", order.Id));
             }
 
-            context.ShirtStockMovements.Add(ShirtStockMovement.Create(
-                stockItem.Id, fabricColorId, colorName, normalizedSize,
-                qty, $"Costura pedido #{orderNum}", "Costureiro", order.Id));
+            var itemGoodTotal = input.GoodPieces.Values.Sum();
+            var itemDefectiveTotal = input.DefectivePieces.Values.Sum();
+            if (itemGoodTotal > 0 || itemDefectiveTotal > 0)
+            {
+                itemResults.Add(new SewingItemResult(
+                    colorName,
+                    typeName,
+                    hexCode,
+                    input.GoodPieces.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value),
+                    input.DefectivePieces.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value)));
+            }
         }
-
-        var totalGood = request.GoodPieces.Where(kv => kv.Value > 0).Sum(kv => kv.Value);
-        var totalDefective = request.DefectivePieces.Where(kv => kv.Value > 0).Sum(kv => kv.Value);
 
         if (sewingCostTotal > 0)
         {
             context.FinancialEntries.Add(FinancialEntry.CreateExpense(
                 "Costura",
                 sewingCostTotal,
-                $"Costura pedido #{orderNum} — {totalGood} peças",
+                $"Costura pedido #{order.OrderNumber} — {allGood.Values.Sum()} peças",
                 sewingDelivery.Id,
                 "SewingDelivery"));
         }
@@ -120,7 +146,7 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
             context.FinancialEntries.Add(FinancialEntry.CreateExpense(
                 "Defeitos",
                 defectCostTotal,
-                $"Defeitos pedido #{orderNum} — {totalDefective} peça(s) defeituosa(s)",
+                $"Defeitos pedido #{order.OrderNumber} — {allDefective.Values.Sum()} peça(s) defeituosa(s)",
                 sewingDelivery.Id,
                 "SewingDelivery"));
         }
@@ -131,12 +157,22 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
 
         return new RegisterSewingDeliveryResult(
             sewingDelivery.Id,
-            totalGood,
-            totalDefective,
+            allGood.Values.Sum(),
+            allDefective.Values.Sum(),
             sewingCostTotal,
             defectCostTotal,
-            request.GoodPieces,
-            request.DefectivePieces);
+            allGood,
+            allDefective,
+            itemResults);
+    }
+
+    private static Dictionary<string, int> AggregatePieces(IEnumerable<Dictionary<string, int>> sources)
+    {
+        var result = new Dictionary<string, int>();
+        foreach (var dict in sources)
+            foreach (var (size, qty) in dict)
+                result[size] = result.GetValueOrDefault(size) + qty;
+        return result;
     }
 
     private static decimal GetDecimalConfig(List<AppConfig> configs, string key, decimal fallback)

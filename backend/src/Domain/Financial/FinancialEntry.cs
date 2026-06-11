@@ -43,6 +43,19 @@ public class FinancialEntry : BaseEntity
         };
     }
 
+    public void UpdateAmount(decimal amount, string description)
+    {
+        if (amount <= 0)
+            throw new DomainException("Valor do lançamento deve ser maior que zero.");
+
+        if (string.IsNullOrWhiteSpace(description))
+            throw new DomainException("Descrição do lançamento não pode ser vazia.");
+
+        Amount = amount;
+        Description = description.Trim();
+        TouchUpdatedAt();
+    }
+
     public static FinancialEntry CreateReversal(FinancialEntry original)
     {
         if (original is null)

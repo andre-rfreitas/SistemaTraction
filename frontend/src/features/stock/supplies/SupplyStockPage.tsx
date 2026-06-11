@@ -2,46 +2,99 @@ import { useState } from 'react'
 import { SupplyStockList } from './components/SupplyStockList'
 import { SupplyMovementForm } from './components/SupplyMovementForm'
 import { SupplyMovementHistory } from './components/SupplyMovementHistory'
+import { SupplyEntryForm, type EntryFormData } from './components/SupplyEntryForm'
 import { useRegisterSupplyMovement } from './hooks/useRegisterSupplyMovement'
+import { useUpdateSupplyMovement } from './hooks/useUpdateSupplyMovement'
 import { useCreateFinancialEntry } from '@/features/financial/hooks/useCreateFinancialEntry'
-import type { SupplyStockItemDto, RegisterSupplyMovementResult } from './types'
+import type { SupplyStockItemDto, SupplyStockMovementDto, RegisterSupplyMovementResult } from './types'
 import { PageHeader } from '@/components/ui/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
-type DialogStep = 'movement' | 'financial-confirm'
+type DialogMode =
+  | { kind: 'entry'; item: SupplyStockItemDto }
+  | { kind: 'edit-entry'; item: SupplyStockItemDto; movement: SupplyStockMovementDto }
+  | { kind: 'movement'; item: SupplyStockItemDto }
+  | { kind: 'financial'; item: SupplyStockItemDto; result: RegisterSupplyMovementResult; suggestedAmount?: number }
+  | null
+
+const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
 export function SupplyStockPage() {
-  const [selected, setSelected] = useState<SupplyStockItemDto | null>(null)
-  const [step, setStep] = useState<DialogStep>('movement')
-  const [movementResult, setMovementResult] = useState<RegisterSupplyMovementResult | null>(null)
+  const [dialog, setDialog] = useState<DialogMode>(null)
   const [financialAmount, setFinancialAmount] = useState('')
   const [financialDesc, setFinancialDesc] = useState('')
 
   const register = useRegisterSupplyMovement()
+  const updateMovement = useUpdateSupplyMovement(
+    dialog?.kind === 'edit-entry' ? dialog.item.id : ''
+  )
   const createEntry = useCreateFinancialEntry()
 
-  function handleClose() {
-    setSelected(null)
-    setStep('movement')
-    setMovementResult(null)
+  function closeDialog() {
+    setDialog(null)
     setFinancialAmount('')
     setFinancialDesc('')
   }
 
-  function handleMovementSubmit(data: { type: 'Entrada' | 'Saida' | 'Ajuste'; quantity: number; reason?: string | null }) {
-    if (!selected) return
+  function handleEntry(item: SupplyStockItemDto, data: EntryFormData) {
     register.mutate(
-      { supplyStockItemId: selected.id, ...data },
+      {
+        supplyStockItemId: item.id,
+        type: 'Entrada',
+        quantity: data.quantity,
+        reason: null,
+        supplierName: data.supplierName || null,
+        supplierPhone: data.supplierPhone || null,
+        occurredAt: data.occurredAt ? new Date(data.occurredAt).toISOString() : undefined,
+        unitPrice: data.unitPrice ?? undefined,
+        totalCost: data.totalCost ?? undefined,
+      },
       {
         onSuccess: (result) => {
           if (result.requiresFinancialConfirmation) {
-            setMovementResult(result)
-            setFinancialDesc(result.suggestedDescription ?? '')
-            setStep('financial-confirm')
+            setFinancialDesc(result.suggestedDescription ?? `Compra: ${item.name}`)
+            setFinancialAmount(data.totalCost != null ? String(data.totalCost.toFixed(2)) : '')
+            setDialog({ kind: 'financial', item, result, suggestedAmount: data.totalCost ?? undefined })
           } else {
-            handleClose()
+            closeDialog()
+          }
+        },
+      }
+    )
+  }
+
+  function handleEditSubmit(data: EntryFormData) {
+    if (dialog?.kind !== 'edit-entry') return
+    updateMovement.mutate(
+      {
+        movementId: dialog.movement.id,
+        data: {
+          supplierName: data.supplierName || null,
+          supplierPhone: data.supplierPhone || null,
+          occurredAt: data.occurredAt,
+          unitPrice: data.unitPrice,
+          totalCost: data.totalCost,
+        },
+      },
+      { onSuccess: closeDialog }
+    )
+  }
+
+  function handleMovementSubmit(data: { type: 'Entrada' | 'Saida' | 'Ajuste'; quantity: number; reason?: string | null }) {
+    if (dialog?.kind !== 'movement') return
+    const item = dialog.item
+    register.mutate(
+      { supplyStockItemId: item.id, ...data },
+      {
+        onSuccess: (result) => {
+          if (result.requiresFinancialConfirmation) {
+            setFinancialDesc(result.suggestedDescription ?? '')
+            setFinancialAmount(result.suggestedAmount != null ? String(result.suggestedAmount.toFixed(2)) : '')
+            setDialog({ kind: 'financial', item, result, suggestedAmount: result.suggestedAmount ?? undefined })
+          } else {
+            closeDialog()
           }
         },
       }
@@ -49,34 +102,68 @@ export function SupplyStockPage() {
   }
 
   function handleFinancialConfirm() {
-    if (!selected || !financialAmount) return
+    if (dialog?.kind !== 'financial') return
+    const item = dialog.item
     createEntry.mutate(
       {
         type: 'Expense',
-        category: selected.name,
+        category: item.name,
         amount: parseFloat(financialAmount),
         description: financialDesc,
       },
-      { onSuccess: handleClose }
+      { onSuccess: closeDialog }
     )
+  }
+
+  const dialogOpen = dialog !== null
+
+  function dialogTitle() {
+    if (!dialog) return ''
+    if (dialog.kind === 'entry') return `Registrar entrada — ${dialog.item.name}`
+    if (dialog.kind === 'edit-entry') return `Editar entrada — ${dialog.item.name}`
+    if (dialog.kind === 'movement') return dialog.item.name
+    if (dialog.kind === 'financial') return 'Registrar despesa?'
+    return ''
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Estoque de Embalagens"
+        title="Insumos e Embalagens"
         description="Posição atual de insumos por tipo. Registre entradas, saídas e ajustes."
       />
 
-      <SupplyStockList onSelect={(item) => { setSelected(item); setStep('movement') }} />
+      <SupplyStockList
+        onEntry={(item) => setDialog({ kind: 'entry', item })}
+        onMovement={(item) => setDialog({ kind: 'movement', item })}
+      />
 
-      <Dialog open={!!selected} onOpenChange={(v) => { if (!v) handleClose() }}>
+      <Dialog open={dialogOpen} onOpenChange={(v) => { if (!v) closeDialog() }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{selected?.name}</DialogTitle>
+            <DialogTitle>{dialogTitle()}</DialogTitle>
           </DialogHeader>
 
-          {step === 'movement' && selected && (
+          {dialog?.kind === 'entry' && (
+            <SupplyEntryForm
+              item={dialog.item}
+              isLoading={register.isPending}
+              onSubmit={(data) => handleEntry(dialog.item, data)}
+              onCancel={closeDialog}
+            />
+          )}
+
+          {dialog?.kind === 'edit-entry' && (
+            <SupplyEntryForm
+              item={dialog.item}
+              editing={dialog.movement}
+              isLoading={updateMovement.isPending}
+              onSubmit={handleEditSubmit}
+              onCancel={closeDialog}
+            />
+          )}
+
+          {dialog?.kind === 'movement' && (
             <div className="space-y-5">
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
@@ -97,12 +184,17 @@ export function SupplyStockPage() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                   Últimas movimentações
                 </p>
-                <SupplyMovementHistory supplyStockItemId={selected.id} />
+                <SupplyMovementHistory
+                  supplyStockItemId={dialog.item.id}
+                  onEdit={(movement) =>
+                    setDialog({ kind: 'edit-entry', item: dialog.item, movement })
+                  }
+                />
               </div>
             </div>
           )}
 
-          {step === 'financial-confirm' && movementResult && (
+          {dialog?.kind === 'financial' && (
             <div className="space-y-4">
               <div className="rounded-md bg-success/10 border border-success/20 p-3 text-sm text-success">
                 ✓ Entrada registrada com sucesso!
@@ -121,6 +213,19 @@ export function SupplyStockPage() {
                     onChange={(e) => setFinancialAmount(e.target.value)}
                     placeholder="0,00"
                   />
+                  {dialog.suggestedAmount != null && !financialAmount && (
+                    <p className="text-xs text-muted-foreground">
+                      Sugerido: R$ {fmt(dialog.suggestedAmount)}
+                      {' '}
+                      <button
+                        type="button"
+                        className="text-primary underline"
+                        onClick={() => setFinancialAmount(dialog.suggestedAmount!.toFixed(2))}
+                      >
+                        Usar
+                      </button>
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Descrição</label>
@@ -131,7 +236,7 @@ export function SupplyStockPage() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={handleClose} className="flex-1">
+                <Button variant="outline" onClick={closeDialog} className="flex-1">
                   Não registrar
                 </Button>
                 <Button

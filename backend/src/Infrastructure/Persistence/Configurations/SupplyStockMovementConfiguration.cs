@@ -13,5 +13,9 @@ public class SupplyStockMovementConfiguration : IEntityTypeConfiguration<SupplyS
         builder.Property(m => m.Type).HasConversion<string>().IsRequired();
         builder.Property(m => m.Delta).IsRequired();
         builder.Property(m => m.Reason).HasMaxLength(200);
+        builder.Property(m => m.SupplierName).HasMaxLength(200);
+        builder.Property(m => m.SupplierPhone).HasMaxLength(30);
+        builder.Property(m => m.UnitPrice).HasPrecision(18, 4);
+        builder.Property(m => m.TotalCost).HasPrecision(18, 4);
     }
 }

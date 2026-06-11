@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -15,13 +15,15 @@ import { Label } from '@/components/ui/label'
 interface Props {
   isLoading: boolean
   onSubmit: (data: FabricRollFormData) => void
+  defaultValues?: Partial<FabricRollFormInput>
+  submitLabel?: string
 }
 
-export function FabricRollForm({ isLoading, onSubmit }: Props) {
+export function FabricRollForm({ isLoading, onSubmit, defaultValues, submitLabel }: Props) {
   const { data: fabricTypes = [] } = useFabricTypes()
   const [selectedType, setSelectedType] = useState<FabricTypeDto | null>(null)
-  const [weightKgRaw, setWeightKgRaw] = useState('')
-  const [priceTotalRaw, setPriceTotalRaw] = useState('')
+  const [weightKgRaw, setWeightKgRaw] = useState(defaultValues?.weightKg?.toString() ?? '')
+  const [priceTotalRaw, setPriceTotalRaw] = useState(defaultValues?.priceTotal?.toString() ?? '')
 
   const {
     register,
@@ -31,14 +33,19 @@ export function FabricRollForm({ isLoading, onSubmit }: Props) {
     formState: { errors },
   } = useForm<FabricRollFormInput, unknown, FabricRollFormData>({
     resolver: zodResolver(fabricRollSchema),
+    defaultValues,
   })
 
   const fabricTypeId = watch('fabricTypeId')
+  const isMounted = useRef(false)
 
   useEffect(() => {
     const type = fabricTypes.find((t) => t.id === fabricTypeId) ?? null
     setSelectedType(type)
-    setValue('fabricColorId', '')
+    if (isMounted.current) {
+      setValue('fabricColorId', '')
+    }
+    isMounted.current = true
   }, [fabricTypeId, fabricTypes, setValue])
 
   const weightKg = parseFloat(weightKgRaw) || 0
@@ -156,7 +163,7 @@ export function FabricRollForm({ isLoading, onSubmit }: Props) {
       )}
 
       <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? 'Registrando...' : 'Registrar chegada'}
+        {isLoading ? 'Salvando...' : (submitLabel ?? 'Registrar chegada')}
       </Button>
     </form>
   )

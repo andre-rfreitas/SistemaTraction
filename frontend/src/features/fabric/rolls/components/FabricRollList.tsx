@@ -1,6 +1,8 @@
-import { Layers } from 'lucide-react'
+import { Layers, Pencil } from 'lucide-react'
 import { useFabricRolls } from '../hooks/useFabricRolls'
+import type { FabricRollDto } from '../types'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -30,7 +32,11 @@ function fmt(n: number, decimals = 2) {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
 }
 
-export function FabricRollList() {
+interface Props {
+  onEdit?: (roll: FabricRollDto) => void
+}
+
+export function FabricRollList({ onEdit }: Props) {
   const { data: rolls = [], isLoading } = useFabricRolls()
 
   if (isLoading) {
@@ -65,6 +71,7 @@ export function FabricRollList() {
           <TableHead className="text-right">R$/kg ref.</TableHead>
           <TableHead>Recebida em</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead />
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -109,6 +116,18 @@ export function FabricRollList() {
                 <Badge variant={STATUS_VARIANT[r.status] ?? 'neutral'}>
                   {STATUS_LABEL[r.status] ?? r.status}
                 </Badge>
+              </TableCell>
+              <TableCell className="text-right">
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEdit(r)}
+                    aria-label="Editar bobina"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                )}
               </TableCell>
             </TableRow>
           )

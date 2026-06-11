@@ -16,7 +16,15 @@ public class SupplyStockItem : BaseEntity
     public static SupplyStockItem Create(Guid supplyTypeId) =>
         new() { SupplyTypeId = supplyTypeId };
 
-    public SupplyStockMovement AddMovement(SupplyMovementType type, int quantity, string? reason = null)
+    public SupplyStockMovement AddMovement(
+        SupplyMovementType type,
+        int quantity,
+        string? reason = null,
+        string? supplierName = null,
+        string? supplierPhone = null,
+        DateTime? occurredAt = null,
+        decimal? unitPrice = null,
+        decimal? totalCost = null)
     {
         if (type != SupplyMovementType.Ajuste && quantity <= 0)
             throw new DomainException("Quantidade deve ser maior que zero.");
@@ -39,7 +47,7 @@ public class SupplyStockItem : BaseEntity
         Quantity += delta;
         TouchUpdatedAt();
 
-        var movement = SupplyStockMovement.Create(Id, type, delta, reason);
+        var movement = SupplyStockMovement.Create(Id, type, delta, reason, supplierName, supplierPhone, occurredAt, unitPrice, totalCost);
         _movements.Add(movement);
         return movement;
     }

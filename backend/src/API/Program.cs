@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using SistemaTraction.API.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -70,7 +71,10 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
-        opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    {
+        opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        opts.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
+    });
 builder.Services.AddOpenApi();
 
 builder.Services.AddCors(options =>

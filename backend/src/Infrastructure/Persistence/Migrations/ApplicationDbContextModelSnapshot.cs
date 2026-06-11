@@ -859,6 +859,76 @@ namespace SistemaTraction.Infrastructure.Persistence.Migrations
                     b.ToTable("SkuCodes");
                 });
 
+            modelBuilder.Entity("SistemaTraction.Domain.Sewing.Sewer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Sewers");
+                });
+
+            modelBuilder.Entity("SistemaTraction.Domain.Sewing.SewerProductType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("PriceDefault")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("PriceG1")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid>("SewerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SewerId");
+
+                    b.ToTable("SewerProductTypes");
+                });
+
             modelBuilder.Entity("SistemaTraction.Domain.Sewing.SewingDelivery", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1084,16 +1154,35 @@ namespace SistemaTraction.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Reason")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("SupplierName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SupplierPhone")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<Guid>("SupplyStockItemId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("TotalCost")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("UnitPrice")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1121,6 +1210,10 @@ namespace SistemaTraction.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("PricePerUnit")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
 
                     b.Property<string>("Unit")
                         .IsRequired()
@@ -1233,6 +1326,17 @@ namespace SistemaTraction.Infrastructure.Persistence.Migrations
                     b.Navigation("SeparationList");
                 });
 
+            modelBuilder.Entity("SistemaTraction.Domain.Sewing.SewerProductType", b =>
+                {
+                    b.HasOne("SistemaTraction.Domain.Sewing.Sewer", "Sewer")
+                        .WithMany("ProductTypes")
+                        .HasForeignKey("SewerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sewer");
+                });
+
             modelBuilder.Entity("SistemaTraction.Domain.Sewing.SewingDelivery", b =>
                 {
                     b.HasOne("SistemaTraction.Domain.Cutting.CuttingOrder", "CuttingOrder")
@@ -1306,6 +1410,11 @@ namespace SistemaTraction.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("SistemaTraction.Domain.Separation.SeparationList", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("SistemaTraction.Domain.Sewing.Sewer", b =>
+                {
+                    b.Navigation("ProductTypes");
                 });
 
             modelBuilder.Entity("SistemaTraction.Domain.Supplies.SupplyStockItem", b =>

@@ -1,12 +1,13 @@
 import {
   Boxes, Layers, Scissors, ClipboardList, Wallet, Shirt, Image, Settings, Archive, Package, Tag,
+  Spool, Users,
   type LucideIcon,
 } from 'lucide-react'
 
 export type TabId =
   | 'fabric' | 'rolls' | 'cutting' | 'dtf-models'
   | 'dtf-stock' | 'shirt-stock' | 'supply-stock' | 'separation' | 'financial' | 'config'
-  | 'supply-types'
+  | 'supply-types' | 'sewing-orders' | 'sewers'
 
 export interface NavItem {
   id: TabId
@@ -21,19 +22,20 @@ export interface NavGroup {
 
 export const NAV_GROUPS: NavGroup[] = [
   {
-    label: 'Estoque',
+    label: 'Produção',
     items: [
       { id: 'rolls', label: 'Bobinas', icon: Layers },
-      { id: 'shirt-stock', label: 'Camisetas', icon: Archive },
-      { id: 'dtf-stock', label: 'Estoque DTF', icon: Boxes },
-      { id: 'supply-stock', label: 'Embalagens', icon: Package },
+      { id: 'cutting', label: 'Pedidos de Corte', icon: Scissors },
+      { id: 'sewing-orders', label: 'Pedidos de Costura', icon: Spool },
+      { id: 'separation', label: 'Lista de Separação', icon: ClipboardList },
     ],
   },
   {
-    label: 'Produção',
+    label: 'Estoque',
     items: [
-      { id: 'cutting', label: 'Pedidos de Corte', icon: Scissors },
-      { id: 'separation', label: 'Lista de Separação', icon: ClipboardList },
+      { id: 'shirt-stock', label: 'Camisetas', icon: Archive },
+      { id: 'supply-stock', label: 'Insumos e Embalagens', icon: Package },
+      { id: 'dtf-stock', label: 'Estoque DTF', icon: Boxes },
     ],
   },
   {
@@ -44,6 +46,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Cadastros',
     items: [
       { id: 'fabric', label: 'Tecidos', icon: Shirt },
+      { id: 'sewers', label: 'Costureiras', icon: Users },
       { id: 'dtf-models', label: 'Modelos DTF', icon: Image },
       { id: 'supply-types', label: 'Tipos de Insumo', icon: Tag },
       { id: 'config', label: 'Configurações', icon: Settings },

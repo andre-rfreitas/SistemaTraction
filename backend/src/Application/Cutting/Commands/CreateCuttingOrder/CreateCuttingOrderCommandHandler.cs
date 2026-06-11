@@ -108,7 +108,7 @@ public class CreateCuttingOrderCommandHandler(IApplicationDbContext context)
         foreach (var item in items)
         {
             var roll = rollMap[item.FabricRollId];
-            lines.Add($"{roll.FabricColor!.Name} {roll.FabricType!.Variation}");
+            lines.Add($"{roll.FabricType!.Variation} {roll.FabricColor!.Name}");
             foreach (var size in sizeOrder)
                 if (item.RequestedPieces.TryGetValue(size, out var qty) && qty > 0)
                     lines.Add($"  {qty} {size}");

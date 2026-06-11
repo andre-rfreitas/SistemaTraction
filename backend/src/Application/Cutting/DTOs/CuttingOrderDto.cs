@@ -81,6 +81,14 @@ public record RegisterCuttingDeliveryResult(
     string SewerName
 );
 
+public record SewingItemResult(
+    string FabricColorName,
+    string FabricTypeName,
+    string? FabricColorHexCode,
+    Dictionary<string, int> GoodPieces,
+    Dictionary<string, int> DefectivePieces
+);
+
 public record RegisterSewingDeliveryResult(
     Guid SewingDeliveryId,
     int TotalGoodPieces,
@@ -88,5 +96,6 @@ public record RegisterSewingDeliveryResult(
     decimal SewingCostTotal,
     decimal DefectCostTotal,
     Dictionary<string, int> GoodPieces,
-    Dictionary<string, int> DefectivePieces
+    Dictionary<string, int> DefectivePieces,
+    List<SewingItemResult> Items
 );

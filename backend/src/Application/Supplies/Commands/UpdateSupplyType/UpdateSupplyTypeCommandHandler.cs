@@ -14,7 +14,7 @@ public class UpdateSupplyTypeCommandHandler(IApplicationDbContext context)
             .FirstOrDefaultAsync(t => t.Id == request.Id && !t.IsDeleted, cancellationToken)
             ?? throw new DomainException("Tipo de insumo não encontrado.");
 
-        supplyType.Update(request.Name, request.Unit);
+        supplyType.Update(request.Name, request.Unit, request.PricePerUnit);
         await context.SaveChangesAsync(cancellationToken);
     }
 }

@@ -70,6 +70,14 @@ export interface RegisterCuttingDeliveryResult {
   sewerName: string
 }
 
+export interface SewingItemResult {
+  fabricColorName: string
+  fabricTypeName: string
+  fabricColorHexCode: string | null
+  goodPieces: Record<string, number>
+  defectivePieces: Record<string, number>
+}
+
 export interface RegisterSewingDeliveryResult {
   sewingDeliveryId: string
   totalGoodPieces: number
@@ -78,4 +86,5 @@ export interface RegisterSewingDeliveryResult {
   defectCostTotal: number
   goodPieces: Record<string, number>
   defectivePieces: Record<string, number>
+  items: SewingItemResult[]
 }

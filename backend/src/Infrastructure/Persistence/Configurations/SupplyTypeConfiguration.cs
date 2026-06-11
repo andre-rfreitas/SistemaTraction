@@ -12,5 +12,6 @@ public class SupplyTypeConfiguration : IEntityTypeConfiguration<SupplyType>
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Name).IsRequired().HasMaxLength(100);
         builder.Property(t => t.Unit).IsRequired().HasMaxLength(20);
+        builder.Property(t => t.PricePerUnit).HasPrecision(18, 4);
     }
 }

@@ -156,9 +156,9 @@ export function CuttingOrderPage() {
             <CuttingDeliveryForm
               order={selectedOrder}
               isLoading={registerDelivery.isPending}
-              onConfirm={(deliveredPieces) =>
+              onConfirm={(items) =>
                 registerDelivery.mutate(
-                  { orderId: selectedOrder.id, deliveredPieces },
+                  { orderId: selectedOrder.id, items },
                   { onSuccess: (r) => { setDeliveryResult(r); setDeliveryStep('delivery-whatsapp') } }
                 )
               }
@@ -187,9 +187,9 @@ export function CuttingOrderPage() {
             <SewingDeliveryForm
               order={sewingOrder}
               isLoading={registerSewing.isPending}
-              onConfirm={(goodPieces, defectivePieces) =>
+              onConfirm={(items) =>
                 registerSewing.mutate(
-                  { orderId: sewingOrder.id, goodPieces, defectivePieces },
+                  { orderId: sewingOrder.id, items },
                   { onSuccess: (r) => { setSewingResult(r); setSewingStep('sewing-done') } }
                 )
               }
@@ -214,8 +214,6 @@ function SewingDeliveryDone({
   onClose: () => void
 }) {
   const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-  const activeGood = Object.entries(result.goodPieces).filter(([, q]) => q > 0)
-  const activeDefects = Object.entries(result.defectivePieces).filter(([, q]) => q > 0)
 
   return (
     <div className="space-y-4">
@@ -233,34 +231,47 @@ function SewingDeliveryDone({
         </div>
       </div>
 
-      {activeGood.length > 0 && (
-        <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1.5">
-            Adicionado ao estoque
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {activeGood.map(([size, qty]) => (
-              <Badge key={size} variant="success">
-                {qty} {size}
-              </Badge>
-            ))}
+      {result.items.map((item, idx) => {
+        const goodEntries = Object.entries(item.goodPieces).filter(([, q]) => q > 0)
+        const defectEntries = Object.entries(item.defectivePieces).filter(([, q]) => q > 0)
+        if (goodEntries.length === 0 && defectEntries.length === 0) return null
+        return (
+          <div key={idx} className="space-y-2">
+            <div className="flex items-center gap-2">
+              {item.fabricColorHexCode && (
+                <span
+                  className="inline-block w-3 h-3 rounded-full border border-border shrink-0"
+                  style={{ backgroundColor: item.fabricColorHexCode }}
+                />
+              )}
+              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                {item.fabricTypeName} — {item.fabricColorName}
+              </p>
+            </div>
+            {goodEntries.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {goodEntries.map(([size, qty]) => (
+                  <Badge key={size} variant="success">{qty} {size}</Badge>
+                ))}
+              </div>
+            )}
+            {defectEntries.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {defectEntries.map(([size, qty]) => (
+                  <Badge key={size} variant="warning">{qty} {size} (defeito)</Badge>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )
+      })}
 
-      {activeDefects.length > 0 && (
+      {result.totalDefectivePieces > 0 && (
         <div className="rounded-md bg-warning/10 border border-warning/20 p-3 text-sm">
-          <p className="font-medium text-warning mb-1">
+          <p className="font-medium text-warning">
             {result.totalDefectivePieces} peça(s) com defeito
           </p>
-          <div className="flex flex-wrap gap-1.5 mb-1">
-            {activeDefects.map(([size, qty]) => (
-              <Badge key={size} variant="warning">
-                {qty} {size}
-              </Badge>
-            ))}
-          </div>
-          <p className="text-xs text-warning">
+          <p className="text-xs text-warning mt-1">
             Custo de defeitos: <span className="font-semibold">R$ {fmt(result.defectCostTotal)}</span>
           </p>
         </div>

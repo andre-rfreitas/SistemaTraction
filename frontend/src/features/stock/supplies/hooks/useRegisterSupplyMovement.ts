@@ -7,6 +7,11 @@ interface Payload {
   type: 'Entrada' | 'Saida' | 'Ajuste'
   quantity: number
   reason?: string | null
+  supplierName?: string | null
+  supplierPhone?: string | null
+  occurredAt?: string
+  unitPrice?: number | null
+  totalCost?: number | null
 }
 
 export function useRegisterSupplyMovement() {

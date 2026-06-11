@@ -14,6 +14,8 @@ import { SettingsPage } from '@/features/settings/SettingsPage'
 import { ShirtStockPage } from '@/features/stock/shirts/ShirtStockPage'
 import { SupplyStockPage } from '@/features/stock/supplies/SupplyStockPage'
 import { SupplyTypePage } from '@/features/settings/supplies/SupplyTypePage'
+import { SewerPage } from '@/features/sewing/sewers/SewerPage'
+import { SewingOrdersPage } from '@/features/sewing/orders/SewingOrdersPage'
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth()
@@ -40,6 +42,8 @@ function App() {
     'shirt-stock': <ShirtStockPage />,
     'supply-stock': <SupplyStockPage />,
     'supply-types': <SupplyTypePage />,
+    sewers: <SewerPage />,
+    'sewing-orders': <SewingOrdersPage />,
     separation: <SeparationListPage />,
     financial: <FinancialPage />,
     config: <SettingsPage onNavigate={setTab} />,

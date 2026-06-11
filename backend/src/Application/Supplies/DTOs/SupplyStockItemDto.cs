@@ -5,4 +5,5 @@ public record SupplyStockItemDto(
     Guid SupplyTypeId,
     string Name,
     string Unit,
-    int Quantity);
+    int Quantity,
+    decimal? PricePerUnit);

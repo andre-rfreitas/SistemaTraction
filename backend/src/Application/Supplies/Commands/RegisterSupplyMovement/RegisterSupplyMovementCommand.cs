@@ -8,4 +8,9 @@ public record RegisterSupplyMovementCommand(
     Guid SupplyStockItemId,
     SupplyMovementType Type,
     int Quantity,
-    string? Reason) : IRequest<RegisterSupplyMovementResult>;
+    string? Reason,
+    string? SupplierName = null,
+    string? SupplierPhone = null,
+    DateTime? OccurredAt = null,
+    decimal? UnitPrice = null,
+    decimal? TotalCost = null) : IRequest<RegisterSupplyMovementResult>;

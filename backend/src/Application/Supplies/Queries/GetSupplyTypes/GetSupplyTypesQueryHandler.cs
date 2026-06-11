@@ -13,7 +13,7 @@ public class GetSupplyTypesQueryHandler(IApplicationDbContext context)
         return await context.SupplyTypes
             .Where(t => !t.IsDeleted)
             .OrderBy(t => t.Name)
-            .Select(t => new SupplyTypeDto(t.Id, t.Name, t.Unit))
+            .Select(t => new SupplyTypeDto(t.Id, t.Name, t.Unit, t.PricePerUnit))
             .ToListAsync(cancellationToken);
     }
 }

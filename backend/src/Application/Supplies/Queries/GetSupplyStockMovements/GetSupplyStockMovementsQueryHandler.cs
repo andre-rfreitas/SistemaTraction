@@ -13,13 +13,18 @@ public class GetSupplyStockMovementsQueryHandler(IApplicationDbContext context)
     {
         return await context.SupplyStockMovements
             .Where(m => m.SupplyStockItemId == request.SupplyStockItemId)
-            .OrderByDescending(m => m.CreatedAt)
+            .OrderByDescending(m => m.OccurredAt)
             .Take(20)
             .Select(m => new SupplyStockMovementDto(
                 m.Id,
                 m.Type.ToString(),
                 m.Delta,
                 m.Reason,
+                m.SupplierName,
+                m.SupplierPhone,
+                m.OccurredAt,
+                m.UnitPrice,
+                m.TotalCost,
                 m.CreatedAt))
             .ToListAsync(cancellationToken);
     }

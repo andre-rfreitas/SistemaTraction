@@ -5,4 +5,9 @@ public record SupplyStockMovementDto(
     string Type,
     int Delta,
     string? Reason,
+    string? SupplierName,
+    string? SupplierPhone,
+    DateTime OccurredAt,
+    decimal? UnitPrice,
+    decimal? TotalCost,
     DateTime CreatedAt);

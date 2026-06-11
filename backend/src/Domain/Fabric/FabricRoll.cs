@@ -37,6 +37,22 @@ public class FabricRoll : BaseEntity
         };
     }
 
+    public void Update(Guid fabricTypeId, Guid fabricColorId, decimal weightKg, decimal priceTotal)
+    {
+        if (weightKg <= 0)
+            throw new DomainException("Peso da bobina deve ser maior que zero.");
+
+        if (priceTotal <= 0)
+            throw new DomainException("Preço total da bobina deve ser maior que zero.");
+
+        FabricTypeId = fabricTypeId;
+        FabricColorId = fabricColorId;
+        WeightKg = weightKg;
+        PriceTotal = priceTotal;
+        PricePerKgActual = priceTotal / weightKg;
+        TouchUpdatedAt();
+    }
+
     public void StartCutting()
     {
         if (Status != FabricRollStatus.Available)

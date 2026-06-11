@@ -19,7 +19,8 @@ public class GetSupplyStockItemsQueryHandler(IApplicationDbContext context)
                 i.SupplyTypeId,
                 i.SupplyType.Name,
                 i.SupplyType.Unit,
-                i.Quantity))
+                i.Quantity,
+                i.SupplyType.PricePerUnit))
             .ToListAsync(cancellationToken);
     }
 }
