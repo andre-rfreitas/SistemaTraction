@@ -97,7 +97,11 @@ export function SupplyTypeForm({ defaultValues, isLoading, onSubmit }: Props) {
                 })}
               />
               <select
-                {...register('yieldBasis')}
+                {...register('yieldBasis', {
+                  onChange: (e) => {
+                    if (e.target.value !== 'PerProduct') setValue('yieldProductName', null)
+                  },
+                })}
                 className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="PerOrder">Pedido</option>
