@@ -6,6 +6,7 @@ using SistemaTraction.Application.Supplies.Commands.DeleteSupplyType;
 using SistemaTraction.Application.Supplies.Commands.UpdateSupplyType;
 using SistemaTraction.Application.Supplies.Queries.GetSupplyTypes;
 using SistemaTraction.Domain.Common;
+using SistemaTraction.Domain.Supplies;
 
 namespace SistemaTraction.API.Controllers;
 
@@ -26,7 +27,9 @@ public class SupplyTypesController(IMediator mediator) : ControllerBase
     {
         try
         {
-            var id = await mediator.Send(new CreateSupplyTypeCommand(request.Name, request.Unit, request.PricePerUnit), ct);
+            var id = await mediator.Send(new CreateSupplyTypeCommand(
+                request.Name, request.Unit, request.PricePerUnit,
+                request.YieldBasis, request.YieldQuantity, request.YieldProductName), ct);
             return Ok(new { id });
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
@@ -37,7 +40,9 @@ public class SupplyTypesController(IMediator mediator) : ControllerBase
     {
         try
         {
-            await mediator.Send(new UpdateSupplyTypeCommand(id, request.Name, request.Unit, request.PricePerUnit), ct);
+            await mediator.Send(new UpdateSupplyTypeCommand(
+                id, request.Name, request.Unit, request.PricePerUnit,
+                request.YieldBasis, request.YieldQuantity, request.YieldProductName), ct);
             return NoContent();
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
@@ -55,5 +60,18 @@ public class SupplyTypesController(IMediator mediator) : ControllerBase
     }
 }
 
-public record CreateSupplyTypeRequest(string Name, string Unit, decimal? PricePerUnit);
-public record UpdateSupplyTypeRequest(string Name, string Unit, decimal? PricePerUnit);
+public record CreateSupplyTypeRequest(
+    string Name,
+    string Unit,
+    decimal? PricePerUnit,
+    YieldBasis? YieldBasis = null,
+    decimal? YieldQuantity = null,
+    string? YieldProductName = null);
+
+public record UpdateSupplyTypeRequest(
+    string Name,
+    string Unit,
+    decimal? PricePerUnit,
+    YieldBasis? YieldBasis = null,
+    decimal? YieldQuantity = null,
+    string? YieldProductName = null);

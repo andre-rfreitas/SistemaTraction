@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Sewing.Commands.CreateSewer;
 using SistemaTraction.Application.Sewing.Commands.DeleteSewer;
 using SistemaTraction.Application.Sewing.Commands.UpdateSewer;
+using SistemaTraction.Application.Sewing.Queries.GetSewerProductTypeNames;
 using SistemaTraction.Application.Sewing.Queries.GetSewers;
 using SistemaTraction.Domain.Common;
 
@@ -18,6 +19,13 @@ public class SewersController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetAll([FromQuery] bool includeInactive = false, CancellationToken ct = default)
     {
         var result = await mediator.Send(new GetSewersQuery(includeInactive), ct);
+        return Ok(result);
+    }
+
+    [HttpGet("product-type-names")]
+    public async Task<IActionResult> GetProductTypeNames(CancellationToken ct)
+    {
+        var result = await mediator.Send(new GetSewerProductTypeNamesQuery(), ct);
         return Ok(result);
     }
 
