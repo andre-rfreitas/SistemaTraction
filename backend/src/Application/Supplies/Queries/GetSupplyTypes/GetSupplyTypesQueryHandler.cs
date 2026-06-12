@@ -13,7 +13,9 @@ public class GetSupplyTypesQueryHandler(IApplicationDbContext context)
         return await context.SupplyTypes
             .Where(t => !t.IsDeleted)
             .OrderBy(t => t.Name)
-            .Select(t => new SupplyTypeDto(t.Id, t.Name, t.Unit, t.PricePerUnit))
+            .Select(t => new SupplyTypeDto(
+                t.Id, t.Name, t.Unit, t.PricePerUnit,
+                t.YieldBasis, t.YieldQuantity, t.YieldProductName))
             .ToListAsync(cancellationToken);
     }
 }

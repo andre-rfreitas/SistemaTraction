@@ -10,6 +10,10 @@ public class CreateSupplyTypeCommandHandler(IApplicationDbContext context)
     public async Task<Guid> Handle(CreateSupplyTypeCommand request, CancellationToken cancellationToken)
     {
         var supplyType = SupplyType.Create(request.Name, request.Unit, request.PricePerUnit);
+
+        if (request.YieldBasis.HasValue && request.YieldBasis.Value != YieldBasis.None)
+            supplyType.SetYield(request.YieldBasis.Value, request.YieldQuantity ?? 0, request.YieldProductName);
+
         context.SupplyTypes.Add(supplyType);
 
         var stockItem = SupplyStockItem.Create(supplyType.Id);
