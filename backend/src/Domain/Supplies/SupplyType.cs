@@ -7,6 +7,9 @@ public class SupplyType : BaseEntity
     public string Name { get; private set; } = string.Empty;
     public string Unit { get; private set; } = string.Empty;
     public decimal? PricePerUnit { get; private set; }
+    public YieldBasis YieldBasis { get; private set; } = YieldBasis.None;
+    public decimal? YieldQuantity { get; private set; }
+    public string? YieldProductName { get; private set; }
 
     private SupplyType() { }
 
@@ -38,6 +41,34 @@ public class SupplyType : BaseEntity
         Name = name.Trim();
         Unit = unit.Trim();
         PricePerUnit = pricePerUnit;
+        TouchUpdatedAt();
+    }
+
+    public void SetYield(YieldBasis basis, decimal quantity, string? productName)
+    {
+        if (basis == YieldBasis.None)
+        {
+            ClearYield();
+            return;
+        }
+
+        if (quantity <= 0)
+            throw new DomainException("Quantidade do rendimento deve ser maior que zero.");
+
+        if (basis == YieldBasis.PerProduct && string.IsNullOrWhiteSpace(productName))
+            throw new DomainException("Nome do produto é obrigatório quando o rendimento é por produto.");
+
+        YieldBasis = basis;
+        YieldQuantity = quantity;
+        YieldProductName = basis == YieldBasis.PerProduct ? productName!.Trim() : null;
+        TouchUpdatedAt();
+    }
+
+    public void ClearYield()
+    {
+        YieldBasis = YieldBasis.None;
+        YieldQuantity = null;
+        YieldProductName = null;
         TouchUpdatedAt();
     }
 }
