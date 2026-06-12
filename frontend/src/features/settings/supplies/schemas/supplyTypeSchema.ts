@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { YieldBasis } from '../types'
 
 export const supplyTypeSchema = z
   .object({
@@ -9,13 +10,13 @@ export const supplyTypeSchema = z
       .positive('Preço deve ser maior que zero')
       .optional()
       .nullable(),
-    yieldBasis: z.enum(['None', 'PerOrder', 'PerProduct']).default('None'),
+    yieldBasis: z.enum(['None', 'PerOrder', 'PerProduct'] as [YieldBasis, ...YieldBasis[]]).default('None'),
     yieldQuantity: z.number().positive('Rendimento deve ser maior que zero').optional().nullable(),
     yieldProductName: z.string().max(100).optional().nullable(),
   })
   .superRefine((data, ctx) => {
     if (data.yieldBasis !== 'None') {
-      if (!data.yieldQuantity || data.yieldQuantity <= 0) {
+      if (data.yieldQuantity == null) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: 'Quantidade do rendimento deve ser maior que zero',
