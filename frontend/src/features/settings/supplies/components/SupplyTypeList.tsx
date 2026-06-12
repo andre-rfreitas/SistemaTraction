@@ -5,6 +5,17 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Tag } from 'lucide-react'
 
+function formatYield(t: SupplyTypeDto): string {
+  if (t.yieldBasis === 'None' || !t.yieldQuantity) return '—'
+  const qty = t.yieldQuantity % 1 === 0
+    ? t.yieldQuantity.toFixed(0)
+    : t.yieldQuantity.toString()
+  if (t.yieldBasis === 'PerOrder') {
+    return `1 un. rende ${qty} ${Number(qty) === 1 ? 'Pedido' : 'Pedidos'}`
+  }
+  return `1 un. rende ${qty} ${t.yieldProductName ?? 'Produto'}`
+}
+
 interface Props {
   onEdit: (item: SupplyTypeDto) => void
 }
@@ -25,6 +36,7 @@ export function SupplyTypeList({ onEdit }: Props) {
           <div>
             <p className="text-sm font-semibold text-foreground">{t.name}</p>
             <p className="text-xs text-muted-foreground">{t.unit}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{formatYield(t)}</p>
           </div>
           <div className="flex gap-2">
             <button
