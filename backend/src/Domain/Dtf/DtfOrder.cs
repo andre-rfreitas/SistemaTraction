@@ -11,6 +11,7 @@ public class DtfOrder : BaseEntity
     public DateTime? ReceivedAt { get; private set; }
 
     private readonly List<DtfOrderItem> _items = [];
+    // Filters soft-deleted items — RemoveItem() uses MarkAsDeleted() for EF tracking.
     public IReadOnlyList<DtfOrderItem> Items => _items.Where(i => !i.IsDeleted).ToList().AsReadOnly();
 
     private DtfOrder() { }

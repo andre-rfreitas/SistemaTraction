@@ -150,4 +150,18 @@ public class DtfOrderTests
         var act = () => order.UpdateNotes("nova nota");
         act.Should().Throw<DomainException>();
     }
+
+    [Fact]
+    public void DtfOrderItem_Create_WithZeroQuantity_ThrowsDomainException()
+    {
+        var act = () => DtfOrderItem.Create(Guid.NewGuid(), Guid.NewGuid(), 0);
+        act.Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void DtfOrderItem_Create_WithNegativeQuantity_ThrowsDomainException()
+    {
+        var act = () => DtfOrderItem.Create(Guid.NewGuid(), Guid.NewGuid(), -1);
+        act.Should().Throw<DomainException>();
+    }
 }
