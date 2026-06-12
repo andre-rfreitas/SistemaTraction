@@ -168,7 +168,11 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
             b.Property(e => e.Type).HasConversion<string>();
         });
 
-        modelBuilder.Entity<SupplyType>(b => b.HasKey(t => t.Id));
+        modelBuilder.Entity<SupplyType>(b =>
+        {
+            b.HasKey(t => t.Id);
+            b.Property(t => t.YieldBasis).HasConversion<string>();
+        });
 
         modelBuilder.Entity<SupplyStockItem>(b =>
         {
