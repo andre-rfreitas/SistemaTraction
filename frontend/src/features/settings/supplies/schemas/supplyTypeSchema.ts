@@ -10,7 +10,7 @@ export const supplyTypeSchema = z
       .positive('Preço deve ser maior que zero')
       .optional()
       .nullable(),
-    yieldBasis: z.enum(['None', 'PerOrder', 'PerProduct'] as [YieldBasis, ...YieldBasis[]]).default('None'),
+    yieldBasis: z.enum(['None', 'PerOrder', 'PerProduct'] as [YieldBasis, ...YieldBasis[]]),
     yieldQuantity: z.number().positive('Rendimento deve ser maior que zero').optional().nullable(),
     yieldProductName: z.string().max(100).optional().nullable(),
   })
