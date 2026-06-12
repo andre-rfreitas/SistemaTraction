@@ -54,6 +54,22 @@ public class SupplyTypeYieldTests
     }
 
     [Fact]
+    public void SetYield_PerProduct_WithWhitespaceName_ThrowsDomainException()
+    {
+        var st = SupplyType.Create("Linha", "rolo");
+        var act = () => st.SetYield(YieldBasis.PerProduct, 20m, "   ");
+        act.Should().Throw<DomainException>().WithMessage("*produto*");
+    }
+
+    [Fact]
+    public void SetYield_NegativeQuantity_ThrowsDomainException()
+    {
+        var st = SupplyType.Create("Linha", "rolo");
+        var act = () => st.SetYield(YieldBasis.PerProduct, -1m, "Camiseta");
+        act.Should().Throw<DomainException>().WithMessage("*maior que zero*");
+    }
+
+    [Fact]
     public void ClearYield_ResetsAllFields()
     {
         var st = SupplyType.Create("Etiqueta", "un");
