@@ -1,4 +1,4 @@
-import { Layers, Pencil } from 'lucide-react'
+import { Layers, Pencil, Trash2 } from 'lucide-react'
 import { useFabricRolls } from '../hooks/useFabricRolls'
 import type { FabricRollDto } from '../types'
 import { Badge } from '@/components/ui/badge'
@@ -34,9 +34,10 @@ function fmt(n: number, decimals = 2) {
 
 interface Props {
   onEdit?: (roll: FabricRollDto) => void
+  onDelete?: (roll: FabricRollDto) => void
 }
 
-export function FabricRollList({ onEdit }: Props) {
+export function FabricRollList({ onEdit, onDelete }: Props) {
   const { data: rolls = [], isLoading } = useFabricRolls()
 
   if (isLoading) {
@@ -118,16 +119,29 @@ export function FabricRollList({ onEdit }: Props) {
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
-                {onEdit && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEdit(r)}
-                    aria-label="Editar bobina"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                )}
+                <div className="flex items-center justify-end gap-1">
+                  {onEdit && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(r)}
+                      aria-label="Editar bobina"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                  )}
+                  {onDelete && r.status !== 'InCutting' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete(r)}
+                      aria-label="Excluir bobina"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           )

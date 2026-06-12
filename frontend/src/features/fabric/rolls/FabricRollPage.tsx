@@ -3,6 +3,7 @@ import { FabricRollList } from './components/FabricRollList'
 import { FabricRollForm } from './components/FabricRollForm'
 import { useRegisterFabricRoll } from './hooks/useRegisterFabricRoll'
 import { useUpdateFabricRoll } from './hooks/useUpdateFabricRoll'
+import { useDeleteFabricRoll } from './hooks/useDeleteFabricRoll'
 import type { FabricRollDto, RegisterFabricRollResult } from './types'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/ui/page-header'
@@ -17,8 +18,11 @@ export function FabricRollPage() {
   const [open, setOpen] = useState(false)
   const [editingRoll, setEditingRoll] = useState<FabricRollDto | null>(null)
   const [summary, setSummary] = useState<RegisterFabricRollResult | null>(null)
+  const [deletingRoll, setDeletingRoll] = useState<FabricRollDto | null>(null)
+
   const register = useRegisterFabricRoll()
   const update = useUpdateFabricRoll()
+  const deleteMutation = useDeleteFabricRoll()
 
   function handleClose() {
     setOpen(false)
@@ -31,6 +35,13 @@ export function FabricRollPage() {
     setOpen(true)
   }
 
+  function handleDeleteConfirm() {
+    if (!deletingRoll) return
+    deleteMutation.mutate(deletingRoll.id, {
+      onSuccess: () => setDeletingRoll(null),
+    })
+  }
+
   const isEditing = editingRoll !== null
 
   return (
@@ -41,8 +52,9 @@ export function FabricRollPage() {
         actions={<Button onClick={() => setOpen(true)}>+ Nova bobina</Button>}
       />
 
-      <FabricRollList onEdit={handleEdit} />
+      <FabricRollList onEdit={handleEdit} onDelete={(r) => setDeletingRoll(r)} />
 
+      {/* Dialog: registrar / editar */}
       <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose() }}>
         <DialogContent>
           <DialogHeader>
@@ -98,6 +110,49 @@ export function FabricRollPage() {
               }}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: confirmar exclusão */}
+      <Dialog open={!!deletingRoll} onOpenChange={(v) => { if (!v) setDeletingRoll(null) }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Excluir bobina?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {deletingRoll && (
+              <p className="text-sm text-muted-foreground">
+                Excluir{' '}
+                <span className="font-medium text-foreground">
+                  {deletingRoll.fabricColorName} — {deletingRoll.fabricTypeName} {deletingRoll.fabricTypeVariation}
+                </span>
+                {' '}({deletingRoll.weightKg.toFixed(3)} kg)?
+                {deletingRoll.status === 'Consumed' && (
+                  <span className="block mt-1 text-xs text-warning">
+                    Esta bobina já foi consumida. O histórico financeiro será mantido.
+                  </span>
+                )}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setDeletingRoll(null)}
+                disabled={deleteMutation.isPending}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteConfirm}
+                disabled={deleteMutation.isPending}
+                className="flex-1"
+              >
+                {deleteMutation.isPending ? 'Excluindo...' : 'Excluir'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

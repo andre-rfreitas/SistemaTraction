@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SistemaTraction.Application.Fabric.Commands.DeleteFabricRoll;
 using SistemaTraction.Application.Fabric.Commands.RegisterFabricRoll;
 using SistemaTraction.Application.Fabric.Commands.UpdateFabricRoll;
 using SistemaTraction.Application.Fabric.Queries.GetFabricRollById;
@@ -51,6 +52,17 @@ public class FabricRollsController(IMediator mediator) : ControllerBase
         {
             await mediator.Send(
                 new UpdateFabricRollCommand(id, request.FabricTypeId, request.FabricColorId, request.WeightKg, request.PriceTotal), ct);
+            return NoContent();
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+    // DELETE api/fabric-rolls/{id}
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await mediator.Send(new DeleteFabricRollCommand(id), ct);
             return NoContent();
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
