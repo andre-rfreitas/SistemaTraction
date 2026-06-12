@@ -1,45 +1,114 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { PageHeader } from '@/components/ui/page-header'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useShirtStock } from './hooks/useShirtStock'
 import { useAdjustShirtStock } from './hooks/useAdjustShirtStock'
 import { ShirtStockGrid } from './components/ShirtStockGrid'
-import { StockAdjustmentModal } from './components/StockAdjustmentModal'
 import { ShirtStockMovementsTable } from './components/ShirtStockMovementsTable'
+import type { ShirtStockGridDto } from './types'
+
+type DraftGrid = Record<string, Record<string, number>>
+
+function buildDraftGrid(data: ShirtStockGridDto): DraftGrid {
+  return Object.fromEntries(
+    data.rows.map((row) => [
+      row.colorId,
+      Object.fromEntries(data.sizes.map((s) => [s, row.quantities[s] ?? 0])),
+    ])
+  )
+}
 
 export function ShirtStockPage() {
-  const [modalOpen, setModalOpen] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [draftGrid, setDraftGrid] = useState<DraftGrid>({})
+  const [isSaving, setIsSaving] = useState(false)
+
   const { data, isLoading } = useShirtStock()
   const adjust = useAdjustShirtStock()
+  const queryClient = useQueryClient()
 
-  function handleClose() {
-    setModalOpen(false)
+  function enterEditMode() {
+    if (!data) return
+    setDraftGrid(buildDraftGrid(data))
+    setIsEditMode(true)
   }
 
-  function handleCellSave(colorId: string, _colorName: string, size: string, newQty: number) {
-    const row = data?.rows.find((r) => r.colorId === colorId)
-    const currentQty = row?.quantities[size] ?? 0
-    const delta = newQty - currentQty
-    if (delta === 0) return
+  function cancelEditMode() {
+    setIsEditMode(false)
+    setDraftGrid({})
+  }
 
-    adjust.mutate({
-      fabricColorId: colorId,
-      size,
-      adjustmentType: delta > 0 ? 'Entrada' : 'Saída',
-      quantity: Math.abs(delta),
-      reason: 'Ajuste manual',
-    })
+  function handleQuantityChange(colorId: string, size: string, value: number) {
+    setDraftGrid((prev) => ({
+      ...prev,
+      [colorId]: { ...prev[colorId], [size]: value },
+    }))
+  }
+
+  async function handleConfirm() {
+    if (!data) return
+
+    const payloads = []
+    for (const row of data.rows) {
+      const draftRow = draftGrid[row.colorId] ?? {}
+      for (const size of data.sizes) {
+        const originalQty = row.quantities[size] ?? 0
+        const newQty = draftRow[size] ?? originalQty
+        const delta = newQty - originalQty
+        if (delta === 0) continue
+        payloads.push({
+          fabricColorId: row.colorId,
+          size,
+          adjustmentType: (delta > 0 ? 'Entrada' : 'Saída') as 'Entrada' | 'Saída',
+          quantity: Math.abs(delta),
+          reason: 'Ajuste manual',
+        })
+      }
+    }
+
+    if (payloads.length === 0) {
+      cancelEditMode()
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      await Promise.all(payloads.map((p) => adjust.mutateAsync(p)))
+      await queryClient.invalidateQueries({ queryKey: ['shirt-stock'] })
+      await queryClient.invalidateQueries({ queryKey: ['shirt-stock-movements'] })
+    } finally {
+      setIsSaving(false)
+      setIsEditMode(false)
+      setDraftGrid({})
+    }
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Estoque de Camisetas"
-        description="Visão geral do estoque por cor e tamanho. Ajustes manuais ficam registrados no histórico."
+        description={
+          isEditMode
+            ? 'Edite as quantidades diretamente na tabela e confirme para salvar.'
+            : 'Visão geral do estoque por cor e tamanho. Ajustes manuais ficam registrados no histórico.'
+        }
         actions={
-          <Button variant="outline" onClick={() => setModalOpen(true)}>Ajuste manual</Button>
+          isEditMode ? (
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={cancelEditMode} disabled={isSaving}>
+                Cancelar
+              </Button>
+              <Button onClick={handleConfirm} disabled={isSaving}>
+                {isSaving ? 'Salvando...' : 'Confirmar edições'}
+              </Button>
+            </div>
+          ) : (
+            <Button variant="outline" onClick={enterEditMode} disabled={!data || isLoading}>
+              Ajuste manual
+            </Button>
+          )
         }
       />
 
@@ -48,31 +117,18 @@ export function ShirtStockPage() {
       ) : data ? (
         <ShirtStockGrid
           data={data}
-          isSaving={adjust.isPending}
-          onCellSave={handleCellSave}
+          editMode={isEditMode}
+          draftQuantities={isEditMode ? draftGrid : undefined}
+          onQuantityChange={handleQuantityChange}
         />
       ) : null}
 
-      <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-foreground">Histórico de movimentações</h2>
-        <ShirtStockMovementsTable />
-      </div>
-
-      <Dialog open={modalOpen} onOpenChange={(v) => { if (!v) handleClose() }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Ajuste manual de estoque</DialogTitle>
-          </DialogHeader>
-          <StockAdjustmentModal
-            sizes={data?.sizes ?? ['P', 'M', 'G', 'G1', 'GG']}
-            isLoading={adjust.isPending}
-            onConfirm={(payload) =>
-              adjust.mutate(payload, { onSuccess: handleClose })
-            }
-            onClose={handleClose}
-          />
-        </DialogContent>
-      </Dialog>
+      {!isEditMode && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-foreground">Histórico de movimentações</h2>
+          <ShirtStockMovementsTable />
+        </div>
+      )}
     </div>
   )
 }
