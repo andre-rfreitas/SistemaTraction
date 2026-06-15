@@ -36,6 +36,8 @@ public interface IApplicationDbContext
     DbSet<SupplyOrderConfig> SupplyOrderConfigs { get; }
     DbSet<Sewer> Sewers { get; }
     DbSet<SewerProductType> SewerProductTypes { get; }
+    DbSet<DtfOrder> DtfOrders { get; }
+    DbSet<DtfOrderItem> DtfOrderItems { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -39,6 +39,8 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<SupplyOrderConfig> SupplyOrderConfigs => Set<SupplyOrderConfig>();
     public DbSet<Sewer> Sewers => Set<Sewer>();
     public DbSet<SewerProductType> SewerProductTypes => Set<SewerProductType>();
+    public DbSet<DtfOrder> DtfOrders => Set<DtfOrder>();
+    public DbSet<DtfOrderItem> DtfOrderItems => Set<DtfOrderItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -212,5 +214,22 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
         });
 
         modelBuilder.Entity<SewerProductType>(b => b.HasKey(pt => pt.Id));
+
+        modelBuilder.Entity<DtfOrder>(b =>
+        {
+            b.HasKey(o => o.Id);
+            b.Property(o => o.Status).HasConversion<string>();
+            b.HasMany(o => o.Items)
+             .WithOne()
+             .HasForeignKey(i => i.DtfOrderId);
+            b.Navigation(o => o.Items)
+             .HasField("_items")
+             .UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        modelBuilder.Entity<DtfOrderItem>(b =>
+        {
+            b.HasKey(i => i.Id);
+        });
     }
 }

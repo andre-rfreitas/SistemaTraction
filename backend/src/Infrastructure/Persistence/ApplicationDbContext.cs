@@ -38,6 +38,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<SupplyOrderConfig> SupplyOrderConfigs => Set<SupplyOrderConfig>();
     public DbSet<Sewer> Sewers => Set<Sewer>();
     public DbSet<SewerProductType> SewerProductTypes => Set<SewerProductType>();
+    public DbSet<DtfOrder> DtfOrders => Set<DtfOrder>();
+    public DbSet<DtfOrderItem> DtfOrderItems => Set<DtfOrderItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
