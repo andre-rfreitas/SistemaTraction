@@ -33,7 +33,7 @@ public class GetDtfOrdersQueryHandler(IApplicationDbContext context)
             .ToList();
 
         var models = await context.DtfModels
-            .Where(m => modelIds.Contains(m.Id))
+            .Where(m => modelIds.Contains(m.Id) && !m.IsDeleted)
             .ToDictionaryAsync(m => m.Id, cancellationToken);
 
         return orders.Select(o => new DtfOrderDto(
