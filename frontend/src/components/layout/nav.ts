@@ -1,13 +1,13 @@
 import {
   Boxes, Layers, Scissors, ClipboardList, Wallet, Shirt, Image, Settings, Archive, Package, Tag,
-  Spool, Users,
+  Spool, Users, FileText,
   type LucideIcon,
 } from 'lucide-react'
 
 export type TabId =
   | 'fabric' | 'rolls' | 'cutting' | 'dtf-models'
   | 'dtf-stock' | 'shirt-stock' | 'supply-stock' | 'separation' | 'financial' | 'config'
-  | 'supply-types' | 'sewing-orders' | 'sewers'
+  | 'supply-types' | 'sewing-orders' | 'sewers' | 'dtf-orders'
 
 export interface NavItem {
   id: TabId
@@ -27,6 +27,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'rolls', label: 'Bobinas', icon: Layers },
       { id: 'cutting', label: 'Pedidos de Corte', icon: Scissors },
       { id: 'sewing-orders', label: 'Pedidos de Costura', icon: Spool },
+      { id: 'dtf-orders', label: 'Pedidos DTF', icon: FileText },
       { id: 'separation', label: 'Lista de Separação', icon: ClipboardList },
     ],
   },

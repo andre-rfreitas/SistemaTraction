@@ -16,6 +16,7 @@ import { SupplyStockPage } from '@/features/stock/supplies/SupplyStockPage'
 import { SupplyTypePage } from '@/features/settings/supplies/SupplyTypePage'
 import { SewerPage } from '@/features/sewing/sewers/SewerPage'
 import { SewingOrdersPage } from '@/features/sewing/orders/SewingOrdersPage'
+import { DtfOrderPage } from '@/features/stock/dtf/orders/DtfOrderPage'
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth()
@@ -39,6 +40,7 @@ function App() {
     cutting: <CuttingOrderPage />,
     'dtf-models': <DtfModelPage />,
     'dtf-stock': <DtfStockPage />,
+    'dtf-orders': <DtfOrderPage />,
     'shirt-stock': <ShirtStockPage />,
     'supply-stock': <SupplyStockPage />,
     'supply-types': <SupplyTypePage />,
