@@ -27,6 +27,8 @@ public class GetDtfOrdersQueryHandler(IApplicationDbContext context)
 
         var modelIds = orders.SelectMany(o => o.Items)
             .Select(i => i.DtfModelId)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
             .Distinct()
             .ToList();
 
@@ -43,7 +45,7 @@ public class GetDtfOrdersQueryHandler(IApplicationDbContext context)
             o.ReceivedAt,
             o.Items.Select(i =>
             {
-                var model = models.GetValueOrDefault(i.DtfModelId);
+                var model = i.DtfModelId.HasValue ? models.GetValueOrDefault(i.DtfModelId.Value) : null;
                 return new DtfOrderItemDto(
                     i.Id,
                     i.DtfModelId,

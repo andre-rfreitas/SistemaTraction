@@ -4,7 +4,7 @@ namespace SistemaTraction.Application.Dtf.DTOs;
 
 public record DtfOrderItemDto(
     Guid Id,
-    Guid DtfModelId,
+    Guid? DtfModelId,
     string ModelName,
     string SheetLabel,
     int SheetQuantity,

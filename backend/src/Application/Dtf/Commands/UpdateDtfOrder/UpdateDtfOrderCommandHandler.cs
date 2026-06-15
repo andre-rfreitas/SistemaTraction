@@ -21,8 +21,8 @@ public class UpdateDtfOrderCommandHandler(IApplicationDbContext context)
 
         foreach (var existingItem in order.Items.ToList())
         {
-            if (!requestedModelIds.Contains(existingItem.DtfModelId))
-                order.RemoveItem(existingItem.DtfModelId);
+            if (existingItem.DtfModelId.HasValue && !requestedModelIds.Contains(existingItem.DtfModelId.Value))
+                order.RemoveItem(existingItem.DtfModelId.Value);
         }
 
         foreach (var input in request.Items)

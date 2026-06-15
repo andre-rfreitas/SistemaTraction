@@ -5,7 +5,7 @@ namespace SistemaTraction.Domain.Dtf;
 public class DtfOrderItem : BaseEntity
 {
     public Guid DtfOrderId { get; private set; }
-    public Guid DtfModelId { get; private set; }
+    public Guid? DtfModelId { get; private set; }
     public int SheetQuantity { get; private set; }
 
     private DtfOrderItem() { }

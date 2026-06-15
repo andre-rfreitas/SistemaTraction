@@ -17,7 +17,11 @@ public class ReceiveDtfOrderCommandHandler(IApplicationDbContext context)
             ?? throw new DomainException("Pedido DTF não encontrado.");
 
         var activeItems = order.Items.ToList();
-        var modelIds = activeItems.Select(i => i.DtfModelId).ToList();
+        var modelIds = activeItems
+            .Select(i => i.DtfModelId)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .ToList();
 
         var models = await context.DtfModels
             .Where(m => modelIds.Contains(m.Id) && !m.IsDeleted)
@@ -29,14 +33,17 @@ public class ReceiveDtfOrderCommandHandler(IApplicationDbContext context)
 
         foreach (var item in activeItems)
         {
-            if (!models.TryGetValue(item.DtfModelId, out var model))
+            if (!item.DtfModelId.HasValue)
+                throw new DomainException("Item do pedido não tem modelo associado.");
+
+            if (!models.TryGetValue(item.DtfModelId.Value, out var model))
                 throw new DomainException("Modelo DTF não encontrado para item do pedido.");
 
-            if (!stockItems.TryGetValue(item.DtfModelId, out var stockItem))
+            if (!stockItems.TryGetValue(item.DtfModelId.Value, out var stockItem))
             {
-                stockItem = DtfStockItem.Create(item.DtfModelId);
+                stockItem = DtfStockItem.Create(item.DtfModelId.Value);
                 context.DtfStockItems.Add(stockItem);
-                stockItems[item.DtfModelId] = stockItem;
+                stockItems[item.DtfModelId.Value] = stockItem;
             }
 
             int stamps;
