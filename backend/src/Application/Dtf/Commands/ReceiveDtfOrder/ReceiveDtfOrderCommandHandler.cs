@@ -17,20 +17,26 @@ public class ReceiveDtfOrderCommandHandler(IApplicationDbContext context)
             ?? throw new DomainException("Pedido DTF não encontrado.");
 
         var activeItems = order.Items.ToList();
+        var modelIds = activeItems.Select(i => i.DtfModelId).ToList();
+
+        var models = await context.DtfModels
+            .Where(m => modelIds.Contains(m.Id) && !m.IsDeleted)
+            .ToDictionaryAsync(m => m.Id, cancellationToken);
+
+        var stockItems = await context.DtfStockItems
+            .Where(s => modelIds.Contains(s.DtfModelId) && !s.IsDeleted)
+            .ToDictionaryAsync(s => s.DtfModelId, cancellationToken);
 
         foreach (var item in activeItems)
         {
-            var model = await context.DtfModels
-                .FirstOrDefaultAsync(m => m.Id == item.DtfModelId && !m.IsDeleted, cancellationToken)
-                ?? throw new DomainException($"Modelo DTF não encontrado para item do pedido.");
+            if (!models.TryGetValue(item.DtfModelId, out var model))
+                throw new DomainException("Modelo DTF não encontrado para item do pedido.");
 
-            var stockItem = await context.DtfStockItems
-                .FirstOrDefaultAsync(s => s.DtfModelId == item.DtfModelId && !s.IsDeleted, cancellationToken);
-
-            if (stockItem is null)
+            if (!stockItems.TryGetValue(item.DtfModelId, out var stockItem))
             {
                 stockItem = DtfStockItem.Create(item.DtfModelId);
                 context.DtfStockItems.Add(stockItem);
+                stockItems[item.DtfModelId] = stockItem;
             }
 
             int stamps;

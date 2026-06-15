@@ -233,7 +233,8 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
             b.HasOne<DtfModel>()
              .WithMany()
              .HasForeignKey(i => i.DtfModelId)
-             .IsRequired(false);
+             .IsRequired(false)
+             .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
