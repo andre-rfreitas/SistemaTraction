@@ -12,7 +12,12 @@ public class DtfOrderItemConfiguration : IEntityTypeConfiguration<DtfOrderItem>
 
         builder.HasKey(i => i.Id);
 
-        builder.Property(i => i.DtfModelId).IsRequired();
         builder.Property(i => i.SheetQuantity).IsRequired();
+
+        builder.HasOne<DtfModel>()
+               .WithMany()
+               .HasForeignKey(i => i.DtfModelId)
+               .IsRequired(false)
+               .OnDelete(DeleteBehavior.SetNull);
     }
 }

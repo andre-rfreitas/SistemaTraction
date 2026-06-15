@@ -230,6 +230,10 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<DtfOrderItem>(b =>
         {
             b.HasKey(i => i.Id);
+            b.HasOne<DtfModel>()
+             .WithMany()
+             .HasForeignKey(i => i.DtfModelId)
+             .IsRequired(false);
         });
     }
 }
