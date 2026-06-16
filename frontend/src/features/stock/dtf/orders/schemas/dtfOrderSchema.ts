@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const dtfOrderItemSchema = z.object({
-  dtfModelId: z.string().uuid('Selecione um modelo'),
+  dtfModelId: z.string().min(1, 'Selecione um modelo'),
   sheetQuantity: z.number().int().positive('Quantidade deve ser maior que zero'),
 })
 

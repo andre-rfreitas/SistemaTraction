@@ -1,4 +1,4 @@
-import { useForm, useFieldArray, useWatch } from 'react-hook-form'
+import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { dtfOrderSchema, type DtfOrderFormData } from '../schemas/dtfOrderSchema'
 import { Button } from '@/components/ui/button'
@@ -65,17 +65,23 @@ export function DtfOrderForm({ models, defaultValues, isLoading, onSubmit }: Pro
           return (
             <div key={field.id} className="flex items-start gap-2">
               <div className="flex-1 space-y-1">
-                <select
-                  {...register(`items.${index}.dtfModelId`)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <option value="">Selecionar modelo...</option>
-                  {models.map(m => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.sheetLabel})
-                    </option>
-                  ))}
-                </select>
+                <Controller
+                  control={control}
+                  name={`items.${index}.dtfModelId`}
+                  render={({ field: selectField }) => (
+                    <select
+                      {...selectField}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="">Selecionar modelo...</option>
+                      {models.map(m => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} ({m.sheetLabel})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
                 {errors.items?.[index]?.dtfModelId && (
                   <p className="text-xs text-danger">{errors.items[index].dtfModelId?.message}</p>
                 )}
