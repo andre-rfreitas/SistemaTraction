@@ -9,7 +9,7 @@ interface SidebarProps {
 
 export function Sidebar({ active, onSelect, collapsed = false }: SidebarProps) {
   return (
-    <nav className="flex h-full flex-col gap-5 overflow-y-auto p-3" aria-label="Navegação principal">
+    <nav className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-3" aria-label="Navegação principal">
       {NAV_GROUPS.map((group) => (
         <div key={group.label} className="space-y-1">
           {!collapsed && (

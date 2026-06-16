@@ -32,11 +32,11 @@ export function AppShell({ active, onSelect, children }: AppShellProps) {
     <div className="flex h-screen overflow-hidden bg-background">
       <aside
         className={cn(
-          'hidden shrink-0 border-r border-border bg-card transition-[width] duration-200 lg:block',
+          'hidden shrink-0 flex-col border-r border-border bg-card transition-[width] duration-200 lg:flex',
           collapsed ? 'w-16' : 'w-60',
         )}
       >
-        <div className="flex h-14 items-center gap-2 border-b border-border px-4">
+        <div className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
           <div className="size-6 rounded bg-primary" />
           {!collapsed && <span className="text-sm font-semibold tracking-tight">StockShirt</span>}
         </div>
