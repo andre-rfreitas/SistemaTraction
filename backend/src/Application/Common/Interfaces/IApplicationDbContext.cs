@@ -41,6 +41,7 @@ public interface IApplicationDbContext
     DbSet<GenericProductCategory> GenericProductCategories { get; }
     DbSet<GenericProduct> GenericProducts { get; }
     DbSet<GenericProductMovement> GenericProductMovements { get; }
+    DbSet<OperationalExpense> OperationalExpenses { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

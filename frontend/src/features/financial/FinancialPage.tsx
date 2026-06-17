@@ -8,6 +8,7 @@ import { CategoryChart } from './components/CategoryChart'
 import { EntriesTable } from './components/EntriesTable'
 import { ManualEntryForm } from './components/ManualEntryForm'
 import { ShopifySyncCard } from './components/ShopifySyncCard'
+import { OpexSection } from './components/OpexSection'
 import type { PeriodPreset } from './types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -141,6 +142,7 @@ export function FinancialPage() {
         <>
           <SummaryCards summary={summary.data} />
           <CategoryChart data={summary.data.expenseByCategory} />
+          <OpexSection opexItems={summary.data.opexItems} totalOpex={summary.data.totalOpex} />
         </>
       )}
 

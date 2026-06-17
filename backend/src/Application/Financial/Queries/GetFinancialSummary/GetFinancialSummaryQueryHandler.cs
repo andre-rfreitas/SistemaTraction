@@ -29,7 +29,6 @@ public class GetFinancialSummaryQueryHandler(IApplicationDbContext context)
 
         var totalIncome = entries.Where(e => e.Type == FinancialEntryType.Income).Sum(e => e.Amount);
         var totalExpense = entries.Where(e => e.Type == FinancialEntryType.Expense).Sum(e => e.Amount);
-        var balance = totalIncome - totalExpense;
 
         var expenseByCategory = entries
             .Where(e => e.Type == FinancialEntryType.Expense)
@@ -49,6 +48,26 @@ public class GetFinancialSummaryQueryHandler(IApplicationDbContext context)
             ? Math.Round((totalFabric + totalCutting + totalSewing) / goodPiecesProduced, 2)
             : null;
 
+        // OPEX calculation
+        var activeOpex = await context.OperationalExpenses
+            .Where(e => !e.IsDeleted && e.IsActive)
+            .ToListAsync(cancellationToken);
+
+        var periodDays = Math.Max(1, (to - from).TotalDays);
+        const double daysInMonth = 30.0;
+
+        var opexItems = activeOpex.Select(e =>
+        {
+            var proratedFixed = e.FixedMonthlyValue * (decimal)(periodDays / daysInMonth);
+            var rateAmount = e.RatePercent / 100m * totalIncome;
+            var periodTotal = Math.Round(proratedFixed + rateAmount, 2);
+            return new OpexPeriodItemDto(e.Id, e.Name, e.FixedMonthlyValue, e.RatePercent,
+                Math.Round(proratedFixed, 2), Math.Round(rateAmount, 2), periodTotal);
+        }).ToList();
+
+        var totalOpex = opexItems.Sum(o => o.PeriodTotal);
+        var balance = totalIncome - totalExpense - totalOpex;
+
         return new FinancialSummaryDto(
             from,
             to,
@@ -62,7 +81,9 @@ public class GetFinancialSummaryQueryHandler(IApplicationDbContext context)
             balance,
             goodPiecesProduced,
             averageCostPerShirt,
-            expenseByCategory
+            expenseByCategory,
+            totalOpex,
+            opexItems
         );
     }
 }

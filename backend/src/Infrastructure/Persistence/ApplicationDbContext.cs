@@ -43,6 +43,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<GenericProductCategory> GenericProductCategories => Set<GenericProductCategory>();
     public DbSet<GenericProduct> GenericProducts => Set<GenericProduct>();
     public DbSet<GenericProductMovement> GenericProductMovements => Set<GenericProductMovement>();
+    public DbSet<OperationalExpense> OperationalExpenses => Set<OperationalExpense>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

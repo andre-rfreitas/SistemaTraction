@@ -18,5 +18,7 @@ public record FinancialSummaryDto(
     decimal Balance,
     int GoodPiecesProduced,
     decimal? AverageCostPerShirt,
-    List<CategoryTotalDto> ExpenseByCategory
+    List<CategoryTotalDto> ExpenseByCategory,
+    decimal TotalOpex,
+    List<OpexPeriodItemDto> OpexItems
 );

@@ -44,6 +44,7 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<GenericProductCategory> GenericProductCategories => Set<GenericProductCategory>();
     public DbSet<GenericProduct> GenericProducts => Set<GenericProduct>();
     public DbSet<GenericProductMovement> GenericProductMovements => Set<GenericProductMovement>();
+    public DbSet<OperationalExpense> OperationalExpenses => Set<OperationalExpense>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -239,5 +240,7 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
              .IsRequired(false)
              .OnDelete(DeleteBehavior.SetNull);
         });
+
+        modelBuilder.Entity<OperationalExpense>(b => b.HasKey(e => e.Id));
     }
 }

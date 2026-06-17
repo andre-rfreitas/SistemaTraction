@@ -2,10 +2,14 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Financial.Commands.CreateFinancialEntry;
+using SistemaTraction.Application.Financial.Commands.CreateOperationalExpense;
+using SistemaTraction.Application.Financial.Commands.DeleteOperationalExpense;
 using SistemaTraction.Application.Financial.Commands.ReverseFinancialEntry;
 using SistemaTraction.Application.Financial.Commands.SyncShopifyOrders;
+using SistemaTraction.Application.Financial.Commands.UpdateOperationalExpense;
 using SistemaTraction.Application.Financial.Queries.GetFinancialEntries;
 using SistemaTraction.Application.Financial.Queries.GetFinancialSummary;
+using SistemaTraction.Application.Financial.Queries.GetOperationalExpenses;
 using SistemaTraction.Application.Financial.Queries.GetShopifyStatus;
 using SistemaTraction.Domain.Common;
 
@@ -80,6 +84,50 @@ public class FinancialController(IMediator mediator) : ControllerBase
         var result = await mediator.Send(new GetShopifyStatusQuery(), ct);
         return Ok(result);
     }
+
+    // GET api/financial/opex
+    [HttpGet("opex")]
+    public async Task<IActionResult> GetOpex(CancellationToken ct)
+    {
+        var result = await mediator.Send(new GetOperationalExpensesQuery(), ct);
+        return Ok(result);
+    }
+
+    // POST api/financial/opex
+    [HttpPost("opex")]
+    public async Task<IActionResult> CreateOpex([FromBody] OpexRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var result = await mediator.Send(new CreateOperationalExpenseCommand(request.Name, request.FixedMonthlyValue, request.RatePercent), ct);
+            return Ok(result);
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    // PUT api/financial/opex/{id}
+    [HttpPut("opex/{id:guid}")]
+    public async Task<IActionResult> UpdateOpex(Guid id, [FromBody] OpexUpdateRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var result = await mediator.Send(new UpdateOperationalExpenseCommand(id, request.Name, request.FixedMonthlyValue, request.RatePercent, request.IsActive), ct);
+            return Ok(result);
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    // DELETE api/financial/opex/{id}
+    [HttpDelete("opex/{id:guid}")]
+    public async Task<IActionResult> DeleteOpex(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await mediator.Send(new DeleteOperationalExpenseCommand(id), ct);
+            return NoContent();
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
 }
 
 public record CreateFinancialEntryRequest(
@@ -90,3 +138,5 @@ public record CreateFinancialEntryRequest(
 );
 
 public record ShopifySyncRequest(DateOnly From, DateOnly To);
+public record OpexRequest(string Name, decimal FixedMonthlyValue, decimal RatePercent);
+public record OpexUpdateRequest(string Name, decimal FixedMonthlyValue, decimal RatePercent, bool IsActive);

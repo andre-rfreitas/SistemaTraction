@@ -19,6 +19,24 @@ export interface CategoryTotalDto {
   total: number
 }
 
+export interface OpexPeriodItemDto {
+  id: string
+  name: string
+  fixedMonthlyValue: number
+  ratePercent: number
+  proratedFixed: number
+  rateAmount: number
+  periodTotal: number
+}
+
+export interface OperationalExpenseDto {
+  id: string
+  name: string
+  fixedMonthlyValue: number
+  ratePercent: number
+  isActive: boolean
+}
+
 export interface FinancialSummaryDto {
   from: string
   to: string
@@ -33,6 +51,8 @@ export interface FinancialSummaryDto {
   goodPiecesProduced: number
   averageCostPerShirt: number | null
   expenseByCategory: CategoryTotalDto[]
+  totalOpex: number
+  opexItems: OpexPeriodItemDto[]
 }
 
 export interface ShopifySyncResultDto {
