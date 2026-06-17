@@ -123,6 +123,16 @@ export function EntriesTable({ entries, onReverse, isReversing }: Props) {
                 </p>
               </div>
             )}
+            {toReverse?.referenceType === 'CuttingDelivery' && (
+              <p className="text-amber-600 font-medium">
+                Este estorno também cancelará o pedido de corte vinculado e reverterá as bobinas de tecido para disponível.
+              </p>
+            )}
+            {toReverse?.referenceType === 'SewingDelivery' && (
+              <p className="text-amber-600 font-medium">
+                Este estorno também cancelará o pedido de corte, reverterá o estoque de camisetas e estornará todos os lançamentos vinculados (Costura e Defeitos).
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setToReverse(null)}>

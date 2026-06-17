@@ -9,6 +9,9 @@ export function useReverseFinancialEntry() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['financial-summary'] })
       queryClient.invalidateQueries({ queryKey: ['financial-entries'] })
+      queryClient.invalidateQueries({ queryKey: ['cutting-orders'] })
+      queryClient.invalidateQueries({ queryKey: ['fabric-rolls'] })
+      queryClient.invalidateQueries({ queryKey: ['shirt-stock'] })
     },
   })
 }
