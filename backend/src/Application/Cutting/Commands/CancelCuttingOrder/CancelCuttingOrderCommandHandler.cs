@@ -10,6 +10,9 @@ namespace SistemaTraction.Application.Cutting.Commands.CancelCuttingOrder;
 public class CancelCuttingOrderCommandHandler(IApplicationDbContext context, ISender sender)
     : IRequestHandler<CancelCuttingOrderCommand, Unit>
 {
+    private const string CuttingDeliveryRef = "CuttingDelivery";
+    private const string SewingDeliveryRef = "SewingDelivery";
+
     public async Task<Unit> Handle(CancelCuttingOrderCommand request, CancellationToken cancellationToken)
     {
         var order = await context.CuttingOrders
@@ -19,13 +22,13 @@ public class CancelCuttingOrderCommandHandler(IApplicationDbContext context, ISe
 
         if (order.Status == CuttingOrderStatus.Delivered)
         {
-            await CancelWithFinancialReversal(order, "CuttingDelivery", cancellationToken);
+            await CancelWithFinancialReversal(order, CuttingDeliveryRef, cancellationToken);
             return Unit.Value;
         }
 
         if (order.Status == CuttingOrderStatus.SewingDelivered)
         {
-            await CancelWithFinancialReversal(order, "SewingDelivery", cancellationToken);
+            await CancelWithFinancialReversal(order, SewingDeliveryRef, cancellationToken);
             return Unit.Value;
         }
 
@@ -42,7 +45,7 @@ public class CancelCuttingOrderCommandHandler(IApplicationDbContext context, ISe
 
     private async Task CancelWithFinancialReversal(CuttingOrder order, string referenceType, CancellationToken cancellationToken)
     {
-        Guid? deliveryId = referenceType == "CuttingDelivery"
+        Guid? deliveryId = referenceType == CuttingDeliveryRef
             ? (await context.CuttingDeliveries
                 .FirstOrDefaultAsync(d => d.CuttingOrderId == order.Id, cancellationToken))?.Id
             : (await context.SewingDeliveries
