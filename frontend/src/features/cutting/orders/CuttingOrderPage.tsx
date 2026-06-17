@@ -177,7 +177,11 @@ export function CuttingOrderPage() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {cancelOrder?.status === 'SentToCutter'
+              {cancelOrder?.status === 'Delivered'
+                ? 'Este cancelamento estornará o lançamento financeiro de corte e reverterá as bobinas de tecido para disponível.'
+                : cancelOrder?.status === 'SewingDelivered'
+                ? 'Este cancelamento estornará os lançamentos de costura e defeitos, reverterá o estoque de camisetas e cancelará o pedido.'
+                : cancelOrder?.status === 'SentToCutter'
                 ? 'O pedido foi enviado ao cortador. As bobinas serão revertidas para disponível.'
                 : 'O rascunho será removido permanentemente.'}
             </p>

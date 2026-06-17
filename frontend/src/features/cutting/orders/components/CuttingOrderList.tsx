@@ -55,7 +55,7 @@ export function CuttingOrderList({ onRegisterDelivery, onEdit, onCancel }: Props
       {orders.map((o) => {
         const isCancelled = o.status === 'Cancelled'
         const canEdit = !isCancelled && o.status === 'Draft'
-        const canCancel = !isCancelled && (o.status === 'Draft' || o.status === 'SentToCutter')
+        const canCancel = !isCancelled
 
         return (
           <div key={o.id} className="border border-border rounded-lg p-3 bg-card">

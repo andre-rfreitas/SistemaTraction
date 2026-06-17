@@ -10,6 +10,9 @@ export function useCancelCuttingOrder() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cutting-orders'] })
       queryClient.invalidateQueries({ queryKey: ['fabric-rolls'] })
+      queryClient.invalidateQueries({ queryKey: ['financial-entries'] })
+      queryClient.invalidateQueries({ queryKey: ['financial-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['shirt-stock'] })
     },
   })
 }
