@@ -51,7 +51,6 @@ export function CuttingOrderList({ onRegisterDelivery, onEdit, onCancel }: Props
   return (
     <div className="space-y-2">
       {orders.map((o) => {
-        const activePieces = Object.entries(o.requestedPieces).filter(([, qty]) => qty > 0)
         const canEdit = o.status === 'Draft'
         const canCancel = o.status === 'Draft' || o.status === 'SentToCutter'
 
@@ -66,30 +65,29 @@ export function CuttingOrderList({ onRegisterDelivery, onEdit, onCancel }: Props
                   </Badge>
                 </div>
 
-                {o.items.length === 1 ? (
-                  <p className="text-sm text-foreground">
-                    {o.items[0].fabricColorName} {o.items[0].fabricTypeName} {o.items[0].fabricTypeVariation}
-                    <span className="text-xs text-muted-foreground ml-1">— {o.items[0].fabricRollWeightKg.toFixed(3)} kg</span>
-                  </p>
-                ) : (
-                  <div className="space-y-0.5">
-                    {o.items.map((item) => (
-                      <p key={item.id} className="text-sm text-foreground">
-                        {item.fabricColorName} {item.fabricTypeName} {item.fabricTypeVariation}
-                        <span className="text-xs text-muted-foreground ml-1">— {item.fabricRollWeightKg.toFixed(3)} kg</span>
-                      </p>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-1.5 mt-1.5">
-                  {activePieces.map(([size, qty]) => (
-                    <Badge key={size} variant="neutral">
-                      {qty} {size}
-                    </Badge>
-                  ))}
-                  <span className="text-xs text-muted-foreground self-center">= {o.totalPieces} peças</span>
+                <div className="space-y-2 mt-0.5">
+                  {o.items.map((item) => {
+                    const itemPieces = Object.entries(item.requestedPieces).filter(([, qty]) => qty > 0)
+                    return (
+                      <div key={item.id}>
+                        <p className="text-sm text-foreground">
+                          {item.fabricColorName} {item.fabricTypeName} {item.fabricTypeVariation}
+                          <span className="text-xs text-muted-foreground ml-1">— {item.fabricRollWeightKg.toFixed(3)} kg</span>
+                        </p>
+                        {itemPieces.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {itemPieces.map(([size, qty]) => (
+                              <Badge key={size} variant="neutral">
+                                {qty} {size}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
+                <p className="text-xs text-muted-foreground mt-1.5">Total = {o.totalPieces} peças</p>
                 {o.notes && <p className="text-xs text-muted-foreground mt-1 italic">{o.notes}</p>}
               </div>
 
