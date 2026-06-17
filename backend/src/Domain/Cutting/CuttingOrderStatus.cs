@@ -5,5 +5,6 @@ public enum CuttingOrderStatus
     Draft,
     SentToCutter,
     Delivered,
-    SewingDelivered
+    SewingDelivered,
+    Cancelled
 }

@@ -97,8 +97,15 @@ public class CuttingOrder : BaseEntity
     public void Cancel()
     {
         if (Status == CuttingOrderStatus.Delivered || Status == CuttingOrderStatus.SewingDelivered)
-            throw new DomainException("Pedidos já entregues não podem ser cancelados.");
-        MarkAsDeleted();
+            throw new DomainException("Pedidos já entregues não podem ser cancelados manualmente. Use o estorno financeiro.");
+        Status = CuttingOrderStatus.Cancelled;
+        TouchUpdatedAt();
+    }
+
+    public void CancelDelivered()
+    {
+        Status = CuttingOrderStatus.Cancelled;
+        TouchUpdatedAt();
     }
 
     public void MarkSent()
