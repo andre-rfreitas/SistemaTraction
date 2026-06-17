@@ -13,6 +13,9 @@ function formatYield(t: SupplyTypeDto): string {
   if (t.yieldBasis === 'PerOrder') {
     return `1 un. rende ${qty} ${Number(qty) === 1 ? 'Pedido' : 'Pedidos'}`
   }
+  if (t.yieldBasis === 'PerAllProducts') {
+    return `1 un. rende ${qty} por produto (todos)`
+  }
   return `1 un. rende ${qty} ${t.yieldProductName ?? 'Produto'}`
 }
 

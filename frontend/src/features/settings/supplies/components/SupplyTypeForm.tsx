@@ -25,6 +25,7 @@ export function SupplyTypeForm({ defaultValues, isLoading, onSubmit }: Props) {
   const yieldBasis = useWatch({ control, name: 'yieldBasis' })
   const { data: productNames = [] } = useSewerProductTypeNames({ enabled: yieldBasis === 'PerProduct' })
 
+
   const currentYieldProductName = useWatch({ control, name: 'yieldProductName' })
 
   const allProductNames = currentYieldProductName && !productNames.includes(currentYieldProductName)
@@ -111,7 +112,8 @@ export function SupplyTypeForm({ defaultValues, isLoading, onSubmit }: Props) {
                 className="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="PerOrder">Pedido</option>
-                <option value="PerProduct">Produto</option>
+                <option value="PerAllProducts">Todos os produtos</option>
+                <option value="PerProduct">Produto específico</option>
               </select>
               {yieldBasis === 'PerProduct' && (
                 <select

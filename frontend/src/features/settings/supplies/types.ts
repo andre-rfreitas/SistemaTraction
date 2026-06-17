@@ -1,4 +1,4 @@
-export type YieldBasis = 'None' | 'PerOrder' | 'PerProduct'
+export type YieldBasis = 'None' | 'PerOrder' | 'PerProduct' | 'PerAllProducts'
 
 export interface SupplyTypeDto {
   id: string
