@@ -11,6 +11,7 @@ const STATUS_LABEL: Record<string, string> = {
   SentToCutter: 'Enviado ao cortador',
   Delivered: 'Entregue pelo cortador',
   SewingDelivered: 'Em estoque',
+  Cancelled: 'Cancelado',
 }
 
 const STATUS_VARIANT: Record<string, BadgeProps['variant']> = {
@@ -18,6 +19,7 @@ const STATUS_VARIANT: Record<string, BadgeProps['variant']> = {
   SentToCutter: 'info',
   Delivered: 'warning',
   SewingDelivered: 'success',
+  Cancelled: 'danger',
 }
 
 interface Props {
@@ -51,8 +53,9 @@ export function CuttingOrderList({ onRegisterDelivery, onEdit, onCancel }: Props
   return (
     <div className="space-y-2">
       {orders.map((o) => {
-        const canEdit = o.status === 'Draft'
-        const canCancel = o.status === 'Draft' || o.status === 'SentToCutter'
+        const isCancelled = o.status === 'Cancelled'
+        const canEdit = !isCancelled && o.status === 'Draft'
+        const canCancel = !isCancelled && (o.status === 'Draft' || o.status === 'SentToCutter')
 
         return (
           <div key={o.id} className="border border-border rounded-lg p-3 bg-card">
