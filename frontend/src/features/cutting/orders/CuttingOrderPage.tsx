@@ -170,7 +170,7 @@ export function CuttingOrderPage() {
       </Dialog>
 
       {/* Dialog: confirmar cancelamento */}
-      <Dialog open={!!cancelOrder} onOpenChange={(v) => { if (!v) setCancelOrder(null) }}>
+      <Dialog open={!!cancelOrder} onOpenChange={(v) => { if (!v) { setCancelOrder(null); cancelOrderMutation.reset() } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Cancelar pedido #{cancelOrder?.orderNumber}?</DialogTitle>
@@ -185,10 +185,13 @@ export function CuttingOrderPage() {
                 ? 'O pedido foi enviado ao cortador. As bobinas serão revertidas para disponível.'
                 : 'O rascunho será removido permanentemente.'}
             </p>
+            {cancelOrderMutation.isError && (
+              <p className="text-sm text-destructive">{(cancelOrderMutation.error as Error).message}</p>
+            )}
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => setCancelOrder(null)}
+                onClick={() => { setCancelOrder(null); cancelOrderMutation.reset() }}
                 disabled={cancelOrderMutation.isPending}
                 className="flex-1"
               >
