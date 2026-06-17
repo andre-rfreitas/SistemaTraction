@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SistemaTraction.Application.Common.Interfaces;
 using SistemaTraction.Application.Stock.DTOs;
 using SistemaTraction.Domain.Common;
+using SistemaTraction.Domain.Financial;
 using SistemaTraction.Domain.Stock;
 using ShirtTypeEnum = SistemaTraction.Domain.Stock.ShirtType;
 
@@ -68,6 +69,20 @@ public class AdjustShirtStockCommandHandler(IApplicationDbContext context)
             "Manual",
             shirtType: shirtType);
         context.ShirtStockMovements.Add(movement);
+
+        // Lançamento financeiro automático: quando há valor unitário informado em uma entrada
+        if (!isSaida && request.UnitCost > 0)
+        {
+            var totalCost = request.UnitCost * request.Quantity;
+            var shirtTypeLabel = shirtType == ShirtTypeEnum.Over ? "Over" : "Regular";
+            var financialEntry = FinancialEntry.CreateExpense(
+                FinancialCategories.Estoque,
+                totalCost,
+                $"Entrada de estoque: {color.Name} {size} {shirtTypeLabel} ({request.Quantity} un. × R$ {request.UnitCost:N2})",
+                referenceId: movement.Id,
+                referenceType: "ShirtStockMovement");
+            context.FinancialEntries.Add(financialEntry);
+        }
 
         await context.SaveChangesAsync(cancellationToken);
 

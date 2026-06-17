@@ -1,24 +1,25 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { Package, Plus } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+
+// Hooks and components for Shirts
 import { useShirtStock } from './hooks/useShirtStock'
 import { useAdjustShirtStock } from './hooks/useAdjustShirtStock'
 import { ShirtStockGrid } from './components/ShirtStockGrid'
 import { ShirtStockMovementsTable } from './components/ShirtStockMovementsTable'
+import { ManageProductsModal } from './components/ManageProductsModal'
 import type { ShirtStockGridDto, ShirtType } from './types'
 
-type ProductCategory = 'camisetas' | 'toucas' | 'meias' | 'calcas'
-type ShirtSubType = 'regular' | 'over'
+// Hooks and components for Generic Products
+import { useGenericProductCategories } from '../generic/hooks/useGenericProductsApi'
+import { GenericProductCategoryView } from '../generic/components/GenericProductCategoryView'
+import { CreateCategoryModal } from '../generic/components/CreateCategoryModal'
 
-const CATEGORIES: { id: ProductCategory; label: string }[] = [
-  { id: 'camisetas', label: 'Camisetas' },
-  { id: 'toucas', label: 'Toucas' },
-  { id: 'meias', label: 'Meias' },
-  { id: 'calcas', label: 'Calças' },
-]
+type ShirtSubType = 'regular' | 'over'
 
 const SHIRT_TYPES: { id: ShirtSubType; label: string }[] = [
   { id: 'regular', label: 'Regular' },
@@ -36,36 +37,32 @@ function buildDraftGrid(data: ShirtStockGridDto): DraftGrid {
   )
 }
 
-function EmptyProductState({ label }: { label: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-12 text-center text-sm text-muted-foreground">
-      Estoque de <span className="font-medium text-foreground">{label}</span> em breve.
-    </div>
-  )
-}
-
 export function ShirtStockPage() {
-  const [category, setCategory] = useState<ProductCategory>('camisetas')
+  const [activeTabId, setActiveTabId] = useState<string>('camisetas')
   const [shirtType, setShirtType] = useState<ShirtSubType>('regular')
   const [isEditMode, setIsEditMode] = useState(false)
   const [draftGrid, setDraftGrid] = useState<DraftGrid>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [isManageOpen, setIsManageOpen] = useState(false)
+  const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false)
+
+  const { data: genericCategories = [] } = useGenericProductCategories()
 
   const apiShirtType: ShirtType = shirtType === 'regular' ? 'Regular' : 'Over'
 
-  const { data, isLoading } = useShirtStock(apiShirtType)
-  const adjust = useAdjustShirtStock()
+  const { data: shirtData, isLoading: isShirtLoading } = useShirtStock(apiShirtType)
+  const adjustShirt = useAdjustShirtStock()
   const queryClient = useQueryClient()
 
-  function handleCategoryChange(cat: ProductCategory) {
-    setCategory(cat)
+  function handleTabChange(id: string) {
+    setActiveTabId(id)
     setIsEditMode(false)
     setDraftGrid({})
   }
 
   function enterEditMode() {
-    if (!data) return
-    setDraftGrid(buildDraftGrid(data))
+    if (!shirtData) return
+    setDraftGrid(buildDraftGrid(shirtData))
     setIsEditMode(true)
   }
 
@@ -82,12 +79,12 @@ export function ShirtStockPage() {
   }
 
   async function handleConfirm() {
-    if (!data) return
+    if (!shirtData) return
 
     const payloads = []
-    for (const row of data.rows) {
+    for (const row of shirtData.rows) {
       const draftRow = draftGrid[row.colorId] ?? {}
-      for (const size of data.sizes) {
+      for (const size of shirtData.sizes) {
         const originalQty = row.quantities[size] ?? 0
         const newQty = draftRow[size] ?? originalQty
         const delta = newQty - originalQty
@@ -110,7 +107,7 @@ export function ShirtStockPage() {
 
     setIsSaving(true)
     try {
-      await Promise.all(payloads.map((p) => adjust.mutateAsync(p)))
+      await Promise.all(payloads.map((p) => adjustShirt.mutateAsync(p)))
       await queryClient.invalidateQueries({ queryKey: ['shirt-stock', apiShirtType] })
       await queryClient.invalidateQueries({ queryKey: ['shirt-stock-movements', apiShirtType] })
     } finally {
@@ -120,7 +117,7 @@ export function ShirtStockPage() {
     }
   }
 
-  const categoryLabel = CATEGORIES.find((c) => c.id === category)?.label ?? ''
+  const activeCategory = genericCategories.find(c => c.id === activeTabId)
 
   return (
     <div className="space-y-6">
@@ -128,15 +125,25 @@ export function ShirtStockPage() {
         title="Produtos"
         description={
           isEditMode
-            ? 'Edite as quantidades diretamente na tabela e confirme para salvar.'
-            : 'Visão geral do estoque por categoria de produto.'
+            ? 'Edite as quantidades de camisetas diretamente na tabela e confirme para salvar.'
+            : 'Visão geral do estoque de produtos acabados.'
         }
         actions={
-          category === 'camisetas' && !isEditMode ? (
-            <Button variant="outline" onClick={enterEditMode} disabled={!data || isLoading}>
-              Ajuste manual
-            </Button>
-          ) : category === 'camisetas' && isEditMode ? (
+          activeTabId === 'camisetas' && !isEditMode ? (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsManageOpen(true)}
+                className="gap-1.5"
+              >
+                <Package className="h-4 w-4" />
+                Gerenciar camisetas
+              </Button>
+              <Button variant="outline" onClick={enterEditMode} disabled={!shirtData || isShirtLoading}>
+                Ajuste manual
+              </Button>
+            </div>
+          ) : activeTabId === 'camisetas' && isEditMode ? (
             <div className="flex gap-2">
               <Button variant="outline" onClick={cancelEditMode} disabled={isSaving}>
                 Cancelar
@@ -149,26 +156,45 @@ export function ShirtStockPage() {
         }
       />
 
-      {/* Abas de categoria */}
-      <div className="flex gap-0 border-b border-border">
-        {CATEGORIES.map((cat) => (
+      {/* Abas Dinâmicas */}
+      <div className="flex flex-wrap gap-0 border-b border-border items-center">
+        <button
+          onClick={() => handleTabChange('camisetas')}
+          className={cn(
+            'px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px',
+            activeTabId === 'camisetas'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground',
+          )}
+        >
+          Camisetas
+        </button>
+
+        {genericCategories.map((cat) => (
           <button
             key={cat.id}
-            type="button"
-            onClick={() => handleCategoryChange(cat.id)}
+            onClick={() => handleTabChange(cat.id)}
             className={cn(
               'px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px',
-              category === cat.id
+              activeTabId === cat.id
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground',
             )}
           >
-            {cat.label}
+            {cat.name}
           </button>
         ))}
+
+        <button
+          onClick={() => setIsCreateCategoryOpen(true)}
+          className="ml-2 flex items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 h-6 w-6 transition-colors"
+          title="Adicionar nova categoria de produto"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
       </div>
 
-      {category === 'camisetas' ? (
+      {activeTabId === 'camisetas' ? (
         <div className="space-y-4">
           {/* Sub-abas Regular / Over */}
           <div className="flex gap-1">
@@ -189,11 +215,11 @@ export function ShirtStockPage() {
             ))}
           </div>
 
-          {isLoading ? (
+          {isShirtLoading ? (
             <Skeleton className="h-48 w-full rounded-lg" />
-          ) : data ? (
+          ) : shirtData ? (
             <ShirtStockGrid
-              data={data}
+              data={shirtData}
               editMode={isEditMode}
               draftQuantities={isEditMode ? draftGrid : undefined}
               onQuantityChange={handleQuantityChange}
@@ -202,14 +228,39 @@ export function ShirtStockPage() {
 
           {!isEditMode && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-foreground">Histórico de movimentações</h2>
+              <h2 className="text-sm font-semibold text-foreground">Histórico de movimentações (Camisetas)</h2>
               <ShirtStockMovementsTable shirtType={apiShirtType} />
             </div>
           )}
         </div>
+      ) : activeCategory ? (
+        <GenericProductCategoryView
+          key={activeCategory.id}
+          categoryId={activeCategory.id}
+          categoryName={activeCategory.name}
+          onCategoryDeleted={() => setActiveTabId('camisetas')}
+        />
       ) : (
-        <EmptyProductState label={categoryLabel} />
+        <div className="rounded-lg border border-border bg-card p-12 text-center text-sm text-muted-foreground">
+          Categoria não encontrada.
+        </div>
       )}
+
+      {/* Modais */}
+      <ManageProductsModal
+        open={isManageOpen}
+        onClose={() => {
+          setIsManageOpen(false)
+          queryClient.invalidateQueries({ queryKey: ['shirt-stock'] })
+          queryClient.invalidateQueries({ queryKey: ['shirt-stock-movements'] })
+        }}
+        currentShirtType={apiShirtType}
+      />
+
+      <CreateCategoryModal
+        open={isCreateCategoryOpen}
+        onClose={() => setIsCreateCategoryOpen(false)}
+      />
     </div>
   )
 }

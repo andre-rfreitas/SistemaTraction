@@ -9,6 +9,7 @@ export interface AdjustPayload {
   quantity: number
   reason: string
   shirtType: ShirtType
+  unitCost?: number
 }
 
 export function useAdjustShirtStock() {

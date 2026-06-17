@@ -40,3 +40,12 @@ public record AdjustShirtStockResult(
     int Delta,
     int NewQuantity
 );
+
+public record ShirtStockItemDto(
+    Guid Id,
+    Guid FabricColorId,
+    string FabricColorName,
+    string Size,
+    string ShirtType,
+    int Quantity
+);

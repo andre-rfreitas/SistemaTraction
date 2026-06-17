@@ -41,6 +41,9 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<SewerProductType> SewerProductTypes => Set<SewerProductType>();
     public DbSet<DtfOrder> DtfOrders => Set<DtfOrder>();
     public DbSet<DtfOrderItem> DtfOrderItems => Set<DtfOrderItem>();
+    public DbSet<GenericProductCategory> GenericProductCategories => Set<GenericProductCategory>();
+    public DbSet<GenericProduct> GenericProducts => Set<GenericProduct>();
+    public DbSet<GenericProductMovement> GenericProductMovements => Set<GenericProductMovement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

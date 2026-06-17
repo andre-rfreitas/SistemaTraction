@@ -2,7 +2,9 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaTraction.Application.Stock.Commands.AdjustShirtStock;
+using SistemaTraction.Application.Stock.Commands.DeleteShirtStockItem;
 using SistemaTraction.Application.Stock.Queries.GetShirtStock;
+using SistemaTraction.Application.Stock.Queries.GetShirtStockItems;
 using SistemaTraction.Application.Stock.Queries.GetShirtStockMovements;
 using SistemaTraction.Domain.Common;
 
@@ -35,6 +37,16 @@ public class ShirtStockController(IMediator mediator) : ControllerBase
         return Ok(result);
     }
 
+    // GET api/stock/shirts/items?shirtType=Regular
+    [HttpGet("items")]
+    public async Task<IActionResult> GetItems(
+        [FromQuery] string shirtType = "Regular",
+        CancellationToken ct = default)
+    {
+        var result = await mediator.Send(new GetShirtStockItemsQuery(shirtType), ct);
+        return Ok(result);
+    }
+
     // POST api/stock/shirts/adjustment
     [HttpPost("adjustment")]
     public async Task<IActionResult> Adjust([FromBody] AdjustShirtStockRequest request, CancellationToken ct)
@@ -48,7 +60,20 @@ public class ShirtStockController(IMediator mediator) : ControllerBase
                     request.AdjustmentType,
                     request.Quantity,
                     request.Reason,
-                    request.ShirtType), ct);
+                    request.ShirtType,
+                    request.UnitCost), ct);
+            return Ok(result);
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    // DELETE api/stock/shirts/items/{id}
+    [HttpDelete("items/{id:guid}")]
+    public async Task<IActionResult> DeleteItem(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            var result = await mediator.Send(new DeleteShirtStockItemCommand(id), ct);
             return Ok(result);
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
@@ -61,5 +86,6 @@ public record AdjustShirtStockRequest(
     string AdjustmentType,
     int Quantity,
     string Reason,
-    string ShirtType = "Regular"
+    string ShirtType = "Regular",
+    decimal UnitCost = 0m
 );
