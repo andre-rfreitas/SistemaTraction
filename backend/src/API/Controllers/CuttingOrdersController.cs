@@ -11,6 +11,7 @@ using SistemaTraction.Application.Cutting.Queries.GetCuttingOrders;
 using SistemaTraction.Application.Cutting.Queries.GetCuttingRecommendation;
 using SistemaTraction.Application.Cutting.Queries.GetCuttingRecommendationHistory;
 using SistemaTraction.Application.Sewing.Commands.RegisterSewingDelivery;
+using SistemaTraction.Application.Sewing.Commands.RegisterPartialSewingDelivery;
 using SistemaTraction.Domain.Common;
 
 namespace SistemaTraction.API.Controllers;
@@ -140,6 +141,21 @@ public class CuttingOrdersController(IMediator mediator) : ControllerBase
                 .Select(i => new RegisterSewingDeliveryItemInput(i.FabricRollId, i.GoodPieces, i.DefectivePieces))
                 .ToList();
             var result = await mediator.Send(new RegisterSewingDeliveryCommand(id, items), ct);
+            return Ok(result);
+        }
+        catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
+    // POST api/cutting-orders/{id}/partial-sewing-delivery
+    [HttpPost("{id:guid}/partial-sewing-delivery")]
+    public async Task<IActionResult> RegisterPartialSewingDelivery(Guid id, [FromBody] RegisterSewingDeliveryRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var items = request.Items
+                .Select(i => new RegisterSewingDeliveryItemInput(i.FabricRollId, i.GoodPieces, i.DefectivePieces))
+                .ToList();
+            var result = await mediator.Send(new RegisterPartialSewingDeliveryCommand(id, items), ct);
             return Ok(result);
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }

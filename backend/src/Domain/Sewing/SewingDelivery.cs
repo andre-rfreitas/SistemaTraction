@@ -12,6 +12,7 @@ public class SewingDelivery : BaseEntity
     public DateTime DeliveredAt { get; private set; }
     public decimal SewingCostTotal { get; private set; }
     public decimal DefectCostTotal { get; private set; }
+    public bool IsPartial { get; private set; }
 
     public CuttingOrder? CuttingOrder { get; private set; }
 
@@ -22,7 +23,8 @@ public class SewingDelivery : BaseEntity
         Dictionary<string, int> goodPieces,
         Dictionary<string, int> defectivePieces,
         decimal sewingCostTotal,
-        decimal defectCostTotal)
+        decimal defectCostTotal,
+        bool isPartial = false)
     {
         if (goodPieces.Values.Any(v => v < 0))
             throw new DomainException("Quantidades de peças boas não podem ser negativas.");
@@ -46,7 +48,8 @@ public class SewingDelivery : BaseEntity
             DefectivePiecesJson = JsonSerializer.Serialize(defectivePieces),
             DeliveredAt = DateTime.UtcNow,
             SewingCostTotal = sewingCostTotal,
-            DefectCostTotal = defectCostTotal
+            DefectCostTotal = defectCostTotal,
+            IsPartial = isPartial
         };
     }
 

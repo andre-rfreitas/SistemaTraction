@@ -27,6 +27,7 @@ public record ShirtStockMovementDto(
     DateTime Date,
     string FabricColorName,
     string Size,
+    string ShirtType,
     int Delta,
     string Reason,
     string Origin

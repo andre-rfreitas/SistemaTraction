@@ -8,7 +8,7 @@ import { useShirtStock } from './hooks/useShirtStock'
 import { useAdjustShirtStock } from './hooks/useAdjustShirtStock'
 import { ShirtStockGrid } from './components/ShirtStockGrid'
 import { ShirtStockMovementsTable } from './components/ShirtStockMovementsTable'
-import type { ShirtStockGridDto } from './types'
+import type { ShirtStockGridDto, ShirtType } from './types'
 
 type ProductCategory = 'camisetas' | 'toucas' | 'meias' | 'calcas'
 type ShirtSubType = 'regular' | 'over'
@@ -51,7 +51,9 @@ export function ShirtStockPage() {
   const [draftGrid, setDraftGrid] = useState<DraftGrid>({})
   const [isSaving, setIsSaving] = useState(false)
 
-  const { data, isLoading } = useShirtStock()
+  const apiShirtType: ShirtType = shirtType === 'regular' ? 'Regular' : 'Over'
+
+  const { data, isLoading } = useShirtStock(apiShirtType)
   const adjust = useAdjustShirtStock()
   const queryClient = useQueryClient()
 
@@ -96,6 +98,7 @@ export function ShirtStockPage() {
           adjustmentType: (delta > 0 ? 'Entrada' : 'Saída') as 'Entrada' | 'Saída',
           quantity: Math.abs(delta),
           reason: 'Ajuste manual',
+          shirtType: apiShirtType,
         })
       }
     }
@@ -108,8 +111,8 @@ export function ShirtStockPage() {
     setIsSaving(true)
     try {
       await Promise.all(payloads.map((p) => adjust.mutateAsync(p)))
-      await queryClient.invalidateQueries({ queryKey: ['shirt-stock'] })
-      await queryClient.invalidateQueries({ queryKey: ['shirt-stock-movements'] })
+      await queryClient.invalidateQueries({ queryKey: ['shirt-stock', apiShirtType] })
+      await queryClient.invalidateQueries({ queryKey: ['shirt-stock-movements', apiShirtType] })
     } finally {
       setIsSaving(false)
       setIsEditMode(false)
@@ -200,7 +203,7 @@ export function ShirtStockPage() {
           {!isEditMode && (
             <div className="space-y-3">
               <h2 className="text-sm font-semibold text-foreground">Histórico de movimentações</h2>
-              <ShirtStockMovementsTable />
+              <ShirtStockMovementsTable shirtType={apiShirtType} />
             </div>
           )}
         </div>

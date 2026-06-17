@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import type { AdjustShirtStockResult } from '../types'
+import type { AdjustShirtStockResult, ShirtType } from '../types'
 
 export interface AdjustPayload {
   fabricColorId: string
@@ -8,6 +8,7 @@ export interface AdjustPayload {
   adjustmentType: 'Entrada' | 'Saída'
   quantity: number
   reason: string
+  shirtType: ShirtType
 }
 
 export function useAdjustShirtStock() {

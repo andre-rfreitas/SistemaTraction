@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SistemaTraction.Application.Common.Interfaces;
 using SistemaTraction.Application.Cutting.DTOs;
 using SistemaTraction.Domain.Cutting;
+using SistemaTraction.Domain.Sewing;
 
 namespace SistemaTraction.Application.Cutting.Queries.GetCuttingOrders;
 
@@ -30,14 +31,25 @@ public class GetCuttingOrdersQueryHandler(IApplicationDbContext context)
             .ToListAsync(cancellationToken);
         var deliveryMap = deliveries.ToDictionary(d => d.CuttingOrderId);
 
+        var sewingDeliveries = await context.SewingDeliveries
+            .Where(sd => orderIds.Contains(sd.CuttingOrderId) && sd.IsPartial)
+            .ToListAsync(cancellationToken);
+        var sewingDeliveryMap = sewingDeliveries
+            .GroupBy(sd => sd.CuttingOrderId)
+            .ToDictionary(g => g.Key, g => AggregateSewingPieces(g));
+
         return orders.Select(o =>
         {
             deliveryMap.TryGetValue(o.Id, out var delivery);
-            return ToDto(o, delivery?.GetDeliveredPieces());
+            sewingDeliveryMap.TryGetValue(o.Id, out var sewingPieces);
+            return ToDto(o, delivery?.GetDeliveredPieces(), sewingPieces);
         }).ToList();
     }
 
-    internal static CuttingOrderDto ToDto(CuttingOrder o, Dictionary<string, int>? deliveredPieces)
+    internal static CuttingOrderDto ToDto(
+        CuttingOrder o,
+        Dictionary<string, int>? deliveredPieces,
+        Dictionary<string, int>? sewingDeliveredPieces = null)
     {
         var items = o.Items.Select(i => new CuttingOrderItemDto(
             i.Id,
@@ -57,11 +69,21 @@ public class GetCuttingOrdersQueryHandler(IApplicationDbContext context)
             items,
             o.GetRequestedPieces(),
             deliveredPieces,
+            sewingDeliveredPieces,
             o.GetTotalPieces(),
             o.Status.ToString(),
             o.SentAt,
             o.Notes,
             o.CreatedAt
         );
+    }
+
+    private static Dictionary<string, int> AggregateSewingPieces(IEnumerable<SewingDelivery> deliveries)
+    {
+        var result = new Dictionary<string, int>();
+        foreach (var d in deliveries)
+            foreach (var (size, qty) in d.GetGoodPieces())
+                result[size] = result.GetValueOrDefault(size) + qty;
+        return result;
     }
 }

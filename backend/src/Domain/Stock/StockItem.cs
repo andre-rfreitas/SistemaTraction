@@ -9,6 +9,7 @@ public class StockItem : BaseEntity
     public string FabricTypeName { get; private set; } = "";
     public string FabricTypeVariation { get; private set; } = "";
     public string Size { get; private set; } = "";
+    public ShirtType ShirtType { get; private set; } = ShirtType.Regular;
     public int Quantity { get; private set; }
 
     private StockItem() { }
@@ -19,7 +20,8 @@ public class StockItem : BaseEntity
         string fabricTypeName,
         string fabricTypeVariation,
         string size,
-        int initialQuantity)
+        int initialQuantity,
+        ShirtType shirtType = ShirtType.Regular)
     {
         if (initialQuantity < 0)
             throw new DomainException("Quantidade inicial não pode ser negativa.");
@@ -34,6 +36,7 @@ public class StockItem : BaseEntity
             FabricTypeName = fabricTypeName.Trim(),
             FabricTypeVariation = fabricTypeVariation.Trim(),
             Size = size.Trim().ToUpper(),
+            ShirtType = shirtType,
             Quantity = initialQuantity
         };
     }

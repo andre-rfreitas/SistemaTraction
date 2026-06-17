@@ -13,5 +13,8 @@ public class AdjustShirtStockCommandValidator : AbstractValidator<AdjustShirtSto
             .WithMessage("Tipo deve ser 'Entrada' ou 'Saída'.");
         RuleFor(x => x.Quantity).GreaterThan(0).WithMessage("Quantidade deve ser maior que zero.");
         RuleFor(x => x.Reason).NotEmpty().WithMessage("Motivo é obrigatório.");
+        RuleFor(x => x.ShirtType)
+            .Must(t => t == "Regular" || t == "Over")
+            .WithMessage("Tipo de camiseta deve ser 'Regular' ou 'Over'.");
     }
 }

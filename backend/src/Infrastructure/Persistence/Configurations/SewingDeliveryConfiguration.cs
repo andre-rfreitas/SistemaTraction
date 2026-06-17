@@ -24,7 +24,10 @@ public class SewingDeliveryConfiguration : IEntityTypeConfiguration<SewingDelive
         builder.Property(s => s.DefectCostTotal)
             .HasPrecision(18, 4);
 
-        builder.HasIndex(s => s.CuttingOrderId).IsUnique();
+        builder.Property(s => s.IsPartial)
+            .HasDefaultValue(false);
+
+        builder.HasIndex(s => s.CuttingOrderId);
 
         builder.HasOne(s => s.CuttingOrder)
             .WithMany()

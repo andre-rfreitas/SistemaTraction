@@ -16,16 +16,32 @@ type PerRoll<T> = Record<string, T>
 interface Props {
   order: CuttingOrderDto
   isLoading: boolean
+  isPartial?: boolean
   onConfirm: (items: SewingDeliveryItemInput[]) => void
   onCancel: () => void
 }
 
-function initReceived(items: CuttingOrderItemDto[]): PerRoll<Record<string, number>> {
+function initReceived(
+  items: CuttingOrderItemDto[],
+  sewingDeliveredPieces?: Record<string, number> | null,
+  isPartial?: boolean,
+): PerRoll<Record<string, number>> {
   return Object.fromEntries(
-    items.map((item) => [
-      item.id,
-      Object.fromEntries(SIZES.map((s) => [s, item.requestedPieces[s] ?? 0])),
-    ])
+    items.map((item) => {
+      const delivered = sewingDeliveredPieces ?? {}
+      const numItems = items.length || 1
+      return [
+        item.id,
+        Object.fromEntries(SIZES.map((s) => {
+          const requested = item.requestedPieces[s] ?? 0
+          if (isPartial) {
+            const alreadyDeliveredForSize = Math.floor((delivered[s] ?? 0) / numItems)
+            return [s, Math.max(0, requested - alreadyDeliveredForSize)]
+          }
+          return [s, requested]
+        })),
+      ]
+    })
   )
 }
 
@@ -47,9 +63,11 @@ function itemGoodPieces(received: Record<string, number>, defects: Record<string
   return Object.fromEntries(SIZES.map((s) => [s, Math.max(0, (received[s] ?? 0) - (defects[s] ?? 0))]))
 }
 
-export function SewingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Props) {
+export function SewingDeliveryForm({ order, isLoading, isPartial, onConfirm, onCancel }: Props) {
   const [step, setStep] = useState<Step>('pieces')
-  const [received, setReceived] = useState<PerRoll<Record<string, number>>>(() => initReceived(order.items))
+  const [received, setReceived] = useState<PerRoll<Record<string, number>>>(() =>
+    isPartial ? initDefects(order.items) : initReceived(order.items, order.sewingDeliveredPieces, isPartial)
+  )
   const [defects, setDefects] = useState<PerRoll<Record<string, number>>>(() => initDefects(order.items))
 
   const totalReceived = order.items.reduce(
@@ -103,6 +121,10 @@ export function SewingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Pr
                 <div className="grid grid-cols-5 gap-2">
                   {SIZES.map((size) => {
                     const expected = item.requestedPieces[size] ?? 0
+                    const alreadyDelivered = isPartial
+                      ? Math.floor(((order.sewingDeliveredPieces ?? {})[size] ?? 0) / (order.items.length || 1))
+                      : 0
+                    const remaining = Math.max(0, expected - alreadyDelivered)
                     return (
                       <div key={size} className="text-center">
                         <div className="text-xs font-semibold text-muted-foreground mb-1">{size}</div>
@@ -113,7 +135,9 @@ export function SewingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Pr
                           onChange={(e) => handleReceivedChange(item.id, size, e.target.value)}
                           className="w-full rounded-md border border-input bg-background px-2 py-2 text-sm text-foreground text-center shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         />
-                        <div className="text-xs text-muted-foreground mt-0.5">esp: {expected}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {isPartial ? `rest: ${remaining}` : `esp: ${expected}`}
+                        </div>
                       </div>
                     )
                   })}
@@ -307,7 +331,7 @@ export function SewingDeliveryForm({ order, isLoading, onConfirm, onCancel }: Pr
           ← Editar
         </Button>
         <Button onClick={() => onConfirm(items)} disabled={isLoading} className="flex-1">
-          {isLoading ? 'Registrando...' : 'Confirmar entrega'}
+          {isLoading ? 'Registrando...' : isPartial ? 'Confirmar entrega parcial' : 'Confirmar entrega'}
         </Button>
       </div>
     </div>

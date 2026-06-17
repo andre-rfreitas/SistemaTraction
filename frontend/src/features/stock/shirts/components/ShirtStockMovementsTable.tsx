@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useShirtStockMovements } from '../hooks/useShirtStockMovements'
 import { Button } from '@/components/ui/button'
+import type { ShirtType } from '../types'
 
 const ORIGIN_BADGE: Record<string, string> = {
   Manual:     'bg-primary/10 text-primary',
@@ -9,9 +10,13 @@ const ORIGIN_BADGE: Record<string, string> = {
   Separação:  'bg-warning/10 text-warning',
 }
 
-export function ShirtStockMovementsTable() {
+interface Props {
+  shirtType: ShirtType
+}
+
+export function ShirtStockMovementsTable({ shirtType }: Props) {
   const [page, setPage] = useState(1)
-  const { data, isLoading } = useShirtStockMovements(page, 20)
+  const { data, isLoading } = useShirtStockMovements(shirtType, page, 20)
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando histórico...</p>
   if (!data || data.totalCount === 0) {

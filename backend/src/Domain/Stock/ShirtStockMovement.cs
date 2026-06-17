@@ -8,6 +8,7 @@ public class ShirtStockMovement : BaseEntity
     public Guid FabricColorId { get; private set; }
     public string FabricColorName { get; private set; } = "";
     public string Size { get; private set; } = "";
+    public ShirtType ShirtType { get; private set; } = ShirtType.Regular;
 
     /// <summary>Positivo = entrada, negativo = saída.</summary>
     public int Delta { get; private set; }
@@ -31,7 +32,8 @@ public class ShirtStockMovement : BaseEntity
         int delta,
         string reason,
         string origin,
-        Guid? referenceId = null)
+        Guid? referenceId = null,
+        ShirtType shirtType = ShirtType.Regular)
     {
         if (delta == 0)
             throw new DomainException("Delta da movimentação não pode ser zero.");
@@ -42,6 +44,7 @@ public class ShirtStockMovement : BaseEntity
             FabricColorId = fabricColorId,
             FabricColorName = fabricColorName.Trim(),
             Size = size.Trim().ToUpper(),
+            ShirtType = shirtType,
             Delta = delta,
             Reason = reason.Trim(),
             Origin = origin.Trim(),

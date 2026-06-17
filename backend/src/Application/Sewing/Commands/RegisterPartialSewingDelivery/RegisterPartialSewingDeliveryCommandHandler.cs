@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SistemaTraction.Application.Common.Interfaces;
 using SistemaTraction.Application.Cutting.DTOs;
+using SistemaTraction.Application.Sewing.Commands.RegisterSewingDelivery;
 using SistemaTraction.Domain.Common;
 using SistemaTraction.Domain.Config;
 using SistemaTraction.Domain.Cutting;
@@ -10,13 +11,13 @@ using SistemaTraction.Domain.Financial;
 using SistemaTraction.Domain.Sewing;
 using SistemaTraction.Domain.Stock;
 
-namespace SistemaTraction.Application.Sewing.Commands.RegisterSewingDelivery;
+namespace SistemaTraction.Application.Sewing.Commands.RegisterPartialSewingDelivery;
 
-public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
-    : IRequestHandler<RegisterSewingDeliveryCommand, RegisterSewingDeliveryResult>
+public class RegisterPartialSewingDeliveryCommandHandler(IApplicationDbContext context)
+    : IRequestHandler<RegisterPartialSewingDeliveryCommand, RegisterSewingDeliveryResult>
 {
     public async Task<RegisterSewingDeliveryResult> Handle(
-        RegisterSewingDeliveryCommand request,
+        RegisterPartialSewingDeliveryCommand request,
         CancellationToken cancellationToken)
     {
         var order = await context.CuttingOrders
@@ -26,12 +27,7 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
             ?? throw new DomainException("Pedido não encontrado.");
 
         if (order.Status != CuttingOrderStatus.Delivered)
-            throw new DomainException("Apenas pedidos no status 'Entregue pelo cortador' podem ter entrega do costureiro registrada.");
-
-        var alreadyFullDelivered = await context.SewingDeliveries
-            .AnyAsync(s => s.CuttingOrderId == request.OrderId && !s.IsPartial, cancellationToken);
-        if (alreadyFullDelivered)
-            throw new DomainException("Este pedido já possui entrega completa do costureiro registrada.");
+            throw new DomainException("Apenas pedidos no status 'Entregue pelo cortador' podem ter entrega parcial registrada.");
 
         var hasActiveSewer = await context.Sewers.AnyAsync(s => s.IsActive, cancellationToken);
         if (!hasActiveSewer)
@@ -51,7 +47,6 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
         decimal SewingPrice(string size) =>
             size.Equals("G1", StringComparison.OrdinalIgnoreCase) ? sewingPriceG1 : sewingPriceDefault;
 
-        // Aggregate totals
         var allGood = AggregatePieces(request.Items.Select(i => i.GoodPieces));
         var allDefective = AggregatePieces(request.Items.Select(i => i.DefectivePieces));
 
@@ -59,7 +54,6 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
             .Where(kv => kv.Value > 0)
             .Sum(kv => (decimal)kv.Value * SewingPrice(kv.Key));
 
-        // Pre-calculate defect cost per roll so we can pass the total to SewingDelivery.Create()
         decimal defectCostTotal = 0m;
         foreach (var input in request.Items)
         {
@@ -74,15 +68,16 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
                 .Sum(kv => (decimal)kv.Value * (fabricCostPerPiece + cuttingPrice + SewingPrice(kv.Key)));
         }
 
+        // IsPartial = true — does NOT close the order
         var sewingDelivery = SewingDelivery.Create(
             request.OrderId,
             allGood,
             allDefective,
             sewingCostTotal,
-            defectCostTotal);
+            defectCostTotal,
+            isPartial: true);
         context.SewingDeliveries.Add(sewingDelivery);
 
-        // Per-roll: add stock to the correct color
         var itemResults = new List<SewingItemResult>();
 
         foreach (var input in request.Items)
@@ -115,7 +110,7 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
 
                 context.ShirtStockMovements.Add(ShirtStockMovement.Create(
                     stockItem.Id, fabricColorId, colorName, normalizedSize,
-                    qty, $"Costura pedido #{order.OrderNumber}", "Costureiro", order.Id));
+                    qty, $"Costura parcial pedido #{order.OrderNumber}", "Costureiro", order.Id));
             }
 
             var itemGoodTotal = input.GoodPieces.Values.Sum();
@@ -136,7 +131,7 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
             context.FinancialEntries.Add(FinancialEntry.CreateExpense(
                 "Costura",
                 sewingCostTotal,
-                $"Costura pedido #{order.OrderNumber} — {allGood.Values.Sum()} peças",
+                $"Costura parcial pedido #{order.OrderNumber} — {allGood.Values.Sum()} peças",
                 sewingDelivery.Id,
                 "SewingDelivery"));
         }
@@ -146,12 +141,12 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
             context.FinancialEntries.Add(FinancialEntry.CreateExpense(
                 "Defeitos",
                 defectCostTotal,
-                $"Defeitos pedido #{order.OrderNumber} — {allDefective.Values.Sum()} peça(s) defeituosa(s)",
+                $"Defeitos parcial pedido #{order.OrderNumber} — {allDefective.Values.Sum()} peça(s) defeituosa(s)",
                 sewingDelivery.Id,
                 "SewingDelivery"));
         }
 
-        order.MarkSewingDelivered();
+        // NOTE: No order.MarkSewingDelivered() — order stays in Delivered status
 
         await context.SaveChangesAsync(cancellationToken);
 

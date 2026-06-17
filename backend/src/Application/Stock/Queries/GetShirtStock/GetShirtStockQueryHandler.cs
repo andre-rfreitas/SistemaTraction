@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SistemaTraction.Application.Common.Interfaces;
 using SistemaTraction.Application.Stock.DTOs;
+using SistemaTraction.Domain.Stock;
 
 namespace SistemaTraction.Application.Stock.Queries.GetShirtStock;
 
@@ -23,8 +24,10 @@ public class GetShirtStockQueryHandler(IApplicationDbContext context)
         var sizes = sizesConfig.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var alertThreshold = int.TryParse(alertThresholdStr, out var t) ? t : 15;
 
+        var shirtType = Enum.TryParse<ShirtType>(request.ShirtType, out var parsed) ? parsed : ShirtType.Regular;
+
         var stockItems = await context.StockItems
-            .Where(s => !s.IsDeleted)
+            .Where(s => !s.IsDeleted && s.ShirtType == shirtType)
             .ToListAsync(cancellationToken);
 
         // Group by color

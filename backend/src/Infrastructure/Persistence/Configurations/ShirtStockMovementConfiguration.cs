@@ -13,6 +13,8 @@ public class ShirtStockMovementConfiguration : IEntityTypeConfiguration<ShirtSto
 
         builder.Property(m => m.FabricColorName).IsRequired().HasMaxLength(100);
         builder.Property(m => m.Size).IsRequired().HasMaxLength(10);
+        builder.Property(m => m.ShirtType).HasConversion<string>().HasMaxLength(20).IsRequired()
+            .HasDefaultValue(SistemaTraction.Domain.Stock.ShirtType.Regular);
         builder.Property(m => m.Reason).IsRequired().HasMaxLength(500);
         builder.Property(m => m.Origin).IsRequired().HasMaxLength(50);
 

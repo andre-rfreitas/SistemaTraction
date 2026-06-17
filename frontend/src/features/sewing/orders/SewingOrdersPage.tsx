@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { useCuttingOrders } from '@/features/cutting/orders/hooks/useCuttingOrders'
 import { useRegisterSewingDelivery } from '@/features/cutting/orders/hooks/useRegisterSewingDelivery'
+import { useRegisterPartialSewingDelivery } from '@/features/cutting/orders/hooks/useRegisterPartialSewingDelivery'
 import { SewingDeliveryForm } from '@/features/cutting/orders/components/SewingDeliveryForm'
 import { useSewers } from '../sewers/hooks/useSewers'
 import type { CuttingOrderDto, RegisterSewingDeliveryResult } from '@/features/cutting/orders/types'
@@ -20,16 +21,19 @@ export function SewingOrdersPage() {
   const { data: orders = [], isLoading } = useCuttingOrders('Delivered')
   const { data: sewers = [], isLoading: sewersLoading } = useSewers()
   const registerSewing = useRegisterSewingDelivery()
+  const registerPartialSewing = useRegisterPartialSewingDelivery()
 
   const [open, setOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<CuttingOrderDto | null>(null)
   const [step, setStep] = useState<SewingStep>('form')
   const [result, setResult] = useState<RegisterSewingDeliveryResult | null>(null)
+  const [isPartialMode, setIsPartialMode] = useState(false)
 
   const hasActiveSewer = sewers.length > 0
 
-  function handleOpen(order: CuttingOrderDto) {
+  function handleOpen(order: CuttingOrderDto, partial: boolean) {
     setSelectedOrder(order)
+    setIsPartialMode(partial)
     setStep('form')
     setResult(null)
     setOpen(true)
@@ -39,6 +43,7 @@ export function SewingOrdersPage() {
     setOpen(false)
     setSelectedOrder(null)
     setResult(null)
+    setIsPartialMode(false)
   }
 
   return (
@@ -71,6 +76,9 @@ export function SewingOrdersPage() {
             const deliveredPcs = order.deliveredPieces
               ? Object.values(order.deliveredPieces).reduce((a, b) => a + b, 0)
               : 0
+            const sewingDeliveredPcs = order.sewingDeliveredPieces
+              ? Object.values(order.sewingDeliveredPieces).reduce((a, b) => a + b, 0)
+              : 0
             return (
               <div key={order.id} className="rounded-lg border border-border bg-card p-4">
                 <div className="flex items-start justify-between gap-2">
@@ -95,14 +103,29 @@ export function SewingOrdersPage() {
                     <p className="text-xs text-muted-foreground">
                       {deliveredPcs} peças cortadas
                     </p>
+                    {sewingDeliveredPcs > 0 && (
+                      <p className="text-xs text-success font-medium">
+                        ✓ {sewingDeliveredPcs} de {deliveredPcs} peças já entregues (parcial)
+                      </p>
+                    )}
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleOpen(order)}
-                    disabled={!hasActiveSewer}
-                  >
-                    Registrar entrega
-                  </Button>
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => handleOpen(order, false)}
+                      disabled={!hasActiveSewer}
+                    >
+                      Registrar entrega
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleOpen(order, true)}
+                      disabled={!hasActiveSewer}
+                    >
+                      Entrega parcial
+                    </Button>
+                  </div>
                 </div>
               </div>
             )
@@ -115,27 +138,31 @@ export function SewingOrdersPage() {
           <DialogHeader>
             <DialogTitle>
               {step === 'form'
-                ? `Entrega do costureiro — Pedido #${selectedOrder?.orderNumber}`
-                : `Pedido #${selectedOrder?.orderNumber} — Em estoque ✓`}
+                ? `${isPartialMode ? 'Entrega parcial' : 'Entrega do costureiro'} — Pedido #${selectedOrder?.orderNumber}`
+                : isPartialMode
+                  ? `Pedido #${selectedOrder?.orderNumber} — Entrega parcial ✓`
+                  : `Pedido #${selectedOrder?.orderNumber} — Em estoque ✓`}
             </DialogTitle>
           </DialogHeader>
 
           {step === 'form' && selectedOrder && (
             <SewingDeliveryForm
               order={selectedOrder}
-              isLoading={registerSewing.isPending}
-              onConfirm={(items) =>
-                registerSewing.mutate(
+              isLoading={isPartialMode ? registerPartialSewing.isPending : registerSewing.isPending}
+              isPartial={isPartialMode}
+              onConfirm={(items) => {
+                const mutation = isPartialMode ? registerPartialSewing : registerSewing
+                mutation.mutate(
                   { orderId: selectedOrder.id, items },
                   { onSuccess: (r) => { setResult(r); setStep('done') } }
                 )
-              }
+              }}
               onCancel={handleClose}
             />
           )}
 
           {step === 'done' && result && (
-            <SewingDone result={result} onClose={handleClose} />
+            <SewingDone result={result} isPartial={isPartialMode} onClose={handleClose} />
           )}
         </DialogContent>
       </Dialog>
@@ -145,9 +172,11 @@ export function SewingOrdersPage() {
 
 function SewingDone({
   result,
+  isPartial,
   onClose,
 }: {
   result: RegisterSewingDeliveryResult
+  isPartial: boolean
   onClose: () => void
 }) {
   const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
@@ -155,7 +184,14 @@ function SewingDone({
   return (
     <div className="space-y-4">
       <div className="rounded-md bg-success/10 border border-success/20 p-4 space-y-2">
-        <p className="font-semibold text-success text-sm">✓ Entrega registrada com sucesso!</p>
+        <p className="font-semibold text-success text-sm">
+          {isPartial ? '✓ Entrega parcial registrada!' : '✓ Entrega registrada com sucesso!'}
+        </p>
+        {isPartial && (
+          <p className="text-xs text-success/80">
+            O pedido continua disponível para novas entregas.
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-2 text-sm text-success">
           <div>
             <span className="text-xs text-success/80 block">Peças em estoque</span>

@@ -13,22 +13,25 @@ namespace SistemaTraction.API.Controllers;
 [Route("api/stock/shirts")]
 public class ShirtStockController(IMediator mediator) : ControllerBase
 {
-    // GET api/stock/shirts
+    // GET api/stock/shirts?shirtType=Regular
     [HttpGet]
-    public async Task<IActionResult> GetGrid(CancellationToken ct)
+    public async Task<IActionResult> GetGrid(
+        [FromQuery] string shirtType = "Regular",
+        CancellationToken ct = default)
     {
-        var result = await mediator.Send(new GetShirtStockQuery(), ct);
+        var result = await mediator.Send(new GetShirtStockQuery(shirtType), ct);
         return Ok(result);
     }
 
-    // GET api/stock/shirts/movements?page=1&pageSize=20
+    // GET api/stock/shirts/movements?shirtType=Regular&page=1&pageSize=20
     [HttpGet("movements")]
     public async Task<IActionResult> GetMovements(
+        [FromQuery] string shirtType = "Regular",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await mediator.Send(new GetShirtStockMovementsQuery(page, pageSize), ct);
+        var result = await mediator.Send(new GetShirtStockMovementsQuery(shirtType, page, pageSize), ct);
         return Ok(result);
     }
 
@@ -44,7 +47,8 @@ public class ShirtStockController(IMediator mediator) : ControllerBase
                     request.Size,
                     request.AdjustmentType,
                     request.Quantity,
-                    request.Reason), ct);
+                    request.Reason,
+                    request.ShirtType), ct);
             return Ok(result);
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
@@ -56,5 +60,6 @@ public record AdjustShirtStockRequest(
     string Size,
     string AdjustmentType,
     int Quantity,
-    string Reason
+    string Reason,
+    string ShirtType = "Regular"
 );

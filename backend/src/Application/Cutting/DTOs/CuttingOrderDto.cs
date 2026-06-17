@@ -40,6 +40,7 @@ public record CuttingOrderDto(
     List<CuttingOrderItemDto> Items,
     Dictionary<string, int> RequestedPieces,
     Dictionary<string, int>? DeliveredPieces,
+    Dictionary<string, int>? SewingDeliveredPieces,
     int TotalPieces,
     string Status,
     DateTime? SentAt,

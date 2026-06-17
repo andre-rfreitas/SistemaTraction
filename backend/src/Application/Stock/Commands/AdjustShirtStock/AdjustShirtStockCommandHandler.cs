@@ -4,6 +4,7 @@ using SistemaTraction.Application.Common.Interfaces;
 using SistemaTraction.Application.Stock.DTOs;
 using SistemaTraction.Domain.Common;
 using SistemaTraction.Domain.Stock;
+using ShirtTypeEnum = SistemaTraction.Domain.Stock.ShirtType;
 
 namespace SistemaTraction.Application.Stock.Commands.AdjustShirtStock;
 
@@ -21,10 +22,11 @@ public class AdjustShirtStockCommandHandler(IApplicationDbContext context)
         var size = request.Size.Trim().ToUpper();
         var isSaida = request.AdjustmentType == "Saída";
         var delta = isSaida ? -request.Quantity : request.Quantity;
+        var shirtType = Enum.TryParse<ShirtTypeEnum>(request.ShirtType, out var parsed) ? parsed : ShirtTypeEnum.Regular;
 
         var stockItem = await context.StockItems
             .FirstOrDefaultAsync(
-                s => s.FabricColorId == request.FabricColorId && s.Size == size && !s.IsDeleted,
+                s => s.FabricColorId == request.FabricColorId && s.Size == size && s.ShirtType == shirtType && !s.IsDeleted,
                 cancellationToken);
 
         if (isSaida)
@@ -46,7 +48,8 @@ public class AdjustShirtStockCommandHandler(IApplicationDbContext context)
                     color.FabricType!.Name,
                     color.FabricType!.Variation,
                     size,
-                    request.Quantity);
+                    request.Quantity,
+                    shirtType);
                 context.StockItems.Add(stockItem);
             }
             else
@@ -62,7 +65,8 @@ public class AdjustShirtStockCommandHandler(IApplicationDbContext context)
             size,
             delta,
             request.Reason,
-            "Manual");
+            "Manual",
+            shirtType: shirtType);
         context.ShirtStockMovements.Add(movement);
 
         await context.SaveChangesAsync(cancellationToken);

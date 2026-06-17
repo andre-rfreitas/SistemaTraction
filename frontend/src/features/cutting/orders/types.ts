@@ -38,6 +38,7 @@ export interface CuttingOrderDto {
   items: CuttingOrderItemDto[]
   requestedPieces: Record<string, number>
   deliveredPieces: Record<string, number> | null
+  sewingDeliveredPieces: Record<string, number> | null
   totalPieces: number
   status: 'Draft' | 'SentToCutter' | 'Delivered' | 'SewingDelivered'
   sentAt: string | null

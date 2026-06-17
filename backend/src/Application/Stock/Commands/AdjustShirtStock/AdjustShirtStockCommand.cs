@@ -8,5 +8,6 @@ public record AdjustShirtStockCommand(
     string Size,
     string AdjustmentType,   // "Entrada" | "Saída"
     int Quantity,
-    string Reason
+    string Reason,
+    string ShirtType = "Regular"
 ) : IRequest<AdjustShirtStockResult>;

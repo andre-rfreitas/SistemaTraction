@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SistemaTraction.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using SistemaTraction.Infrastructure.Persistence;
 namespace SistemaTraction.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260617132635_AddPartialSewingDelivery")]
+    partial class AddPartialSewingDelivery
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1087,13 +1090,6 @@ namespace SistemaTraction.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("ReferenceId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ShirtType")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("Regular");
-
                     b.Property<string>("Size")
                         .IsRequired()
                         .HasMaxLength(10)
@@ -1149,13 +1145,6 @@ namespace SistemaTraction.Infrastructure.Persistence.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
-                    b.Property<string>("ShirtType")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("Regular");
-
                     b.Property<string>("Size")
                         .IsRequired()
                         .HasMaxLength(10)
@@ -1166,7 +1155,7 @@ namespace SistemaTraction.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FabricColorId", "Size", "ShirtType")
+                    b.HasIndex("FabricColorId", "Size")
                         .IsUnique();
 
                     b.ToTable("StockItems");
