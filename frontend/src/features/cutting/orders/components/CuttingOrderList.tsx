@@ -22,12 +22,11 @@ const STATUS_VARIANT: Record<string, BadgeProps['variant']> = {
 
 interface Props {
   onRegisterDelivery: (order: CuttingOrderDto) => void
-  onRegisterSewingDelivery: (order: CuttingOrderDto) => void
   onEdit: (order: CuttingOrderDto) => void
   onCancel: (order: CuttingOrderDto) => void
 }
 
-export function CuttingOrderList({ onRegisterDelivery, onRegisterSewingDelivery, onEdit, onCancel }: Props) {
+export function CuttingOrderList({ onRegisterDelivery, onEdit, onCancel }: Props) {
   const { data: orders = [], isLoading } = useCuttingOrders()
 
   if (isLoading) {
@@ -110,16 +109,7 @@ export function CuttingOrderList({ onRegisterDelivery, onRegisterSewingDelivery,
                     Registrar entrega
                   </Button>
                 )}
-                {o.status === 'Delivered' && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onRegisterSewingDelivery(o)}
-                    className="text-xs h-7 px-2 border-warning/40 text-warning hover:bg-warning/10"
-                  >
-                    Entrega do costureiro
-                  </Button>
-                )}
+
                 {canEdit && (
                   <Button
                     size="sm"
