@@ -34,7 +34,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Estoque',
     items: [
-      { id: 'shirt-stock', label: 'Camisetas', icon: Archive },
+      { id: 'shirt-stock', label: 'Produtos', icon: Archive },
       { id: 'supply-stock', label: 'Insumos e Embalagens', icon: Package },
       { id: 'dtf-stock', label: 'Estoque DTF', icon: Boxes },
     ],
