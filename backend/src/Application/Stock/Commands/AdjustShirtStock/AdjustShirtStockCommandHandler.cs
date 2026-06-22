@@ -5,7 +5,6 @@ using SistemaTraction.Application.Stock.DTOs;
 using SistemaTraction.Domain.Common;
 using SistemaTraction.Domain.Financial;
 using SistemaTraction.Domain.Stock;
-using ShirtTypeEnum = SistemaTraction.Domain.Stock.ShirtType;
 
 namespace SistemaTraction.Application.Stock.Commands.AdjustShirtStock;
 
@@ -23,11 +22,11 @@ public class AdjustShirtStockCommandHandler(IApplicationDbContext context)
         var size = request.Size.Trim().ToUpper();
         var isSaida = request.AdjustmentType == "Saída";
         var delta = isSaida ? -request.Quantity : request.Quantity;
-        var shirtType = Enum.TryParse<ShirtTypeEnum>(request.ShirtType, out var parsed) ? parsed : ShirtTypeEnum.Regular;
+        var modelCode = string.IsNullOrWhiteSpace(request.ModelCode) ? "REG" : request.ModelCode.Trim().ToUpper();
 
         var stockItem = await context.StockItems
             .FirstOrDefaultAsync(
-                s => s.FabricColorId == request.FabricColorId && s.Size == size && s.ShirtType == shirtType && !s.IsDeleted,
+                s => s.FabricColorId == request.FabricColorId && s.Size == size && s.ModelCode == modelCode && !s.IsDeleted,
                 cancellationToken);
 
         if (isSaida)
@@ -50,7 +49,7 @@ public class AdjustShirtStockCommandHandler(IApplicationDbContext context)
                     color.FabricType!.Variation,
                     size,
                     request.Quantity,
-                    shirtType);
+                    modelCode);
                 context.StockItems.Add(stockItem);
             }
             else
@@ -67,18 +66,17 @@ public class AdjustShirtStockCommandHandler(IApplicationDbContext context)
             delta,
             request.Reason,
             "Manual",
-            shirtType: shirtType);
+            modelCode: modelCode);
         context.ShirtStockMovements.Add(movement);
 
         // Lançamento financeiro automático: quando há valor unitário informado em uma entrada
-        if (!isSaida && request.UnitCost > 0)
+        if (!isSaida && request.UnitCost.GetValueOrDefault() > 0)
         {
-            var totalCost = request.UnitCost * request.Quantity;
-            var shirtTypeLabel = shirtType == ShirtTypeEnum.Over ? "Over" : "Regular";
+            var totalCost = request.UnitCost!.Value * request.Quantity;
             var financialEntry = FinancialEntry.CreateExpense(
                 FinancialCategories.Estoque,
                 totalCost,
-                $"Entrada de estoque: {color.Name} {size} {shirtTypeLabel} ({request.Quantity} un. × R$ {request.UnitCost:N2})",
+                $"Entrada de estoque: {color.Name} {size} {modelCode} ({request.Quantity} un. × R$ {request.UnitCost:N2})",
                 referenceId: movement.Id,
                 referenceType: "ShirtStockMovement");
             context.FinancialEntries.Add(financialEntry);

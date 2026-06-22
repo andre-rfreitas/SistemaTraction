@@ -13,7 +13,7 @@ import { useFabricTypes } from '@/features/settings/fabric/hooks/useFabricTypes'
 import { useAdjustShirtStock, type AdjustPayload } from '../hooks/useAdjustShirtStock'
 import { useShirtStockItems, type ShirtStockItemDto } from '../hooks/useShirtStockItems'
 import { useDeleteShirtStockItem } from '../hooks/useDeleteShirtStockItem'
-import type { ShirtType } from '../types'
+
 import { cn } from '@/lib/utils'
 
 type Tab = 'cadastrar' | 'editar' | 'excluir'
@@ -21,7 +21,7 @@ type Tab = 'cadastrar' | 'editar' | 'excluir'
 interface CadastrarForm {
   fabricColorId: string
   size: string
-  shirtType: ShirtType
+  modelCode: string
   quantity: string
   unitCost: string
   reason: string
@@ -32,7 +32,7 @@ const SIZES = ['P', 'M', 'G', 'GG', 'G1', 'G2', 'G3', 'XGG']
 const EMPTY_FORM: CadastrarForm = {
   fabricColorId: '',
   size: '',
-  shirtType: 'Regular',
+  modelCode: 'REG',
   quantity: '',
   unitCost: '',
   reason: 'Cadastro manual',
@@ -41,12 +41,12 @@ const EMPTY_FORM: CadastrarForm = {
 interface Props {
   open: boolean
   onClose: () => void
-  currentShirtType: ShirtType
+  currentModelCode: string
 }
 
-export function ManageProductsModal({ open, onClose, currentShirtType }: Props) {
+export function ManageProductsModal({ open, onClose, currentModelCode }: Props) {
   const [tab, setTab] = useState<Tab>('cadastrar')
-  const [form, setForm] = useState<CadastrarForm>({ ...EMPTY_FORM, shirtType: currentShirtType })
+  const [form, setForm] = useState<CadastrarForm>({ ...EMPTY_FORM, modelCode: currentModelCode })
   const [confirmStep, setConfirmStep] = useState(false)
   const [editItem, setEditItem] = useState<ShirtStockItemDto | null>(null)
   const [editQty, setEditQty] = useState('')
@@ -57,7 +57,7 @@ export function ManageProductsModal({ open, onClose, currentShirtType }: Props) 
 
   const queryClient = useQueryClient()
   const { data: fabricTypes = [] } = useFabricTypes()
-  const { data: stockItems = [], isLoading: itemsLoading } = useShirtStockItems(currentShirtType)
+  const { data: stockItems = [], isLoading: itemsLoading } = useShirtStockItems(currentModelCode)
   const adjust = useAdjustShirtStock()
   const deleteItem = useDeleteShirtStockItem()
 
@@ -76,7 +76,7 @@ export function ManageProductsModal({ open, onClose, currentShirtType }: Props) 
     form.fabricColorId && form.size && qty > 0 && form.reason.trim()
 
   function resetAll() {
-    setForm({ ...EMPTY_FORM, shirtType: currentShirtType })
+    setForm({ ...EMPTY_FORM, modelCode: currentModelCode })
     setConfirmStep(false)
     setEditItem(null)
     setEditQty('')
@@ -106,14 +106,14 @@ export function ManageProductsModal({ open, onClose, currentShirtType }: Props) 
         adjustmentType: 'Entrada',
         quantity: qty,
         reason: form.reason,
-        shirtType: form.shirtType,
+        modelCode: form.modelCode,
         unitCost: unitCost > 0 ? unitCost : undefined,
       }
       await adjust.mutateAsync(payload)
       await queryClient.invalidateQueries({ queryKey: ['shirt-stock-items'] })
       const selectedColor = allColors.find((c) => c.id === form.fabricColorId)
       setSuccessMsg(`✓ ${qty} un. de ${selectedColor?.name} ${form.size} cadastradas com sucesso!`)
-      setForm({ ...EMPTY_FORM, shirtType: currentShirtType })
+      setForm({ ...EMPTY_FORM, modelCode: currentModelCode })
       setConfirmStep(false)
     } catch (e: unknown) {
       const err = e as { response?: { data?: { error?: string } } }
@@ -136,7 +136,7 @@ export function ManageProductsModal({ open, onClose, currentShirtType }: Props) 
         adjustmentType: delta > 0 ? 'Entrada' : 'Saída',
         quantity: Math.abs(delta),
         reason: 'Edição manual de estoque',
-        shirtType: editItem.shirtType as ShirtType,
+        modelCode: editItem.modelCode,
         unitCost: delta > 0 && uc > 0 ? uc : undefined,
       }
       await adjust.mutateAsync(payload)
@@ -230,8 +230,8 @@ export function ManageProductsModal({ open, onClose, currentShirtType }: Props) 
                     <span className="font-medium">{selectedColor?.name}</span>
                     <span className="text-muted-foreground">Tamanho:</span>
                     <span className="font-medium">{form.size}</span>
-                    <span className="text-muted-foreground">Tipo:</span>
-                    <span className="font-medium">{form.shirtType}</span>
+                    <span className="text-muted-foreground">Modelo:</span>
+                    <span className="font-medium">{form.modelCode}</span>
                     <span className="text-muted-foreground">Quantidade:</span>
                     <span className="font-bold">{qty} un.</span>
                     {unitCost > 0 && (
@@ -288,22 +288,9 @@ export function ManageProductsModal({ open, onClose, currentShirtType }: Props) 
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Tipo</label>
-                    <div className="flex gap-1 h-9">
-                      {(['Regular', 'Over'] as ShirtType[]).map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => setField('shirtType', t)}
-                          className={cn(
-                            'flex-1 rounded-md border text-sm font-medium transition-colors',
-                            form.shirtType === t
-                              ? 'border-primary bg-primary/10 text-primary'
-                              : 'border-border text-muted-foreground hover:border-primary/40'
-                          )}
-                        >
-                          {t}
-                        </button>
-                      ))}
+                    <label className="block text-sm font-medium mb-1">Modelo</label>
+                    <div className="flex h-9 w-full rounded-md border border-input bg-muted px-3 py-1.5 text-sm shadow-sm opacity-70">
+                      {currentModelCode}
                     </div>
                   </div>
                 </div>
@@ -380,7 +367,7 @@ export function ManageProductsModal({ open, onClose, currentShirtType }: Props) 
               /* Inline edit form */
               <div className="space-y-4">
                 <div className="rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
-                  <p className="font-medium text-foreground">{editItem.fabricColorName} — {editItem.size} ({editItem.shirtType})</p>
+                  <p className="font-medium text-foreground">{editItem.fabricColorName} — {editItem.size} ({editItem.modelCode})</p>
                   <p className="text-muted-foreground">Quantidade atual: <strong>{editItem.quantity}</strong> un.</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -445,7 +432,7 @@ export function ManageProductsModal({ open, onClose, currentShirtType }: Props) 
                   >
                     <div>
                       <p className="text-sm font-medium text-foreground">{item.fabricColorName} — {item.size}</p>
-                      <p className="text-xs text-muted-foreground">{item.shirtType} · {item.quantity} un.</p>
+                      <p className="text-xs text-muted-foreground">{item.modelCode} · {item.quantity} un.</p>
                     </div>
                     <Button
                       variant="outline"
@@ -480,7 +467,7 @@ export function ManageProductsModal({ open, onClose, currentShirtType }: Props) 
                     Confirmar exclusão
                   </p>
                   <p className="text-muted-foreground">
-                    Você está prestes a excluir <strong className="text-foreground">{deleteTarget.fabricColorName} {deleteTarget.size} ({deleteTarget.shirtType})</strong> com <strong className="text-foreground">{deleteTarget.quantity} un.</strong> em estoque.
+                    Você está prestes a excluir <strong className="text-foreground">{deleteTarget.fabricColorName} {deleteTarget.size} ({deleteTarget.modelCode})</strong> com <strong className="text-foreground">{deleteTarget.quantity} un.</strong> em estoque.
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Um movimento de saída total será registrado para rastreabilidade. Esta ação não pode ser desfeita.
@@ -505,7 +492,7 @@ export function ManageProductsModal({ open, onClose, currentShirtType }: Props) 
                   >
                     <div>
                       <p className="text-sm font-medium text-foreground">{item.fabricColorName} — {item.size}</p>
-                      <p className="text-xs text-muted-foreground">{item.shirtType} · {item.quantity} un.</p>
+                      <p className="text-xs text-muted-foreground">{item.modelCode} · {item.quantity} un.</p>
                     </div>
                     <Button
                       variant="outline"

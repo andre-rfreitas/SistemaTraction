@@ -20,14 +20,12 @@ export interface ShirtStockMovementsDto {
   pageSize: number
 }
 
-export type ShirtType = 'Regular' | 'Over'
-
 export interface ShirtStockMovementDto {
   id: string
   date: string
   fabricColorName: string
   size: string
-  shirtType: ShirtType
+  modelCode: string
   delta: number
   reason: string
   origin: string

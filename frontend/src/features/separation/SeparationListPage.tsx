@@ -20,8 +20,6 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ClipboardList } from 'lucide-react'
-import { useDtfModels } from '../settings/dtf/hooks/useDtfModels'
-import type { DtfModelDto } from '../settings/dtf/types'
 
 type MainTab = 'lists' | 'config'
 
@@ -67,7 +65,6 @@ const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger' | 'neutral
   Confirmed: 'success',
   Cancelled: 'danger',
 }
-const fmt = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
 
 function SeparationWizard() {
   const [step, setStep] = useState<Step>('list')
@@ -75,13 +72,11 @@ function SeparationWizard() {
   const [editedItems, setEditedItems] = useState<SeparationItemDto[]>([])
   const [confirmResult, setConfirmResult] = useState<SeparationConfirmResult | null>(null)
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
   const [supplyDeductions, setSupplyDeductions] = useState<{ supplyStockItemId: string; quantity: number; name: string; unit: string }[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // All hooks called unconditionally
   const { data: lists = [], isLoading } = useSeparationLists()
-  const { data: dtfModels = [] } = useDtfModels()
   const upload = useUploadSeparationList()
   const updateItems = useUpdateSeparationItems()
   const stockCheckQuery = useStockCheck(step === 'stock-check' || step === 'supply-deduction' || step === 'confirm-modal' ? currentList?.id ?? null : null)
@@ -120,12 +115,6 @@ function SeparationWizard() {
         }
       },
     })
-  }
-
-  async function handleCopy(text: string) {
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2500)
   }
 
   function handleReset() {
@@ -197,49 +186,44 @@ function SeparationWizard() {
               <thead className="bg-muted">
                 <tr>
                   <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">SKU</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Modelo</th>
                   <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Cor</th>
                   <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Tam.</th>
                   <th className="px-2 py-2 text-center text-xs font-medium text-muted-foreground">Qtd</th>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">DTF</th>
                 </tr>
               </thead>
               <tbody>
-                {editedItems.map((item, idx) => (
-                  <tr key={item.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-muted/50'}>
-                    <td className="px-2 py-1">
-                      <input value={item.sku}
-                        onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? { ...i, sku: e.target.value } : i))}
-                        className="w-full text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded px-1 font-mono" />
-                    </td>
-                    <td className="px-2 py-1">
-                      <input value={item.color}
-                        onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? { ...i, color: e.target.value } : i))}
-                        className="w-full text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded px-1" />
-                    </td>
-                    <td className="px-2 py-1">
-                      <input value={item.size}
-                        onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? { ...i, size: e.target.value.toUpperCase() } : i))}
-                        className="w-12 text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded px-1 uppercase" />
-                    </td>
-                    <td className="px-2 py-1 text-center">
-                      <input type="number" min="1" value={item.quantity}
-                        onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? { ...i, quantity: parseInt(e.target.value) || 1 } : i))}
-                        className="w-12 text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded px-1 text-center" />
-                    </td>
-                    <td className="px-2 py-1">
-                      <select value={item.dtfModelId ?? ''}
-                        onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? {
-                          ...i,
-                          dtfModelId: e.target.value || null,
-                          dtfModelName: dtfModels.find((m: DtfModelDto) => m.id === e.target.value)?.name ?? null
-                        } : i))}
-                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background">
-                        <option value="">—</option>
-                        {dtfModels.map((m: DtfModelDto) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
+                {editedItems.map((item, idx) => {
+                  // Derive model from SKU (first segment before '-')
+                  const modelCode = item.sku.split('-')[0] ?? ''
+                  return (
+                    <tr key={item.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-muted/50'}>
+                      <td className="px-2 py-1">
+                        <input value={item.sku}
+                          onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? { ...i, sku: e.target.value } : i))}
+                          className="w-full text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded px-1 font-mono" />
+                      </td>
+                      <td className="px-2 py-1">
+                        <span className="text-xs font-mono text-muted-foreground">{modelCode || '—'}</span>
+                      </td>
+                      <td className="px-2 py-1">
+                        <input value={item.color}
+                          onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? { ...i, color: e.target.value } : i))}
+                          className="w-full text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded px-1" />
+                      </td>
+                      <td className="px-2 py-1">
+                        <input value={item.size}
+                          onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? { ...i, size: e.target.value.toUpperCase() } : i))}
+                          className="w-12 text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded px-1 uppercase" />
+                      </td>
+                      <td className="px-2 py-1 text-center">
+                        <input type="number" min="1" value={item.quantity}
+                          onChange={(e) => setEditedItems(p => p.map(i => i.id === item.id ? { ...i, quantity: parseInt(e.target.value) || 1 } : i))}
+                          className="w-12 text-xs border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-ring rounded px-1 text-center" />
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -247,8 +231,7 @@ function SeparationWizard() {
           <div className="flex gap-2 pt-2">
             <Button variant="outline" className="text-xs h-7 px-2"
               onClick={() => setEditedItems(p => [...p, {
-                id: crypto.randomUUID(), sku: '', color: '', size: '', quantity: 1,
-                dtfModelId: null, dtfModelName: null, sortOrder: p.length
+                id: crypto.randomUUID(), sku: '', color: '', size: '', quantity: 1, sortOrder: p.length
               }])}>
               + Linha
             </Button>
@@ -296,6 +279,7 @@ function SeparationWizard() {
                 <table className="w-full text-sm">
                   <thead className="bg-muted">
                     <tr>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Modelo</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Cor</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Tam.</th>
                       <th className="px-3 py-2 text-center text-xs font-medium text-muted-foreground">Necessário</th>
@@ -306,6 +290,7 @@ function SeparationWizard() {
                   <tbody>
                     {check.shirtChecks.map((c, i) => (
                       <tr key={i} className={i % 2 === 0 ? 'bg-card' : 'bg-muted/50'}>
+                        <td className="px-3 py-2 font-mono text-muted-foreground">{c.modelCode}</td>
                         <td className="px-3 py-2">{c.color}</td>
                         <td className="px-3 py-2 font-medium">{c.size}</td>
                         <td className="px-3 py-2 text-center">{c.needed}</td>
@@ -323,37 +308,6 @@ function SeparationWizard() {
               </div>
               {!check.canConfirm && <p className="text-xs text-danger mt-1">Estoque insuficiente. Edite as quantidades antes de confirmar.</p>}
             </div>
-
-            {check.dtfChecks.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">Estoque DTF</p>
-                <div className="space-y-2">
-                  {check.dtfChecks.map((d) => (
-                    <div key={d.dtfModelId} className={`border rounded-lg p-3 text-sm ${d.fromStock ? 'border-success/20 bg-success/10' : 'border-warning/20 bg-warning/10'}`}>
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold">{d.modelName}</span>
-                        {d.fromStock
-                          ? <Badge variant="success">Do estoque</Badge>
-                          : <Badge variant="warning">Pedir folha</Badge>
-                        }
-                      </div>
-                      <p className="text-xs mt-1 text-muted-foreground">Precisa: <b>{d.needed}</b> — Tem: <b>{d.available}</b></p>
-                      {!d.fromStock && (
-                        <p className="text-xs text-warning">
-                          Pedir {d.sheetsToOrder} folha(s) × {d.stampsPerSheet} estampas = {d.stampsFromSheets}
-                          {d.surplus > 0 && ` (sobrará ${d.surplus})`} — R$ {fmt(d.orderCost)}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                {check.totalDtfCost > 0 && (
-                  <p className="text-sm font-medium text-foreground mt-2">
-                    Total DTF: <span className="font-bold">R$ {fmt(check.totalDtfCost)}</span>
-                  </p>
-                )}
-              </div>
-            )}
 
             <div className="flex gap-2 pt-2">
               <Button variant="outline" onClick={() => setStep('review')} className="flex-1">← Editar lista</Button>
@@ -474,36 +428,15 @@ function SeparationWizard() {
             <div className="flex flex-wrap gap-1.5">
               {check.shirtChecks.map((c, i) => (
                 <span key={i} className="bg-card border border-border rounded px-2 py-0.5 text-xs text-foreground">
-                  {c.color} {c.size} × {c.needed}
+                  {c.modelCode} {c.color} {c.size} × {c.needed}
                 </span>
               ))}
             </div>
           </div>
-
-          {check.dtfChecks.filter(d => d.fromStock).length > 0 && (
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">DTF do estoque</p>
-              {check.dtfChecks.filter(d => d.fromStock).map(d => (
-                <p key={d.dtfModelId} className="text-xs text-success">{d.modelName} — {d.needed} un.</p>
-              ))}
-            </div>
-          )}
-
-          {check.dtfChecks.filter(d => !d.fromStock).length > 0 && (
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">Folhas DTF a pedir</p>
-              {check.dtfChecks.filter(d => !d.fromStock).map(d => (
-                <p key={d.dtfModelId} className="text-xs text-warning">
-                  {d.modelName} — {d.sheetsToOrder} folha(s) — R$ {fmt(d.orderCost)}
-                </p>
-              ))}
-              <p className="text-sm font-semibold text-foreground mt-1">Total: R$ {fmt(check.totalDtfCost)}</p>
-            </div>
-          )}
         </div>
 
         <div className="rounded-md bg-danger/10 border border-danger/20 p-3 text-sm text-danger font-medium">
-          ⚠ Esta ação é irreversível. O estoque será descontado e os pedidos DTF lançados.
+          ⚠ Esta ação é irreversível. O estoque será descontado.
         </div>
 
         <div className="flex gap-2">
@@ -531,48 +464,6 @@ function SeparationWizard() {
           {confirmResult.shirtDeductions.reduce((a, d) => a + d.quantity, 0)} peças descontadas do estoque.
         </p>
       </div>
-
-      {confirmResult.dtfOrders.length > 0 && confirmResult.whatsAppMessage && (
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-foreground">Mensagem para o fornecedor DTF</p>
-
-          <div className="flex items-center gap-3 p-3 bg-success/10 border border-success/20 rounded-md">
-            <div className="w-9 h-9 rounded-full bg-success flex items-center justify-center text-white font-bold text-base shrink-0">
-              {confirmResult.dtfSupplierName.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">{confirmResult.dtfSupplierName}</p>
-              <p className="text-xs text-muted-foreground">{confirmResult.dtfSupplierPhone || 'Número não configurado'}</p>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="text-sm font-medium text-foreground">Mensagem WhatsApp</label>
-              <button
-                onClick={() => handleCopy(confirmResult.whatsAppMessage!)}
-                className={`text-xs px-2 py-1 rounded font-medium transition-colors ${copied ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
-              >
-                {copied ? '✓ Copiado!' : 'Copiar'}
-              </button>
-            </div>
-            <pre className="w-full border border-border rounded-md px-3 py-2 text-sm font-mono bg-muted text-foreground whitespace-pre-wrap">
-              {confirmResult.whatsAppMessage}
-            </pre>
-          </div>
-
-          {confirmResult.waMeLink && (
-            <a href={confirmResult.waMeLink} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full rounded-md px-4 py-2 text-sm font-medium bg-[#25D366] text-white hover:bg-[#1ebe5a] transition-colors">
-              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden>
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.118 1.525 5.847L0 24l6.293-1.498A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.793 9.793 0 01-5.001-1.372l-.358-.213-3.728.887.934-3.617-.233-.371A9.787 9.787 0 012.182 12C2.182 6.58 6.58 2.182 12 2.182S21.818 6.58 21.818 12 17.42 21.818 12 21.818z" />
-              </svg>
-              Abrir no WhatsApp
-            </a>
-          )}
-        </div>
-      )}
 
       <Button onClick={handleReset} className="w-full">Voltar para a lista</Button>
     </div>

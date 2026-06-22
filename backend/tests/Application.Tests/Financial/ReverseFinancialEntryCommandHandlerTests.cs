@@ -193,7 +193,7 @@ public class ReverseFinancialEntryCommandHandlerTests : IDisposable
             50.4m, 27m);
         _context.SewingDeliveries.Add(sewingDelivery);
 
-        var stockItem = StockItem.Create(fabricColor.Id, "Preto", "Malha", "Regular", "P", 9);
+        var stockItem = StockItem.Create(fabricColor.Id, "Preto", "Malha", "Regular", "P", 9, "REG");
         _context.StockItems.Add(stockItem);
         await _context.SaveChangesAsync();
 

@@ -13,6 +13,5 @@ public record UpdateItemDto(
     string Sku,
     string Color,
     string Size,
-    int Quantity,
-    Guid? DtfModelId
+    int Quantity
 );

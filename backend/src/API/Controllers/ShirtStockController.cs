@@ -15,35 +15,35 @@ namespace SistemaTraction.API.Controllers;
 [Route("api/stock/shirts")]
 public class ShirtStockController(IMediator mediator) : ControllerBase
 {
-    // GET api/stock/shirts?shirtType=Regular
+    // GET api/stock/shirts?modelCode=REG
     [HttpGet]
     public async Task<IActionResult> GetGrid(
-        [FromQuery] string shirtType = "Regular",
+        [FromQuery] string modelCode = "REG",
         CancellationToken ct = default)
     {
-        var result = await mediator.Send(new GetShirtStockQuery(shirtType), ct);
+        var result = await mediator.Send(new GetShirtStockQuery(modelCode), ct);
         return Ok(result);
     }
 
-    // GET api/stock/shirts/movements?shirtType=Regular&page=1&pageSize=20
+    // GET api/stock/shirts/movements?modelCode=REG&page=1&pageSize=20
     [HttpGet("movements")]
     public async Task<IActionResult> GetMovements(
-        [FromQuery] string shirtType = "Regular",
+        [FromQuery] string modelCode = "REG",
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await mediator.Send(new GetShirtStockMovementsQuery(shirtType, page, pageSize), ct);
+        var result = await mediator.Send(new GetShirtStockMovementsQuery(modelCode, page, pageSize), ct);
         return Ok(result);
     }
 
-    // GET api/stock/shirts/items?shirtType=Regular
+    // GET api/stock/shirts/items?modelCode=REG
     [HttpGet("items")]
     public async Task<IActionResult> GetItems(
-        [FromQuery] string shirtType = "Regular",
+        [FromQuery] string modelCode = "REG",
         CancellationToken ct = default)
     {
-        var result = await mediator.Send(new GetShirtStockItemsQuery(shirtType), ct);
+        var result = await mediator.Send(new GetShirtStockItemsQuery(modelCode), ct);
         return Ok(result);
     }
 
@@ -60,7 +60,7 @@ public class ShirtStockController(IMediator mediator) : ControllerBase
                     request.AdjustmentType,
                     request.Quantity,
                     request.Reason,
-                    request.ShirtType,
+                    request.ModelCode,
                     request.UnitCost), ct);
             return Ok(result);
         }
@@ -86,6 +86,6 @@ public record AdjustShirtStockRequest(
     string AdjustmentType,
     int Quantity,
     string Reason,
-    string ShirtType = "Regular",
+    string ModelCode = "REG",
     decimal UnitCost = 0m
 );

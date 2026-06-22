@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import type { ShirtStockMovementsDto, ShirtType } from '../types'
+import type { ShirtStockMovementsDto } from '../types'
 
-export function useShirtStockMovements(shirtType: ShirtType = 'Regular', page = 1, pageSize = 20) {
+export function useShirtStockMovements(modelCode: string = 'REG', page = 1, pageSize = 20) {
   return useQuery({
-    queryKey: ['shirt-stock-movements', shirtType, page, pageSize],
+    queryKey: ['shirt-stock-movements', modelCode, page, pageSize],
     queryFn: async () => {
       const { data } = await api.get<ShirtStockMovementsDto>(
-        `/stock/shirts/movements?shirtType=${shirtType}&page=${page}&pageSize=${pageSize}`
+        `/stock/shirts/movements?modelCode=${modelCode}&page=${page}&pageSize=${pageSize}`
       )
       return data
     },

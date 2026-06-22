@@ -8,7 +8,7 @@ public class ShirtStockMovement : BaseEntity
     public Guid FabricColorId { get; private set; }
     public string FabricColorName { get; private set; } = "";
     public string Size { get; private set; } = "";
-    public ShirtType ShirtType { get; private set; } = ShirtType.Regular;
+    public string ModelCode { get; private set; } = "";
 
     /// <summary>Positivo = entrada, negativo = saída.</summary>
     public int Delta { get; private set; }
@@ -33,10 +33,14 @@ public class ShirtStockMovement : BaseEntity
         string reason,
         string origin,
         Guid? referenceId = null,
-        ShirtType shirtType = ShirtType.Regular)
+        string modelCode = "REG")
     {
+        if (string.IsNullOrWhiteSpace(size))
+            throw new DomainException("Tamanho é obrigatório.");
         if (delta == 0)
-            throw new DomainException("Delta da movimentação não pode ser zero.");
+            throw new DomainException("Delta não pode ser zero.");
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new DomainException("Motivo é obrigatório.");
 
         return new ShirtStockMovement
         {
@@ -44,7 +48,7 @@ public class ShirtStockMovement : BaseEntity
             FabricColorId = fabricColorId,
             FabricColorName = fabricColorName.Trim(),
             Size = size.Trim().ToUpper(),
-            ShirtType = shirtType,
+            ModelCode = string.IsNullOrWhiteSpace(modelCode) ? "REG" : modelCode.Trim().ToUpper(),
             Delta = delta,
             Reason = reason.Trim(),
             Origin = origin.Trim(),

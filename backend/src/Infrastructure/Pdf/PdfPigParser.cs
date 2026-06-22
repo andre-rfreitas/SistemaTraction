@@ -6,23 +6,31 @@ using UglyToad.PdfPig.Content;
 namespace SistemaTraction.Infrastructure.Pdf;
 
 /// <summary>
-/// Parser PDF com duas estratégias em cascata:
-/// 1) Posicionamento por coluna — lê a coluna "SKU" pela posição das palavras.
-///    É a estratégia correta para o UpSeller / Chrome-to-PDF, onde page.Text vem
-///    como uma string contínua SEM espaços (inútil para regex), mas page.GetWords()
-///    expõe cada palavra com coordenada X/Y. SKUs que quebram em duas linhas na
-///    coluna estreita (ex.: "REG-REDR-RED-" + "GG") são remontados.
-/// 2) Varredura de texto — fallback para PDFs cujo texto contém delimitadores.
+/// Parser PDF com três estratégias em cascata:
+///
+/// 1) Cabeçalho "SKU" — lê a coluna "SKU" pela posição do cabeçalho (layout antigo com coluna nomeada).
+///    SKUs que quebram em duas linhas na coluna estreita são remontados.
+///
+/// 2) Varredura direta por palavras — detecta palavras que casam com o padrão
+///    MODELO-COR-TAMANHO (ex: BBL-BLK-M) e procura "× N" ou número próximo
+///    na mesma linha como quantidade. Funciona para o PDF do UpSeller/Chrome onde
+///    não existe cabeçalho "SKU".
+///
+/// 3) Varredura de texto completo — fallback regex sobre page.Text.
 /// </summary>
 public class PdfPigParser : IPdfParser
 {
-    // SKU = ao menos 2 grupos maiúsculos separados por hífen.
+    // SKU: ao menos 3 partes maiúsculas separadas por hífen (MODELO-COR-TAMANHO)
+    // Ex: BBL-BLK-M, REG-RED-GG, REG-RED-G1
     private static readonly Regex SkuRegex = new(
-        @"(?<![A-Z0-9\-])[A-Z][A-Z0-9]{0,7}(?:-[A-Z0-9]{1,8}){2,4}(?=\s|$)",
+        @"(?<![A-Z0-9\-])[A-Z][A-Z0-9]{0,7}(?:-[A-Z0-9]{1,8}){2,4}(?![A-Z0-9\-])",
         RegexOptions.Compiled | RegexOptions.Multiline);
 
-    private static readonly Regex QtyRegex = new(@"^\s*(\d{1,4})\b", RegexOptions.Compiled);
-    private static readonly Regex DigitsOnly = new(@"^\d{1,4}$", RegexOptions.Compiled);
+    private static readonly Regex QtyRegex    = new(@"^\s*(\d{1,4})\b",       RegexOptions.Compiled);
+    private static readonly Regex DigitsOnly  = new(@"^\d{1,4}$",             RegexOptions.Compiled);
+
+    // "× N", "x N", "xN" — símbolo de multiplicação antes do número
+    private static readonly Regex CrossQtyRegex = new(@"[×xX]\s*(\d{1,4})",   RegexOptions.Compiled);
 
     public ParseResult Parse(Stream pdfStream, string fileName)
     {
@@ -30,12 +38,17 @@ public class PdfPigParser : IPdfParser
         {
             using var doc = PdfDocument.Open(pdfStream);
 
-            // Estratégia 1: posicionamento por coluna (UpSeller e afins)
-            var items = ParseByColumns(doc);
+            // Estratégia 1: coluna com cabeçalho "SKU"
+            var items = ParseBySkuColumnHeader(doc);
             if (items.Count > 0)
                 return new ParseResult(true, items, null);
 
-            // Estratégia 2: varredura de texto (PDFs com texto delimitado)
+            // Estratégia 2: varredura direta de palavras (UpSeller sem cabeçalho)
+            var direct = ParseByDirectWordScan(doc);
+            if (direct.Count > 0)
+                return new ParseResult(true, direct, null);
+
+            // Estratégia 3: varredura de texto completo (fallback)
             var fallback = ParseByFullTextScan(doc);
             if (fallback.Count > 0)
                 return new ParseResult(true, fallback, null);
@@ -50,45 +63,32 @@ public class PdfPigParser : IPdfParser
         }
     }
 
-    // ── Estratégia 1: posicionamento por coluna ───────────────────────────────────
-    // 1. Localiza o cabeçalho "SKU" → define a coluna (X) dos SKUs.
-    // 2. Junta as palavras dessa coluna abaixo do cabeçalho; remonta SKUs quebrados
-    //    em duas linhas (fragmento sem hífen é continuação do SKU anterior).
-    // 3. A quantidade é o número na coluna à direita, dentro da faixa vertical da linha.
-    // 4. Acumula a quantidade por SKU (mesmo SKU repetido em vários pedidos soma).
-
-    private static List<ParsedItem> ParseByColumns(PdfDocument doc)
+    // ── Estratégia 1: cabeçalho "SKU" ────────────────────────────────────────────
+    private static List<ParsedItem> ParseBySkuColumnHeader(PdfDocument doc)
     {
-        const double xTol = 12.0;   // tolerância horizontal da coluna SKU
-        const double yTol = 5.0;    // folga vertical ao casar a linha
+        const double xTol    = 12.0;
+        const double yTol    = 5.0;
 
         var rows = new List<(string Sku, int Qty)>();
 
         foreach (var page in doc.GetPages())
         {
-            var words = page.GetWords()
-                .Select(w => (
-                    Y: page.Height - w.BoundingBox.Bottom,
-                    X: w.BoundingBox.Left,
-                    Text: NormalizeHyphens(w.Text).Trim()))
-                .Where(w => w.Text.Length > 0)
-                .ToList();
+            var words = GetNormalizedWords(page);
 
             var header = words.FirstOrDefault(w =>
                 w.Text.Equals("SKU", StringComparison.OrdinalIgnoreCase));
             if (header.Text is null) continue;
 
-            var skuX = header.X;
+            var skuX   = header.X;
             var headerY = header.Y;
 
-            // Palavras da coluna SKU, de cima para baixo
             var skuColumn = words
                 .Where(w => Math.Abs(w.X - skuX) <= xTol && w.Y > headerY + 1)
                 .OrderBy(w => w.Y)
                 .ToList();
             if (skuColumn.Count == 0) continue;
 
-            // Remonta SKUs quebrados: palavra com hífen inicia um SKU; sem hífen continua o anterior
+            // Remonta SKUs quebrados em duas linhas
             var skus = new List<(string Sku, double Y)>();
             foreach (var w in skuColumn)
             {
@@ -101,13 +101,11 @@ public class PdfPigParser : IPdfParser
                 }
             }
 
-            // Coluna de quantidade: números puros à direita da coluna SKU
             var qtyColumn = words
                 .Where(w => w.X > skuX + 40 && DigitsOnly.IsMatch(w.Text))
                 .OrderBy(w => w.Y)
                 .ToList();
 
-            // Altura típica de linha, para delimitar a faixa do último SKU
             var rowHeight = 50.0;
             if (skus.Count > 1)
             {
@@ -115,10 +113,9 @@ public class PdfPigParser : IPdfParser
                 rowHeight = gaps[gaps.Count / 2];
             }
 
-            // Casa cada SKU com a quantidade na sua faixa vertical
             for (var i = 0; i < skus.Count; i++)
             {
-                var top = skus[i].Y - yTol;
+                var top    = skus[i].Y - yTol;
                 var bottom = (i + 1 < skus.Count ? skus[i + 1].Y : skus[i].Y + rowHeight) - yTol;
                 var qtyWord = qtyColumn.FirstOrDefault(q => q.Y >= top && q.Y < bottom);
                 var qty = qtyWord.Text is not null && int.TryParse(qtyWord.Text, out var q) && q is > 0 and < 9_999
@@ -130,9 +127,80 @@ public class PdfPigParser : IPdfParser
         return Accumulate(rows);
     }
 
-    // ── Estratégia 2: varredura de texto completo ─────────────────────────────────
-    // Para PDFs cujo page.Text contém espaços/quebras entre os tokens.
+    // ── Estratégia 2: varredura direta de palavras ────────────────────────────────
+    //
+    // Para o PDF do UpSeller: cada linha tem a forma:
+    //   [SKU]   × [Qty]
+    //
+    // Algoritmo:
+    // 1. Agrupa todas as palavras por faixa vertical (linha).
+    // 2. Em cada linha procura palavras com o padrão SKU.
+    // 3. Busca a quantidade no "×N" mais próximo na mesma linha,
+    //    ou no número após o símbolo × em qualquer palavra da linha.
+    private static List<ParsedItem> ParseByDirectWordScan(PdfDocument doc)
+    {
+        const double lineHeightTol = 6.0; // pixels de tolerância para agrupar numa linha
 
+        var rows = new List<(string Sku, int Qty)>();
+
+        foreach (var page in doc.GetPages())
+        {
+            var words = GetNormalizedWords(page);
+            if (words.Count == 0) continue;
+
+            // Agrupa por linha (Y similar)
+            var lines = new List<List<(double Y, double X, string Text)>>();
+            foreach (var w in words.OrderBy(w => w.Y).ThenBy(w => w.X))
+            {
+                var matched = false;
+                foreach (var line in lines)
+                {
+                    if (Math.Abs(line[0].Y - w.Y) <= lineHeightTol)
+                    {
+                        line.Add(w);
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) lines.Add([(w.Y, w.X, w.Text)]);
+            }
+
+            foreach (var line in lines)
+            {
+                // Junta as palavras da linha em ordem de X para facilitar o regex
+                var lineText = string.Join(" ", line.OrderBy(w => w.X).Select(w => w.Text));
+
+                // Encontra todas as palavras da linha que são SKUs
+                var skuMatches = SkuRegex.Matches(lineText);
+                if (skuMatches.Count == 0) continue;
+
+                // Tenta extrair a quantidade: procura "× N" ou "x N" na linha
+                var qty = 1;
+                var crossMatch = CrossQtyRegex.Match(lineText);
+                if (crossMatch.Success && int.TryParse(crossMatch.Groups[1].Value, out var cq) && cq is > 0 and < 9_999)
+                {
+                    qty = cq;
+                }
+                else
+                {
+                    // Fallback: pega o último número puro na linha
+                    var numbers = line
+                        .OrderBy(w => w.X)
+                        .Where(w => DigitsOnly.IsMatch(w.Text))
+                        .ToList();
+                    if (numbers.Count > 0 && int.TryParse(numbers[^1].Text, out var nq) && nq is > 0 and < 9_999)
+                        qty = nq;
+                }
+
+                foreach (Match m in skuMatches)
+                    rows.Add((m.Value.Trim(), qty));
+            }
+        }
+
+        return Accumulate(rows);
+    }
+
+    // ── Estratégia 3: varredura de texto completo ─────────────────────────────────
     private static List<ParsedItem> ParseByFullTextScan(PdfDocument doc)
     {
         var rows = new List<(string Sku, int Qty)>();
@@ -151,16 +219,29 @@ public class PdfPigParser : IPdfParser
     {
         if (start >= text.Length) return 1;
         var segment = text[start..Math.Min(start + 20, text.Length)];
+        // Tenta "× N" primeiro
+        var cross = CrossQtyRegex.Match(segment);
+        if (cross.Success && int.TryParse(cross.Groups[1].Value, out var cq) && cq is > 0 and < 9_999)
+            return cq;
+        // Fallback: número simples
         var m = QtyRegex.Match(segment);
         return m.Success && int.TryParse(m.Groups[1].Value, out var q) && q is > 0 and < 9_999 ? q : 1;
     }
 
     // ── Utilitários ───────────────────────────────────────────────────────────────
 
-    // Agrupa por SKU somando a quantidade, preservando a ordem de primeira aparição.
+    private static List<(double Y, double X, string Text)> GetNormalizedWords(Page page) =>
+        page.GetWords()
+            .Select(w => (
+                Y: page.Height - w.BoundingBox.Bottom,
+                X: w.BoundingBox.Left,
+                Text: NormalizeHyphens(w.Text).Trim()))
+            .Where(w => w.Text.Length > 0)
+            .ToList();
+
     private static List<ParsedItem> Accumulate(List<(string Sku, int Qty)> rows)
     {
-        var order = new List<string>();
+        var order  = new List<string>();
         var totals = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var (sku, qty) in rows)

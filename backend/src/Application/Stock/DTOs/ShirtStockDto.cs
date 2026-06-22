@@ -27,7 +27,7 @@ public record ShirtStockMovementDto(
     DateTime Date,
     string FabricColorName,
     string Size,
-    string ShirtType,
+    string ModelCode,
     int Delta,
     string Reason,
     string Origin
@@ -46,6 +46,6 @@ public record ShirtStockItemDto(
     Guid FabricColorId,
     string FabricColorName,
     string Size,
-    string ShirtType,
+    string ModelCode,
     int Quantity
 );

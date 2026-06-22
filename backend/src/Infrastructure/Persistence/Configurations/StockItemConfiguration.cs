@@ -14,9 +14,9 @@ public class StockItemConfiguration : IEntityTypeConfiguration<StockItem>
         builder.Property(s => s.FabricTypeName).HasMaxLength(100).IsRequired();
         builder.Property(s => s.FabricTypeVariation).HasMaxLength(100).IsRequired();
         builder.Property(s => s.Size).HasMaxLength(10).IsRequired();
-        builder.Property(s => s.ShirtType).HasConversion<string>().HasMaxLength(20).IsRequired()
-            .HasDefaultValue(SistemaTraction.Domain.Stock.ShirtType.Regular);
+        builder.Property(s => s.ModelCode).HasMaxLength(50).IsRequired()
+            .HasDefaultValue("REG");
 
-        builder.HasIndex(s => new { s.FabricColorId, s.Size, s.ShirtType }).IsUnique();
+        builder.HasIndex(s => new { s.FabricColorId, s.Size, s.ModelCode }).IsUnique();
     }
 }

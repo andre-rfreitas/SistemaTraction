@@ -79,7 +79,7 @@ public class CancelCuttingOrderCommandHandlerTests : IDisposable
             50.4m, 27m);
         _context.SewingDeliveries.Add(sewingDelivery);
 
-        var stockItem = StockItem.Create(fabricColor.Id, "Preto", "Malha", "Regular", "P", 9);
+        var stockItem = StockItem.Create(fabricColor.Id, "Preto", "Malha", "Regular", "P", 9, "REG");
         _context.StockItems.Add(stockItem);
         _context.ShirtStockMovements.Add(ShirtStockMovement.Create(
             stockItem.Id, fabricColor.Id, "Preto", "P", 9,

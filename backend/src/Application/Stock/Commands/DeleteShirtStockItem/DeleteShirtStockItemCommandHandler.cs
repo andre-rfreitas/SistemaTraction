@@ -4,7 +4,6 @@ using SistemaTraction.Application.Common.Interfaces;
 using SistemaTraction.Application.Stock.DTOs;
 using SistemaTraction.Domain.Common;
 using SistemaTraction.Domain.Stock;
-using ShirtTypeEnum = SistemaTraction.Domain.Stock.ShirtType;
 
 namespace SistemaTraction.Application.Stock.Commands.DeleteShirtStockItem;
 
@@ -27,9 +26,9 @@ public class DeleteShirtStockItemCommandHandler(IApplicationDbContext context)
                 stockItem.FabricColorName,
                 stockItem.Size,
                 -stockItem.Quantity,
-                "Exclusão manual de item",
+                "Exclusão manual de item de estoque",
                 "Manual",
-                shirtType: stockItem.ShirtType);
+                modelCode: stockItem.ModelCode);
             context.ShirtStockMovements.Add(movement);
         }
 

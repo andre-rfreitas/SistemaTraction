@@ -13,8 +13,6 @@ export interface SeparationItemDto {
   color: string
   size: string
   quantity: number
-  dtfModelId: string | null
-  dtfModelName: string | null
   sortOrder: number
 }
 
@@ -32,10 +30,10 @@ export interface UpdateItemPayload {
   color: string
   size: string
   quantity: number
-  dtfModelId: string | null
 }
 
 export interface ShirtStockCheck {
+  modelCode: string
   color: string
   size: string
   needed: number
@@ -43,53 +41,22 @@ export interface ShirtStockCheck {
   ok: boolean
 }
 
-export interface DtfStockCheck {
-  dtfModelId: string
-  modelName: string
-  sheetLabel: string
-  stampsPerSheet: number
-  sheetCost: number
-  needed: number
-  available: number
-  fromStock: boolean
-  sheetsToOrder: number
-  stampsFromSheets: number
-  surplus: number
-  orderCost: number
-}
-
 export interface StockCheckResult {
   shirtChecks: ShirtStockCheck[]
-  dtfChecks: DtfStockCheck[]
-  totalDtfCost: number
   canConfirm: boolean
 }
 
-export type SkuCodeCategory = 'Modelo' | 'EstampaDtf' | 'Cor' | 'Tamanho'
+// SKU code categories — extensible for future additions
+export type SkuCodeCategory = 'Modelo' | 'Cor' | 'Tamanho'
 
 export interface SkuCodeDto {
   id: string
   code: string
   value: string
   category: SkuCodeCategory
-  dtfModelId: string | null
 }
 
 export interface SeparationConfirmResult {
   separationListId: string
-  shirtDeductions: { color: string; size: string; quantity: number }[]
-  dtfUsages: { modelName: string; quantityUsed: number }[]
-  dtfOrders: {
-    modelName: string
-    sheetLabel: string
-    stampsPerSheet: number
-    sheetsOrdered: number
-    sheetCost: number
-    totalCost: number
-  }[]
-  totalDtfCost: number
-  whatsAppMessage: string | null
-  waMeLink: string | null
-  dtfSupplierName: string
-  dtfSupplierPhone: string
+  shirtDeductions: { modelCode: string; color: string; size: string; quantity: number }[]
 }

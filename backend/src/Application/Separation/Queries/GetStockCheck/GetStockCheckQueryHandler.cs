@@ -22,7 +22,11 @@ public class GetStockCheckQueryHandler(IApplicationDbContext context)
 
         // ── Shirt stock check ──────────────────────────────────────────────────
         var shirtGroups = items
-            .GroupBy(i => (Color: i.Color, Size: i.Size.ToUpper()))
+            .GroupBy(i => (
+                ModelCode: (i.Sku.Split('-').FirstOrDefault() ?? "REG").ToUpper(),
+                Color: i.Color, 
+                Size: i.Size.ToUpper()
+            ))
             .ToList();
 
         var shirtChecks = new List<ShirtStockCheckDto>();
@@ -33,55 +37,30 @@ public class GetStockCheckQueryHandler(IApplicationDbContext context)
             var needed = group.Sum(i => i.Quantity);
             var stockItem = await context.StockItems
                 .FirstOrDefaultAsync(s =>
+                    s.ModelCode == group.Key.ModelCode &&
                     s.FabricColorName.ToLower() == group.Key.Color.ToLower() &&
                     s.Size == group.Key.Size &&
                     !s.IsDeleted,
                     cancellationToken);
 
+            // Fallback para itens antigos sem model code exato
+            if (stockItem is null)
+            {
+                stockItem = await context.StockItems
+                    .FirstOrDefaultAsync(s =>
+                        s.FabricColorName.ToLower() == group.Key.Color.ToLower() &&
+                        s.Size == group.Key.Size &&
+                        !s.IsDeleted,
+                        cancellationToken);
+            }
+
             var available = stockItem?.Quantity ?? 0;
             var ok = available >= needed;
             if (!ok) shirtOk = false;
 
-            shirtChecks.Add(new ShirtStockCheckDto(group.Key.Color, group.Key.Size, needed, available, ok));
+            shirtChecks.Add(new ShirtStockCheckDto(group.Key.ModelCode, group.Key.Color, group.Key.Size, needed, available, ok));
         }
 
-        // ── DTF stock check ────────────────────────────────────────────────────
-        var dtfGroups = items
-            .Where(i => i.DtfModelId.HasValue)
-            .GroupBy(i => i.DtfModelId!.Value)
-            .ToList();
-
-        var dtfChecks = new List<DtfStockCheckDto>();
-        var totalDtfCost = 0m;
-
-        foreach (var group in dtfGroups)
-        {
-            var modelId = group.Key;
-            var needed = group.Sum(i => i.Quantity);
-
-            var model = await context.DtfModels
-                .FirstOrDefaultAsync(m => m.Id == modelId && !m.IsDeleted, cancellationToken);
-
-            if (model is null) continue;
-
-            var stockItem = await context.DtfStockItems
-                .FirstOrDefaultAsync(s => s.DtfModelId == modelId && !s.IsDeleted, cancellationToken);
-
-            var available = stockItem?.CurrentQuantity ?? 0;
-            var fromStock = Math.Min(available, needed);
-            var deficit = needed - available;
-            var sheetsToOrder = deficit > 0 ? (int)Math.Ceiling((double)deficit / model.StampsPerSheet) : 0;
-            var stampsFromSheets = sheetsToOrder * model.StampsPerSheet;
-            var surplus = stampsFromSheets - deficit;
-            var orderCost = sheetsToOrder * model.SheetCost;
-            totalDtfCost += orderCost;
-
-            dtfChecks.Add(new DtfStockCheckDto(
-                model.Id, model.Name, model.SheetLabel, model.StampsPerSheet, model.SheetCost,
-                needed, available, sheetsToOrder == 0, sheetsToOrder,
-                stampsFromSheets, surplus, orderCost));
-        }
-
-        return new StockCheckResultDto(shirtChecks, dtfChecks, totalDtfCost, shirtOk);
+        return new StockCheckResultDto(shirtChecks, shirtOk);
     }
 }

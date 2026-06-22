@@ -1,22 +1,21 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import type { ShirtType } from '../types'
 
 export interface ShirtStockItemDto {
   id: string
   fabricColorId: string
   fabricColorName: string
   size: string
-  shirtType: string
+  modelCode: string
   quantity: number
 }
 
-export function useShirtStockItems(shirtType: ShirtType) {
+export function useShirtStockItems(modelCode: string) {
   return useQuery({
-    queryKey: ['shirt-stock-items', shirtType],
+    queryKey: ['shirt-stock-items', modelCode],
     queryFn: async () => {
       const { data } = await api.get<ShirtStockItemDto[]>('/stock/shirts/items', {
-        params: { shirtType },
+        params: { modelCode },
       })
       return data
     },

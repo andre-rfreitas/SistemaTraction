@@ -12,19 +12,16 @@ import { useAdjustShirtStock } from './hooks/useAdjustShirtStock'
 import { ShirtStockGrid } from './components/ShirtStockGrid'
 import { ShirtStockMovementsTable } from './components/ShirtStockMovementsTable'
 import { ManageProductsModal } from './components/ManageProductsModal'
-import type { ShirtStockGridDto, ShirtType } from './types'
+import type { ShirtStockGridDto } from './types'
 
 // Hooks and components for Generic Products
 import { useGenericProductCategories } from '../generic/hooks/useGenericProductsApi'
 import { GenericProductCategoryView } from '../generic/components/GenericProductCategoryView'
 import { CreateCategoryModal } from '../generic/components/CreateCategoryModal'
 
-type ShirtSubType = 'regular' | 'over'
-
-const SHIRT_TYPES: { id: ShirtSubType; label: string }[] = [
-  { id: 'regular', label: 'Regular' },
-  { id: 'over', label: 'Over' },
-]
+// Hooks for SKU
+import { useSkuCodes } from '@/features/separation/hooks/useSkuCodes'
+import { CreateModelModal } from './components/CreateModelModal'
 
 type DraftGrid = Record<string, Record<string, number>>
 
@@ -39,18 +36,23 @@ function buildDraftGrid(data: ShirtStockGridDto): DraftGrid {
 
 export function ShirtStockPage() {
   const [activeTabId, setActiveTabId] = useState<string>('camisetas')
-  const [shirtType, setShirtType] = useState<ShirtSubType>('regular')
+  const [modelCode, setModelCode] = useState<string>('REG')
   const [isEditMode, setIsEditMode] = useState(false)
   const [draftGrid, setDraftGrid] = useState<DraftGrid>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isManageOpen, setIsManageOpen] = useState(false)
   const [isCreateCategoryOpen, setIsCreateCategoryOpen] = useState(false)
+  const [isCreateModelOpen, setIsCreateModelOpen] = useState(false)
 
   const { data: genericCategories = [] } = useGenericProductCategories()
+  const { data: skuCodes = [] } = useSkuCodes()
+  const modelCodes = skuCodes.filter(c => c.category === 'Modelo')
+  
+  // If we have models from DB, ensure the current model is valid, else fallback
+  const validModels = modelCodes.length > 0 ? modelCodes : [{ code: 'REG', value: 'Regular' }]
+  const currentModelCode = validModels.find(m => m.code === modelCode)?.code || validModels[0].code
 
-  const apiShirtType: ShirtType = shirtType === 'regular' ? 'Regular' : 'Over'
-
-  const { data: shirtData, isLoading: isShirtLoading } = useShirtStock(apiShirtType)
+  const { data: shirtData, isLoading: isShirtLoading } = useShirtStock(currentModelCode)
   const adjustShirt = useAdjustShirtStock()
   const queryClient = useQueryClient()
 
@@ -95,7 +97,7 @@ export function ShirtStockPage() {
           adjustmentType: (delta > 0 ? 'Entrada' : 'Saída') as 'Entrada' | 'Saída',
           quantity: Math.abs(delta),
           reason: 'Ajuste manual',
-          shirtType: apiShirtType,
+          modelCode: currentModelCode,
         })
       }
     }
@@ -108,8 +110,8 @@ export function ShirtStockPage() {
     setIsSaving(true)
     try {
       await Promise.all(payloads.map((p) => adjustShirt.mutateAsync(p)))
-      await queryClient.invalidateQueries({ queryKey: ['shirt-stock', apiShirtType] })
-      await queryClient.invalidateQueries({ queryKey: ['shirt-stock-movements', apiShirtType] })
+      await queryClient.invalidateQueries({ queryKey: ['shirt-stock', currentModelCode] })
+      await queryClient.invalidateQueries({ queryKey: ['shirt-stock-movements', currentModelCode] })
     } finally {
       setIsSaving(false)
       setIsEditMode(false)
@@ -196,23 +198,31 @@ export function ShirtStockPage() {
 
       {activeTabId === 'camisetas' ? (
         <div className="space-y-4">
-          {/* Sub-abas Regular / Over */}
-          <div className="flex gap-1">
-            {SHIRT_TYPES.map((type) => (
+          {/* Sub-abas Modelos */}
+          <div className="flex gap-1 items-center">
+            {validModels.map((m) => (
               <button
-                key={type.id}
+                key={m.code}
                 type="button"
-                onClick={() => { setShirtType(type.id); setIsEditMode(false); setDraftGrid({}) }}
+                onClick={() => { setModelCode(m.code); setIsEditMode(false); setDraftGrid({}) }}
                 className={cn(
                   'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-                  shirtType === type.id
+                  currentModelCode === m.code
                     ? 'bg-accent/10 text-accent'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                 )}
+                title={m.value}
               >
-                {type.label}
+                {m.code} - {m.value}
               </button>
             ))}
+            <button
+              onClick={() => setIsCreateModelOpen(true)}
+              className="ml-1 flex items-center justify-center rounded-full bg-accent/10 text-accent hover:bg-accent/20 h-5 w-5 transition-colors"
+              title="Cadastrar novo modelo"
+            >
+              <Plus className="h-3 w-3" />
+            </button>
           </div>
 
           {isShirtLoading ? (
@@ -229,7 +239,7 @@ export function ShirtStockPage() {
           {!isEditMode && (
             <div className="space-y-3">
               <h2 className="text-sm font-semibold text-foreground">Histórico de movimentações (Camisetas)</h2>
-              <ShirtStockMovementsTable shirtType={apiShirtType} />
+              <ShirtStockMovementsTable modelCode={currentModelCode} />
             </div>
           )}
         </div>
@@ -254,12 +264,17 @@ export function ShirtStockPage() {
           queryClient.invalidateQueries({ queryKey: ['shirt-stock'] })
           queryClient.invalidateQueries({ queryKey: ['shirt-stock-movements'] })
         }}
-        currentShirtType={apiShirtType}
+        currentModelCode={currentModelCode}
       />
 
       <CreateCategoryModal
         open={isCreateCategoryOpen}
         onClose={() => setIsCreateCategoryOpen(false)}
+      />
+
+      <CreateModelModal
+        open={isCreateModelOpen}
+        onClose={() => setIsCreateModelOpen(false)}
       />
     </div>
   )

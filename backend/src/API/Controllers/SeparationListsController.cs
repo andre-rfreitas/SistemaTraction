@@ -92,7 +92,7 @@ public class SeparationListsController(IMediator mediator) : ControllerBase
     {
         try
         {
-            var result = await mediator.Send(new UpsertSkuCodeCommand(request.Id, request.Code, request.Value, request.Category, request.DtfModelId), ct);
+            var result = await mediator.Send(new UpsertSkuCodeCommand(request.Id, request.Code, request.Value, request.Category), ct);
             return Ok(result);
         }
         catch (DomainException ex) { return BadRequest(new { error = ex.Message }); }
@@ -149,6 +149,6 @@ public class SeparationListsController(IMediator mediator) : ControllerBase
 
 public record UpdateItemsRequest(List<UpdateItemDto> Items);
 
-public record UpsertSkuCodeRequest(Guid? Id, string Code, string Value, string Category, Guid? DtfModelId);
+public record UpsertSkuCodeRequest(Guid? Id, string Code, string Value, string Category);
 
 public record RenameListRequest(string FileName);

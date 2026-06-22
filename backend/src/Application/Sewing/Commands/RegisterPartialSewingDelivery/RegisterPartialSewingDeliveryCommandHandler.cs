@@ -100,7 +100,7 @@ public class RegisterPartialSewingDeliveryCommandHandler(IApplicationDbContext c
 
                 if (stockItem is null)
                 {
-                    stockItem = StockItem.Create(fabricColorId, colorName, typeName, typeVariation, normalizedSize, qty);
+                    stockItem = StockItem.Create(fabricColorId, colorName, typeName, typeVariation, normalizedSize, qty, "REG");
                     context.StockItems.Add(stockItem);
                 }
                 else

@@ -21,18 +21,10 @@ public class GetSeparationListByIdQueryHandler(IApplicationDbContext context)
             .OrderBy(i => i.SortOrder)
             .ToListAsync(cancellationToken);
 
-        var dtfModelIds = items.Where(i => i.DtfModelId.HasValue).Select(i => i.DtfModelId!.Value).Distinct().ToList();
-        var dtfModels = await context.DtfModels
-            .Where(m => dtfModelIds.Contains(m.Id))
-            .ToDictionaryAsync(m => m.Id, m => m.Name, cancellationToken);
-
         return new SeparationListDetailDto(
             list.Id, list.FileName, list.UploadedAt, list.Status.ToString(),
             items.Select(i => new SeparationItemDto(
-                i.Id, i.Sku, i.Color, i.Size, i.Quantity,
-                i.DtfModelId,
-                i.DtfModelId.HasValue ? dtfModels.GetValueOrDefault(i.DtfModelId.Value) : null,
-                i.SortOrder)).ToList()
+                i.Id, i.Sku, i.Color, i.Size, i.Quantity, i.SortOrder)).ToList()
         );
     }
 }

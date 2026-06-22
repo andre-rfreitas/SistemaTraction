@@ -2,7 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SistemaTraction.Application.Common.Interfaces;
 using SistemaTraction.Application.Stock.DTOs;
-using SistemaTraction.Domain.Stock;
+
 
 namespace SistemaTraction.Application.Stock.Queries.GetShirtStockMovements;
 
@@ -15,23 +15,23 @@ public class GetShirtStockMovementsQueryHandler(IApplicationDbContext context)
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
 
-        var shirtType = Enum.TryParse<ShirtType>(request.ShirtType, out var parsed) ? parsed : ShirtType.Regular;
+        var modelCode = string.IsNullOrWhiteSpace(request.ModelCode) ? "REG" : request.ModelCode.Trim().ToUpper();
 
         var query = context.ShirtStockMovements
-            .Where(m => !m.IsDeleted && m.ShirtType == shirtType)
+            .Where(m => !m.IsDeleted && m.ModelCode == modelCode)
             .OrderByDescending(m => m.CreatedAt);
 
         var totalCount = await query.CountAsync(cancellationToken);
 
         var items = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Skip((request.Page - 1) * request.PageSize)
+            .Take(request.PageSize)
             .Select(m => new ShirtStockMovementDto(
                 m.Id,
                 m.CreatedAt,
                 m.FabricColorName,
                 m.Size,
-                m.ShirtType.ToString(),
+                m.ModelCode,
                 m.Delta,
                 m.Reason,
                 m.Origin))

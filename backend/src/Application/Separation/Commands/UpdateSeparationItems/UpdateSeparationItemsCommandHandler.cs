@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using SistemaTraction.Application.Common.Interfaces;
 using SistemaTraction.Application.Separation.DTOs;
 using SistemaTraction.Domain.Common;
-using SistemaTraction.Domain.Dtf;
 using SistemaTraction.Domain.Separation;
 
 namespace SistemaTraction.Application.Separation.Commands.UpdateSeparationItems;
@@ -31,16 +30,9 @@ public class UpdateSeparationItemsCommandHandler(IApplicationDbContext context)
                 ?? throw new DomainException($"Item {dto.Id} não encontrado.");
 
             item.Update(dto.Sku, dto.Color, dto.Size, dto.Quantity);
-            item.SetDtfModel(dto.DtfModelId);
         }
 
         await context.SaveChangesAsync(cancellationToken);
-
-        // Load DTF model names for response
-        var dtfModelIds = items.Where(i => i.DtfModelId.HasValue).Select(i => i.DtfModelId!.Value).Distinct().ToList();
-        var dtfModels = await context.DtfModels
-            .Where(m => dtfModelIds.Contains(m.Id))
-            .ToDictionaryAsync(m => m.Id, m => m.Name, cancellationToken);
 
         return new SeparationListDetailDto(
             list.Id,
@@ -49,10 +41,7 @@ public class UpdateSeparationItemsCommandHandler(IApplicationDbContext context)
             list.Status.ToString(),
             items.OrderBy(i => i.SortOrder)
                  .Select(i => new SeparationItemDto(
-                     i.Id, i.Sku, i.Color, i.Size, i.Quantity,
-                     i.DtfModelId,
-                     i.DtfModelId.HasValue ? dtfModels.GetValueOrDefault(i.DtfModelId.Value) : null,
-                     i.SortOrder))
+                     i.Id, i.Sku, i.Color, i.Size, i.Quantity, i.SortOrder))
                  .ToList()
         );
     }

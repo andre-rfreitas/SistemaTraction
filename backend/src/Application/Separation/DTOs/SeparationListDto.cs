@@ -15,8 +15,6 @@ public record SeparationItemDto(
     string Color,
     string Size,
     int Quantity,
-    Guid? DtfModelId,
-    string? DtfModelName,
     int SortOrder
 );
 
@@ -30,6 +28,7 @@ public record SeparationListDetailDto(
 
 // Stock check DTOs
 public record ShirtStockCheckDto(
+    string ModelCode,
     string Color,
     string Size,
     int Needed,
@@ -37,50 +36,15 @@ public record ShirtStockCheckDto(
     bool Ok
 );
 
-public record DtfStockCheckDto(
-    Guid DtfModelId,
-    string ModelName,
-    string SheetLabel,
-    int StampsPerSheet,
-    decimal SheetCost,
-    int Needed,
-    int Available,
-    bool FromStock,
-    int SheetsToOrder,
-    int StampsFromSheets,
-    int Surplus,
-    decimal OrderCost
-);
-
 public record StockCheckResultDto(
     List<ShirtStockCheckDto> ShirtChecks,
-    List<DtfStockCheckDto> DtfChecks,
-    decimal TotalDtfCost,
     bool CanConfirm
 );
 
 // Confirm result
 public record SeparationConfirmResultDto(
     Guid SeparationListId,
-    List<ShirtDeductionDto> ShirtDeductions,
-    List<DtfUsageDto> DtfUsages,
-    List<DtfOrderDto> DtfOrders,
-    decimal TotalDtfCost,
-    string? WhatsAppMessage,
-    string? WaMeLink,
-    string DtfSupplierName,
-    string DtfSupplierPhone
+    List<ShirtDeductionDto> ShirtDeductions
 );
 
-public record ShirtDeductionDto(string Color, string Size, int Quantity);
-
-public record DtfUsageDto(string ModelName, int QuantityUsed);
-
-public record DtfOrderDto(
-    string ModelName,
-    string SheetLabel,
-    int StampsPerSheet,
-    int SheetsOrdered,
-    decimal SheetCost,
-    decimal TotalCost
-);
+public record ShirtDeductionDto(string ModelCode, string Color, string Size, int Quantity);

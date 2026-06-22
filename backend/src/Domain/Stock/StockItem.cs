@@ -9,7 +9,7 @@ public class StockItem : BaseEntity
     public string FabricTypeName { get; private set; } = "";
     public string FabricTypeVariation { get; private set; } = "";
     public string Size { get; private set; } = "";
-    public ShirtType ShirtType { get; private set; } = ShirtType.Regular;
+    public string ModelCode { get; private set; } = "";
     public int Quantity { get; private set; }
 
     private StockItem() { }
@@ -21,13 +21,16 @@ public class StockItem : BaseEntity
         string fabricTypeVariation,
         string size,
         int initialQuantity,
-        ShirtType shirtType = ShirtType.Regular)
+        string modelCode)
     {
         if (initialQuantity < 0)
             throw new DomainException("Quantidade inicial não pode ser negativa.");
 
         if (string.IsNullOrWhiteSpace(size))
             throw new DomainException("Tamanho é obrigatório.");
+
+        if (string.IsNullOrWhiteSpace(modelCode))
+            throw new DomainException("Código do Modelo é obrigatório.");
 
         return new StockItem
         {
@@ -36,7 +39,7 @@ public class StockItem : BaseEntity
             FabricTypeName = fabricTypeName.Trim(),
             FabricTypeVariation = fabricTypeVariation.Trim(),
             Size = size.Trim().ToUpper(),
-            ShirtType = shirtType,
+            ModelCode = modelCode.Trim().ToUpper(),
             Quantity = initialQuantity
         };
     }
@@ -57,7 +60,7 @@ public class StockItem : BaseEntity
 
         if (quantity > Quantity)
             throw new DomainException(
-                $"Estoque insuficiente para '{FabricColorName} {Size}'. Disponível: {Quantity}, solicitado: {quantity}.");
+                $"Estoque insuficiente para '{FabricColorName} {Size} ({ModelCode})'. Disponível: {Quantity}, solicitado: {quantity}.");
 
         Quantity -= quantity;
         TouchUpdatedAt();

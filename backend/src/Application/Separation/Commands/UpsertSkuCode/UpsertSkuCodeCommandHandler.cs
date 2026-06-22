@@ -13,7 +13,7 @@ public class UpsertSkuCodeCommandHandler(IApplicationDbContext context)
     public async Task<SkuCodeDto> Handle(UpsertSkuCodeCommand request, CancellationToken cancellationToken)
     {
         if (!Enum.TryParse<SkuCodeCategory>(request.Category, out var category))
-            throw new DomainException($"Categoria inválida: {request.Category}. Use: Modelo, EstampaDtf, Cor, Tamanho.");
+            throw new DomainException($"Categoria inválida: {request.Category}. Use: Modelo, Cor, Tamanho.");
 
         SkuCode skuCode;
 
@@ -23,16 +23,16 @@ public class UpsertSkuCodeCommandHandler(IApplicationDbContext context)
                 .FirstOrDefaultAsync(c => c.Id == request.Id.Value && !c.IsDeleted, cancellationToken)
                 ?? throw new DomainException("Código SKU não encontrado.");
 
-            skuCode.Update(request.Code, request.Value, category, request.DtfModelId);
+            skuCode.Update(request.Code, request.Value, category);
         }
         else
         {
-            skuCode = SkuCode.Create(request.Code, request.Value, category, request.DtfModelId);
+            skuCode = SkuCode.Create(request.Code, request.Value, category);
             context.SkuCodes.Add(skuCode);
         }
 
         await context.SaveChangesAsync(cancellationToken);
 
-        return new SkuCodeDto(skuCode.Id, skuCode.Code, skuCode.Value, skuCode.Category.ToString(), skuCode.DtfModelId);
+        return new SkuCodeDto(skuCode.Id, skuCode.Code, skuCode.Value, skuCode.Category.ToString());
     }
 }

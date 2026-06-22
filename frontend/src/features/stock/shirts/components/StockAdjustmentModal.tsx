@@ -3,14 +3,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useFabricTypes } from '@/features/settings/fabric/hooks/useFabricTypes'
 import type { AdjustPayload } from '../hooks/useAdjustShirtStock'
-import type { ShirtType } from '../types'
+
 
 const TYPES = ['Entrada', 'Saída'] as const
 type AdjType = typeof TYPES[number]
 
 interface Props {
   sizes: string[]
-  shirtType: ShirtType
+  modelCode: string
   isLoading: boolean
   onConfirm: (payload: AdjustPayload) => void
   onClose: () => void
@@ -26,7 +26,7 @@ interface FormState {
 
 const EMPTY: FormState = { fabricColorId: '', size: '', adjustmentType: 'Entrada', quantity: '', reason: '' }
 
-export function StockAdjustmentModal({ sizes, shirtType, isLoading, onConfirm, onClose }: Props) {
+export function StockAdjustmentModal({ sizes, modelCode, isLoading, onConfirm, onClose }: Props) {
   const { data: fabricTypes = [] } = useFabricTypes()
   const [form, setForm] = useState<FormState>(EMPTY)
   const [step, setStep] = useState<'form' | 'confirm'>('form')
@@ -66,7 +66,7 @@ export function StockAdjustmentModal({ sizes, shirtType, isLoading, onConfirm, o
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setStep('form')} disabled={isLoading} className="flex-1">Editar</Button>
           <Button
-            onClick={() => onConfirm({ fabricColorId: form.fabricColorId, size: form.size, adjustmentType: form.adjustmentType, quantity: qty, reason: form.reason, shirtType })}
+            onClick={() => onConfirm({ fabricColorId: form.fabricColorId, size: form.size, adjustmentType: form.adjustmentType, quantity: qty, reason: form.reason, modelCode })}
             disabled={isLoading}
             className="flex-1"
           >

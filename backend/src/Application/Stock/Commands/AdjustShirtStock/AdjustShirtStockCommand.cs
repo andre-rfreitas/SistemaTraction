@@ -9,6 +9,6 @@ public record AdjustShirtStockCommand(
     string AdjustmentType,   // "Entrada" | "Saída"
     int Quantity,
     string Reason,
-    string ShirtType = "Regular",
-    decimal UnitCost = 0m    // se > 0 e AdjustmentType == "Entrada", gera lançamento financeiro
+    string ModelCode = "REG",
+    decimal? UnitCost = null    // se > 0 e AdjustmentType == "Entrada", gera lançamento financeiro
 ) : IRequest<AdjustShirtStockResult>;
