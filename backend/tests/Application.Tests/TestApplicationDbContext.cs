@@ -136,6 +136,7 @@ public class TestApplicationDbContext : DbContext, IApplicationDbContext
         {
             b.HasKey(c => c.Id);
             b.Property(c => c.Category).HasConversion<string>();
+            b.HasOne<DtfModel>().WithMany().HasForeignKey(c => c.DtfModelId).IsRequired(false);
         });
 
         modelBuilder.Entity<DtfModel>(b =>
