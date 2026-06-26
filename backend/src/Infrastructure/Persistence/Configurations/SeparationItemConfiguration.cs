@@ -11,6 +11,7 @@ public class SeparationItemConfiguration : IEntityTypeConfiguration<SeparationIt
         builder.HasKey(i => i.Id);
 
         builder.Property(i => i.Sku).HasMaxLength(100);
+        builder.Property(i => i.Estampa).HasMaxLength(100);
         builder.Property(i => i.Color).HasMaxLength(100).IsRequired();
         builder.Property(i => i.Size).HasMaxLength(10).IsRequired();
 
