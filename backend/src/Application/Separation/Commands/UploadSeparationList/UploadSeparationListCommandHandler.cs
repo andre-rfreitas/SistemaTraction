@@ -19,7 +19,7 @@ public class UploadSeparationListCommandHandler(IApplicationDbContext context, I
                 $"Não foi possível processar o PDF: {parsed.ErrorMessage ?? "formato não reconhecido"}. " +
                 "Verifique se o arquivo é uma lista de separação válida do ERP e se os Códigos SKU estão configurados.");
 
-        // Load SKU code mappings (Modelo, Cor, Tamanho)
+        // Load SKU code mappings (Modelo, Estampa, Cor, Tamanho)
         var skuCodes = await context.SkuCodes
             .Where(c => !c.IsDeleted)
             .ToListAsync(cancellationToken);
@@ -33,15 +33,20 @@ public class UploadSeparationListCommandHandler(IApplicationDbContext context, I
         var items = new List<SeparationItem>();
         foreach (var p in parsed.Items)
         {
-            var (color, size) = ResolveSkuParts(p.Sku, skuLookup);
+            var resolved = ResolveSkuParts(p.Sku, skuLookup);
 
-            var resolvedColor = !string.IsNullOrWhiteSpace(p.Color) ? p.Color : (color ?? "");
-            var resolvedSize  = !string.IsNullOrWhiteSpace(p.Size)  ? p.Size  : (size  ?? "");
+            var resolvedColor = !string.IsNullOrWhiteSpace(p.Color) ? p.Color : (resolved.Color ?? "");
+            var resolvedSize  = !string.IsNullOrWhiteSpace(p.Size)  ? p.Size  : (resolved.Size  ?? "");
 
             if (string.IsNullOrWhiteSpace(resolvedColor)) resolvedColor = "?";
             if (string.IsNullOrWhiteSpace(resolvedSize))  resolvedSize  = "?";
 
-            var item = SeparationItem.Create(list.Id, p.Sku, resolvedColor, resolvedSize, p.Quantity, p.SortOrder);
+            var item = SeparationItem.Create(
+                list.Id, p.Sku, resolved.Estampa ?? "", resolvedColor, resolvedSize, p.Quantity, p.SortOrder);
+
+            if (resolved.DtfModelId.HasValue)
+                item.SetDtfModel(resolved.DtfModelId);
+
             items.Add(item);
         }
 
@@ -51,45 +56,65 @@ public class UploadSeparationListCommandHandler(IApplicationDbContext context, I
         return new SeparationListDetailDto(
             list.Id, list.FileName, list.UploadedAt, list.Status.ToString(),
             items.Select(i => new SeparationItemDto(
-                i.Id, i.Sku, i.Color, i.Size, i.Quantity, i.SortOrder)).ToList()
+                i.Id, i.Sku, i.Estampa, i.Color, i.Size, i.Quantity, i.SortOrder, i.DtfModelId)).ToList()
         );
     }
 
     /// <summary>
-    /// Parses a SKU in the format MODELO-COR-TAMANHO (e.g. BBL-BLK-M).
-    /// - Position 0: Modelo  — looked up but only stored as SKU string; not used for stock.
-    /// - Position 1: Cor     — resolved via SkuCode lookup (Category = Cor).
-    /// - Position 2: Tamanho — resolved via SkuCode lookup (Category = Tamanho).
+    /// Parses a SKU. Dois formatos suportados:
+    /// - 4+ segmentos: MODELAGEM-ESTAMPA-COR-TAMANHO (ex: REG-MADT-RED-G).
+    ///   Posição 1 → Estampa (lookup Category=Estampa, retorna também DtfModelId).
+    ///   Posição 2 → Cor (lookup Category=Cor).
+    ///   Posição 3 → Tamanho (lookup Category=Tamanho).
+    /// - Exatamente 3 segmentos (formato legado): MODELO-COR-TAMANHO (ex: BBL-BLK-M).
+    ///   Posição 1 → Cor. Posição 2 → Tamanho. Sem Estampa.
     ///
-    /// Extra segments are ignored so the parser remains extensible.
-    /// If a segment has no mapping the raw code is used as fallback.
+    /// Posição 0 (Modelagem/Modelo) não é resolvida aqui — usada apenas como ModelCode
+    /// bruto em outras partes do fluxo (checagem/dedução de estoque de camiseta).
+    /// Segmentos extras (5º em diante) são ignorados.
+    /// Se um segmento não tiver mapeamento configurado, o código bruto é usado como fallback.
     /// </summary>
-    private static (string? color, string? size) ResolveSkuParts(
+    private static (string? Color, string? Size, string? Estampa, Guid? DtfModelId) ResolveSkuParts(
         string sku,
-        ILookup<string, Domain.Separation.SkuCode> skuLookup)
+        ILookup<string, SkuCode> skuLookup)
     {
-        if (string.IsNullOrWhiteSpace(sku)) return (null, null);
+        if (string.IsNullOrWhiteSpace(sku)) return (null, null, null, null);
 
         var parts = sku.Split('-', StringSplitOptions.RemoveEmptyEntries);
 
-        // Segment 1 → Cor
-        string? color = null;
-        if (parts.Length > 1)
+        if (parts.Length >= 4)
         {
-            var part = parts[1].ToUpper();
-            var match = skuLookup[part].FirstOrDefault(c => c.Category == SkuCodeCategory.Cor);
-            color = match?.Value ?? part; // fallback: use the raw code
+            var estampaPart = parts[1].ToUpper();
+            var estampaMatch = skuLookup[estampaPart].FirstOrDefault(c => c.Category == SkuCodeCategory.Estampa);
+            var estampa = estampaMatch?.Value ?? estampaPart;
+            var dtfModelId = estampaMatch?.DtfModelId;
+
+            var cor = ResolveSegment(parts[2], SkuCodeCategory.Cor, skuLookup);
+            var tamanho = ResolveSegment(parts[3], SkuCodeCategory.Tamanho, skuLookup);
+
+            return (cor, tamanho, estampa, dtfModelId);
         }
 
-        // Segment 2 → Tamanho
-        string? size = null;
-        if (parts.Length > 2)
+        if (parts.Length == 3)
         {
-            var part = parts[2].ToUpper();
-            var match = skuLookup[part].FirstOrDefault(c => c.Category == SkuCodeCategory.Tamanho);
-            size = match?.Value ?? part; // fallback: use the raw code
+            var cor = ResolveSegment(parts[1], SkuCodeCategory.Cor, skuLookup);
+            var tamanho = ResolveSegment(parts[2], SkuCodeCategory.Tamanho, skuLookup);
+
+            return (cor, tamanho, null, null);
         }
 
-        return (color, size);
+        return (null, null, null, null);
+    }
+
+    /// <summary>
+    /// Resolve um segmento de SKU para o valor mapeado em SkuCode na categoria informada.
+    /// Se não houver mapeamento configurado, retorna o próprio código (em maiúsculas) como fallback.
+    /// </summary>
+    private static string ResolveSegment(
+        string rawSegment, SkuCodeCategory category, ILookup<string, SkuCode> skuLookup)
+    {
+        var part = rawSegment.ToUpper();
+        var match = skuLookup[part].FirstOrDefault(c => c.Category == category);
+        return match?.Value ?? part;
     }
 }
