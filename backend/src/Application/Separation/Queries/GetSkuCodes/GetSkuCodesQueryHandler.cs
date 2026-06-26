@@ -14,7 +14,7 @@ public class GetSkuCodesQueryHandler(IApplicationDbContext context)
             .Where(c => !c.IsDeleted)
             .OrderBy(c => c.Category)
             .ThenBy(c => c.Code)
-            .Select(c => new SkuCodeDto(c.Id, c.Code, c.Value, c.Category.ToString()))
+            .Select(c => new SkuCodeDto(c.Id, c.Code, c.Value, c.Category.ToString(), c.DtfModelId))
             .ToListAsync(cancellationToken);
     }
 }

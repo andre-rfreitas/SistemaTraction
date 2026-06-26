@@ -11,6 +11,7 @@ public record UpdateSeparationItemsCommand(
 public record UpdateItemDto(
     Guid Id,
     string Sku,
+    string Estampa,
     string Color,
     string Size,
     int Quantity

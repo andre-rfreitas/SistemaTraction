@@ -12,10 +12,12 @@ public record SeparationListSummaryDto(
 public record SeparationItemDto(
     Guid Id,
     string Sku,
+    string Estampa,
     string Color,
     string Size,
     int Quantity,
-    int SortOrder
+    int SortOrder,
+    Guid? DtfModelId
 );
 
 public record SeparationListDetailDto(

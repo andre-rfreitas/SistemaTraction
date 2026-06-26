@@ -29,7 +29,7 @@ public class UpdateSeparationItemsCommandHandler(IApplicationDbContext context)
             var item = items.FirstOrDefault(i => i.Id == dto.Id)
                 ?? throw new DomainException($"Item {dto.Id} não encontrado.");
 
-            item.Update(dto.Sku, dto.Color, dto.Size, dto.Quantity);
+            item.Update(dto.Sku, dto.Estampa, dto.Color, dto.Size, dto.Quantity);
         }
 
         await context.SaveChangesAsync(cancellationToken);
@@ -41,7 +41,7 @@ public class UpdateSeparationItemsCommandHandler(IApplicationDbContext context)
             list.Status.ToString(),
             items.OrderBy(i => i.SortOrder)
                  .Select(i => new SeparationItemDto(
-                     i.Id, i.Sku, i.Color, i.Size, i.Quantity, i.SortOrder))
+                     i.Id, i.Sku, i.Estampa, i.Color, i.Size, i.Quantity, i.SortOrder, i.DtfModelId))
                  .ToList()
         );
     }

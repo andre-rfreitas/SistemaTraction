@@ -24,7 +24,7 @@ public class GetSeparationListByIdQueryHandler(IApplicationDbContext context)
         return new SeparationListDetailDto(
             list.Id, list.FileName, list.UploadedAt, list.Status.ToString(),
             items.Select(i => new SeparationItemDto(
-                i.Id, i.Sku, i.Color, i.Size, i.Quantity, i.SortOrder)).ToList()
+                i.Id, i.Sku, i.Estampa, i.Color, i.Size, i.Quantity, i.SortOrder, i.DtfModelId)).ToList()
         );
     }
 }
