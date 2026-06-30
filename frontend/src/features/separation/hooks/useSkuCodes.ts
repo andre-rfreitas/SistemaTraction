@@ -20,6 +20,7 @@ export function useUpsertSkuCode() {
       code: string
       value: string
       category: SkuCodeCategory
+      dtfModelId?: string | null
     }) => {
       const { data } = await api.post<SkuCodeDto>('/separation-lists/sku-codes', payload)
       return data

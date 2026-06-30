@@ -10,10 +10,12 @@ export interface SeparationListSummary {
 export interface SeparationItemDto {
   id: string
   sku: string
+  estampa: string
   color: string
   size: string
   quantity: number
   sortOrder: number
+  dtfModelId: string | null
 }
 
 export interface SeparationListDetail {
@@ -27,6 +29,7 @@ export interface SeparationListDetail {
 export interface UpdateItemPayload {
   id: string
   sku: string
+  estampa: string
   color: string
   size: string
   quantity: number
@@ -47,13 +50,14 @@ export interface StockCheckResult {
 }
 
 // SKU code categories — extensible for future additions
-export type SkuCodeCategory = 'Modelo' | 'Cor' | 'Tamanho'
+export type SkuCodeCategory = 'Modelo' | 'Estampa' | 'Cor' | 'Tamanho'
 
 export interface SkuCodeDto {
   id: string
   code: string
   value: string
   category: SkuCodeCategory
+  dtfModelId: string | null
 }
 
 export interface SeparationConfirmResult {

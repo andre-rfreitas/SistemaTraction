@@ -1,30 +1,33 @@
 import { useState } from 'react'
 import { useSkuCodes, useUpsertSkuCode, useDeleteSkuCode } from '../hooks/useSkuCodes'
+import { useDtfModels } from '@/features/settings/dtf/hooks/useDtfModels'
 import type { SkuCodeCategory, SkuCodeDto } from '../types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 
-// Extensible: add new categories here as needed in the future
 const CATEGORIES: { value: SkuCodeCategory; label: string }[] = [
   { value: 'Modelo',  label: 'Modelo' },
+  { value: 'Estampa', label: 'Estampa' },
   { value: 'Cor',     label: 'Cor' },
   { value: 'Tamanho', label: 'Tamanho' },
 ]
 
-type CategoryBadgeVariant = 'primary' | 'warning' | 'success'
+type CategoryBadgeVariant = 'primary' | 'info' | 'warning' | 'success'
 const CATEGORY_VARIANT: Record<SkuCodeCategory, CategoryBadgeVariant> = {
   Modelo:  'primary',
+  Estampa: 'info',
   Cor:     'warning',
   Tamanho: 'success',
 }
 
 const EMPTY_FORM = {
-  code: '', value: '', category: 'Cor' as SkuCodeCategory,
+  code: '', value: '', category: 'Cor' as SkuCodeCategory, dtfModelId: null as string | null,
 }
 
 export function SkuConfigPanel() {
   const { data: codes = [], isLoading } = useSkuCodes()
+  const { data: dtfModels = [] } = useDtfModels()
   const upsert = useUpsertSkuCode()
   const del = useDeleteSkuCode()
 
@@ -34,7 +37,7 @@ export function SkuConfigPanel() {
 
   function handleEdit(c: SkuCodeDto) {
     setEditingId(c.id)
-    setForm({ code: c.code, value: c.value, category: c.category })
+    setForm({ code: c.code, value: c.value, category: c.category, dtfModelId: c.dtfModelId })
   }
 
   function handleCancel() {
@@ -43,7 +46,7 @@ export function SkuConfigPanel() {
   }
 
   function handleCategoryChange(cat: SkuCodeCategory) {
-    setForm(f => ({ ...f, category: cat, value: '' }))
+    setForm(f => ({ ...f, category: cat, value: '', dtfModelId: null }))
   }
 
   function handleSave() {
@@ -63,8 +66,8 @@ export function SkuConfigPanel() {
         <h3 className="text-base font-semibold text-foreground">Configuração de Códigos SKU</h3>
         <p className="text-xs text-muted-foreground mt-0.5">
           Defina o significado de cada parte do SKU (ex:{' '}
-          <code className="bg-muted px-1 rounded">BBL-BLK-M</code>).
-          Formato: <strong>MODELO-COR-TAMANHO</strong>. Após configurar, o upload do PDF preencherá Cor e Tamanho automaticamente.
+          <code className="bg-muted px-1 rounded">REG-MADT-RED-G</code>).
+          Formato: <strong>MODELAGEM-ESTAMPA-COR-TAMANHO</strong>. Para Estampa, vincule ao modelo DTF correspondente.
         </p>
       </div>
 
@@ -81,7 +84,7 @@ export function SkuConfigPanel() {
             <Input
               value={form.code}
               onChange={(e) => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-              placeholder="ex: BLK"
+              placeholder="ex: MADT"
               className="font-mono text-sm uppercase"
             />
           </div>
@@ -102,19 +105,38 @@ export function SkuConfigPanel() {
           <div>
             <label className="text-xs text-muted-foreground mb-0.5 block">
               {form.category === 'Cor'     ? 'Nome da cor (deve coincidir com o estoque)' :
-               form.category === 'Tamanho' ? 'Tamanho (ex: G, M, GG, G1)' : 'Valor (nome do modelo)'}
+               form.category === 'Tamanho' ? 'Tamanho (ex: G, M, GG, G1)' :
+               form.category === 'Estampa' ? 'Nome da estampa' : 'Valor (nome do modelo)'}
             </label>
             <Input
               value={form.value}
               onChange={(e) => setForm(f => ({ ...f, value: e.target.value }))}
               placeholder={
                 form.category === 'Cor'     ? 'ex: Preto' :
-                form.category === 'Tamanho' ? 'ex: G' : 'ex: Babylook'
+                form.category === 'Tamanho' ? 'ex: G' :
+                form.category === 'Estampa' ? 'ex: Made in Traction' : 'ex: Babylook'
               }
               className="text-sm"
             />
           </div>
         </div>
+
+        {/* DTF Model select — only for Estampa */}
+        {form.category === 'Estampa' && (
+          <div>
+            <label className="text-xs text-muted-foreground mb-0.5 block">Modelo DTF vinculado</label>
+            <select
+              value={form.dtfModelId ?? ''}
+              onChange={(e) => setForm(f => ({ ...f, dtfModelId: e.target.value || null }))}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+            >
+              <option value="">— Selecione um modelo DTF —</option>
+              {dtfModels.map(m => (
+                <option key={m.id} value={m.id}>{m.name} ({m.sheetLabel})</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {form.category === 'Cor' && (
           <p className="text-xs text-warning bg-warning/10 border border-warning/20 rounded px-2 py-1">
@@ -177,6 +199,7 @@ export function SkuConfigPanel() {
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Código</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Valor</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Categoria</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Modelo DTF</th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
@@ -189,6 +212,11 @@ export function SkuConfigPanel() {
                     <Badge variant={CATEGORY_VARIANT[c.category]}>
                       {CATEGORIES.find(cat => cat.value === c.category)?.label ?? c.category}
                     </Badge>
+                  </td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground">
+                    {c.dtfModelId
+                      ? (dtfModels.find(m => m.id === c.dtfModelId)?.name ?? c.dtfModelId)
+                      : '—'}
                   </td>
                   <td className="px-3 py-2 text-right">
                     <div className="flex gap-1 justify-end">
@@ -215,28 +243,27 @@ export function SkuConfigPanel() {
   )
 }
 
-/**
- * Interactive preview that shows how a SKU in MODELO-COR-TAMANHO format
- * resolves against the configured codes.
- */
 function SkuPreview({ codes }: { codes: SkuCodeDto[] }) {
-  const [sku, setSku] = useState('BBL-BLK-M')
+  const [sku, setSku] = useState('REG-MADT-RED-G')
 
-  const byCode = new Map(codes.map(c => [c.code.toUpperCase(), c]))
+  const byCodeAndCategory = new Map(codes.map(c => [`${c.code.toUpperCase()}:${c.category}`, c]))
 
-  // SKU format: MODELO-COR-TAMANHO (3 segments)
   const parts = sku.toUpperCase().split('-').filter(Boolean)
 
-  const resolved = parts.map((part, index) => {
-    const match = byCode.get(part)
-    // Infer expected category by position
-    const expectedCategory: SkuCodeCategory | null =
-      index === 0 ? 'Modelo' : index === 1 ? 'Cor' : index === 2 ? 'Tamanho' : null
+  // 4+ segments: MODELAGEM-ESTAMPA-COR-TAMANHO
+  // 3 segments:  MODELO-COR-TAMANHO (legacy)
+  const positionCategories: (SkuCodeCategory | null)[] =
+    parts.length >= 4
+      ? [null, 'Estampa', 'Cor', 'Tamanho']
+      : parts.length === 3
+      ? [null, 'Cor', 'Tamanho']
+      : []
 
-    if (match) {
-      return { part, code: match, display: match.value }
-    }
-    return { part, code: null, expectedCategory, display: null }
+  const resolved = parts.map((part, index) => {
+    const expectedCategory = positionCategories[index] ?? null
+    if (!expectedCategory) return { part, code: null, expectedCategory: null as SkuCodeCategory | null, display: part }
+    const match = byCodeAndCategory.get(`${part}:${expectedCategory}`)
+    return { part, code: match ?? null, expectedCategory, display: match?.value ?? null }
   })
 
   return (
@@ -247,23 +274,27 @@ function SkuPreview({ codes }: { codes: SkuCodeDto[] }) {
           value={sku}
           onChange={(e) => setSku(e.target.value)}
           className="font-mono text-xs border border-input rounded px-2 py-1 w-44 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          placeholder="BBL-BLK-M"
+          placeholder="REG-MADT-RED-G"
         />
         <span className="text-xs text-muted-foreground">→</span>
         <div className="flex gap-1.5 flex-wrap">
           {resolved.map((r, i) => (
             <span key={i} className={`text-xs px-1.5 py-0.5 rounded font-medium ${
               r.code ? getBadgeClasses(CATEGORY_VARIANT[r.code.category]) :
-              'bg-muted text-muted-foreground border border-border'
+              r.expectedCategory === null
+                ? 'bg-muted text-muted-foreground border border-border'
+                : 'bg-muted text-muted-foreground border border-border opacity-60'
             }`}>
               {r.code
                 ? `${r.part} → ${r.display}`
+                : r.expectedCategory === null
+                ? r.part
                 : `${r.part} (?)`}
             </span>
           ))}
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">(?) = código não configurado</p>
+      <p className="text-xs text-muted-foreground">(?) = código não configurado · posição 0 = Modelagem (não resolvida aqui)</p>
     </div>
   )
 }
@@ -271,6 +302,7 @@ function SkuPreview({ codes }: { codes: SkuCodeDto[] }) {
 function getBadgeClasses(variant: CategoryBadgeVariant): string {
   switch (variant) {
     case 'primary': return 'bg-primary/10 text-primary border border-primary/20'
+    case 'info':    return 'bg-info/10 text-info border border-info/20'
     case 'warning': return 'bg-warning/10 text-warning border border-warning/20'
     case 'success': return 'bg-success/10 text-success border border-success/20'
   }
