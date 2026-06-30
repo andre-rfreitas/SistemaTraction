@@ -186,7 +186,8 @@ function SeparationWizard() {
               <thead className="bg-muted">
                 <tr>
                   <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">SKU</th>
-                  <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Modelo</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Modelagem</th>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Estampa</th>
                   <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Cor</th>
                   <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">Tam.</th>
                   <th className="px-2 py-2 text-center text-xs font-medium text-muted-foreground">Qtd</th>
@@ -194,7 +195,6 @@ function SeparationWizard() {
               </thead>
               <tbody>
                 {editedItems.map((item, idx) => {
-                  // Derive model from SKU (first segment before '-')
                   const modelCode = item.sku.split('-')[0] ?? ''
                   return (
                     <tr key={item.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-muted/50'}>
@@ -205,6 +205,9 @@ function SeparationWizard() {
                       </td>
                       <td className="px-2 py-1">
                         <span className="text-xs font-mono text-muted-foreground">{modelCode || '—'}</span>
+                      </td>
+                      <td className="px-2 py-1">
+                        <span className="text-xs text-muted-foreground">{item.estampa || '—'}</span>
                       </td>
                       <td className="px-2 py-1">
                         <input value={item.color}
@@ -231,7 +234,7 @@ function SeparationWizard() {
           <div className="flex gap-2 pt-2">
             <Button variant="outline" className="text-xs h-7 px-2"
               onClick={() => setEditedItems(p => [...p, {
-                id: crypto.randomUUID(), sku: '', color: '', size: '', quantity: 1, sortOrder: p.length
+                id: crypto.randomUUID(), sku: '', estampa: '', color: '', size: '', quantity: 1, sortOrder: p.length, dtfModelId: null
               }])}>
               + Linha
             </Button>
