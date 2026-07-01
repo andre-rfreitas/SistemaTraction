@@ -75,7 +75,9 @@ public class RegisterPartialSewingDeliveryCommandHandler(IApplicationDbContext c
             allDefective,
             sewingCostTotal,
             defectCostTotal,
-            isPartial: true);
+            isPartial: true,
+            goodPiecesByItem: request.Items.ToDictionary(i => i.FabricRollId, i => i.GoodPieces),
+            defectivePiecesByItem: request.Items.ToDictionary(i => i.FabricRollId, i => i.DefectivePieces));
         context.SewingDeliveries.Add(sewingDelivery);
 
         var itemResults = new List<SewingItemResult>();

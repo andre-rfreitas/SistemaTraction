@@ -18,6 +18,16 @@ public class SewingDeliveryConfiguration : IEntityTypeConfiguration<SewingDelive
             .HasColumnType("nvarchar(max)")
             .IsRequired();
 
+        builder.Property(s => s.GoodPiecesByItemJson)
+            .HasColumnType("nvarchar(max)")
+            .HasDefaultValue("{}")
+            .IsRequired();
+
+        builder.Property(s => s.DefectivePiecesByItemJson)
+            .HasColumnType("nvarchar(max)")
+            .HasDefaultValue("{}")
+            .IsRequired();
+
         builder.Property(s => s.SewingCostTotal)
             .HasPrecision(18, 4);
 

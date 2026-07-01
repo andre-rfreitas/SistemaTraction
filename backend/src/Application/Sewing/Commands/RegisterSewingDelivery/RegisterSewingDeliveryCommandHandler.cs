@@ -79,7 +79,9 @@ public class RegisterSewingDeliveryCommandHandler(IApplicationDbContext context)
             allGood,
             allDefective,
             sewingCostTotal,
-            defectCostTotal);
+            defectCostTotal,
+            goodPiecesByItem: request.Items.ToDictionary(i => i.FabricRollId, i => i.GoodPieces),
+            defectivePiecesByItem: request.Items.ToDictionary(i => i.FabricRollId, i => i.DefectivePieces));
         context.SewingDeliveries.Add(sewingDelivery);
 
         // Per-roll: add stock to the correct color

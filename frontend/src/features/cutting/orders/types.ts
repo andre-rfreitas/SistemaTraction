@@ -30,6 +30,7 @@ export interface CuttingOrderItemDto {
   fabricRollWeightKg: number
   requestedPieces: Record<string, number>
   totalPieces: number
+  sewingDeliveredPieces: Record<string, number> | null
 }
 
 export interface CuttingOrderDto {

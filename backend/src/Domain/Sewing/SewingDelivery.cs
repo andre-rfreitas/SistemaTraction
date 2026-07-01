@@ -9,6 +9,8 @@ public class SewingDelivery : BaseEntity
     public Guid CuttingOrderId { get; private set; }
     public string GoodPiecesJson { get; private set; } = "{}";
     public string DefectivePiecesJson { get; private set; } = "{}";
+    public string GoodPiecesByItemJson { get; private set; } = "{}";
+    public string DefectivePiecesByItemJson { get; private set; } = "{}";
     public DateTime DeliveredAt { get; private set; }
     public decimal SewingCostTotal { get; private set; }
     public decimal DefectCostTotal { get; private set; }
@@ -24,7 +26,9 @@ public class SewingDelivery : BaseEntity
         Dictionary<string, int> defectivePieces,
         decimal sewingCostTotal,
         decimal defectCostTotal,
-        bool isPartial = false)
+        bool isPartial = false,
+        Dictionary<Guid, Dictionary<string, int>>? goodPiecesByItem = null,
+        Dictionary<Guid, Dictionary<string, int>>? defectivePiecesByItem = null)
     {
         if (goodPieces.Values.Any(v => v < 0))
             throw new DomainException("Quantidades de peças boas não podem ser negativas.");
@@ -46,6 +50,8 @@ public class SewingDelivery : BaseEntity
             CuttingOrderId = cuttingOrderId,
             GoodPiecesJson = JsonSerializer.Serialize(goodPieces),
             DefectivePiecesJson = JsonSerializer.Serialize(defectivePieces),
+            GoodPiecesByItemJson = JsonSerializer.Serialize(goodPiecesByItem ?? []),
+            DefectivePiecesByItemJson = JsonSerializer.Serialize(defectivePiecesByItem ?? []),
             DeliveredAt = DateTime.UtcNow,
             SewingCostTotal = sewingCostTotal,
             DefectCostTotal = defectCostTotal,
@@ -58,6 +64,12 @@ public class SewingDelivery : BaseEntity
 
     public Dictionary<string, int> GetDefectivePieces()
         => JsonSerializer.Deserialize<Dictionary<string, int>>(DefectivePiecesJson) ?? [];
+
+    public Dictionary<Guid, Dictionary<string, int>> GetGoodPiecesByItem()
+        => JsonSerializer.Deserialize<Dictionary<Guid, Dictionary<string, int>>>(GoodPiecesByItemJson) ?? [];
+
+    public Dictionary<Guid, Dictionary<string, int>> GetDefectivePiecesByItem()
+        => JsonSerializer.Deserialize<Dictionary<Guid, Dictionary<string, int>>>(DefectivePiecesByItemJson) ?? [];
 
     public int GetTotalGoodPieces() => GetGoodPieces().Values.Sum();
     public int GetTotalDefectivePieces() => GetDefectivePieces().Values.Sum();

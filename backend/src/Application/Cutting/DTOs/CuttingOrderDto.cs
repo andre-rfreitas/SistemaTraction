@@ -31,7 +31,8 @@ public record CuttingOrderItemDto(
     string? FabricColorHexCode,
     decimal FabricRollWeightKg,
     Dictionary<string, int> RequestedPieces,
-    int TotalPieces
+    int TotalPieces,
+    Dictionary<string, int>? SewingDeliveredPieces = null
 );
 
 public record CuttingOrderDto(

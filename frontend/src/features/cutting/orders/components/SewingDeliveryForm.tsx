@@ -23,20 +23,17 @@ interface Props {
 
 function initReceived(
   items: CuttingOrderItemDto[],
-  sewingDeliveredPieces?: Record<string, number> | null,
   isPartial?: boolean,
 ): PerRoll<Record<string, number>> {
   return Object.fromEntries(
     items.map((item) => {
-      const delivered = sewingDeliveredPieces ?? {}
-      const numItems = items.length || 1
+      const delivered = item.sewingDeliveredPieces ?? {}
       return [
         item.id,
         Object.fromEntries(SIZES.map((s) => {
           const requested = item.requestedPieces[s] ?? 0
           if (isPartial) {
-            const alreadyDeliveredForSize = Math.floor((delivered[s] ?? 0) / numItems)
-            return [s, Math.max(0, requested - alreadyDeliveredForSize)]
+            return [s, Math.max(0, requested - (delivered[s] ?? 0))]
           }
           return [s, requested]
         })),
@@ -66,7 +63,7 @@ function itemGoodPieces(received: Record<string, number>, defects: Record<string
 export function SewingDeliveryForm({ order, isLoading, isPartial, onConfirm, onCancel }: Props) {
   const [step, setStep] = useState<Step>('pieces')
   const [received, setReceived] = useState<PerRoll<Record<string, number>>>(() =>
-    isPartial ? initDefects(order.items) : initReceived(order.items, order.sewingDeliveredPieces, isPartial)
+    isPartial ? initDefects(order.items) : initReceived(order.items, isPartial)
   )
   const [defects, setDefects] = useState<PerRoll<Record<string, number>>>(() => initDefects(order.items))
 
@@ -122,7 +119,7 @@ export function SewingDeliveryForm({ order, isLoading, isPartial, onConfirm, onC
                   {SIZES.map((size) => {
                     const expected = item.requestedPieces[size] ?? 0
                     const alreadyDelivered = isPartial
-                      ? Math.floor(((order.sewingDeliveredPieces ?? {})[size] ?? 0) / (order.items.length || 1))
+                      ? (item.sewingDeliveredPieces ?? {})[size] ?? 0
                       : 0
                     const remaining = Math.max(0, expected - alreadyDelivered)
                     return (

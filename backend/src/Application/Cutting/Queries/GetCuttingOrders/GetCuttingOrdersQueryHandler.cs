@@ -37,31 +37,42 @@ public class GetCuttingOrdersQueryHandler(IApplicationDbContext context)
         var sewingDeliveryMap = sewingDeliveries
             .GroupBy(sd => sd.CuttingOrderId)
             .ToDictionary(g => g.Key, g => AggregateSewingPieces(g));
+        var sewingDeliveryByItemMap = sewingDeliveries
+            .GroupBy(sd => sd.CuttingOrderId)
+            .ToDictionary(g => g.Key, g => AggregateSewingPiecesByItem(g));
 
         return orders.Select(o =>
         {
             deliveryMap.TryGetValue(o.Id, out var delivery);
             sewingDeliveryMap.TryGetValue(o.Id, out var sewingPieces);
-            return ToDto(o, delivery?.GetDeliveredPieces(), sewingPieces);
+            sewingDeliveryByItemMap.TryGetValue(o.Id, out var sewingPiecesByItem);
+            return ToDto(o, delivery?.GetDeliveredPieces(), sewingPieces, sewingPiecesByItem);
         }).ToList();
     }
 
     internal static CuttingOrderDto ToDto(
         CuttingOrder o,
         Dictionary<string, int>? deliveredPieces,
-        Dictionary<string, int>? sewingDeliveredPieces = null)
+        Dictionary<string, int>? sewingDeliveredPieces = null,
+        Dictionary<Guid, Dictionary<string, int>>? sewingDeliveredPiecesByItem = null)
     {
-        var items = o.Items.Select(i => new CuttingOrderItemDto(
-            i.Id,
-            i.FabricRollId,
-            i.FabricRoll!.FabricType!.Name,
-            i.FabricRoll!.FabricType!.Variation,
-            i.FabricRoll!.FabricColor!.Name,
-            i.FabricRoll!.FabricColor!.HexCode,
-            i.FabricRoll!.WeightKg,
-            i.GetRequestedPieces(),
-            i.GetTotalPieces()
-        )).ToList();
+        var items = o.Items.Select(i =>
+        {
+            Dictionary<string, int>? itemSewingDelivered = null;
+            sewingDeliveredPiecesByItem?.TryGetValue(i.FabricRollId, out itemSewingDelivered);
+            return new CuttingOrderItemDto(
+                i.Id,
+                i.FabricRollId,
+                i.FabricRoll!.FabricType!.Name,
+                i.FabricRoll!.FabricType!.Variation,
+                i.FabricRoll!.FabricColor!.Name,
+                i.FabricRoll!.FabricColor!.HexCode,
+                i.FabricRoll!.WeightKg,
+                i.GetRequestedPieces(),
+                i.GetTotalPieces(),
+                itemSewingDelivered
+            );
+        }).ToList();
 
         return new CuttingOrderDto(
             o.Id,
@@ -84,6 +95,21 @@ public class GetCuttingOrdersQueryHandler(IApplicationDbContext context)
         foreach (var d in deliveries)
             foreach (var (size, qty) in d.GetGoodPieces())
                 result[size] = result.GetValueOrDefault(size) + qty;
+        return result;
+    }
+
+    private static Dictionary<Guid, Dictionary<string, int>> AggregateSewingPiecesByItem(IEnumerable<SewingDelivery> deliveries)
+    {
+        var result = new Dictionary<Guid, Dictionary<string, int>>();
+        foreach (var d in deliveries)
+            foreach (var (fabricRollId, sizes) in d.GetGoodPiecesByItem())
+            {
+                if (!result.TryGetValue(fabricRollId, out var sizeTotals))
+                    result[fabricRollId] = sizeTotals = new Dictionary<string, int>();
+
+                foreach (var (size, qty) in sizes)
+                    sizeTotals[size] = sizeTotals.GetValueOrDefault(size) + qty;
+            }
         return result;
     }
 }
